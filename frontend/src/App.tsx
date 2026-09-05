@@ -6,6 +6,7 @@ import { SofleLayout } from "./keyboards/sofle_v2/Layout";
 import { ActionTray } from "./components/ActionTray";
 import { IKeyAction } from "./types/keyboard";
 import { Key } from "./components/Key";
+import { getKeyWidth } from "./utils/keyFormatter";
 
 export default function App() {
     const {
@@ -69,7 +70,7 @@ export default function App() {
 
     return (
         <div className="flex flex-col h-screen px-5 py-4">
-            <header className="flex justify-between items-center mb-4 border-b border-gray-700 pb-4 shrink-0">
+            <header className="flex justify-between items-center mb-2.5 border-b border-gray-700 pb-4 shrink-0">
                 <h1 className="text-2xl font-bold text-blue-400">Z-MapFlow</h1>
 
                 <div className="flex gap-4">
@@ -119,7 +120,7 @@ export default function App() {
                         {activeDragAction ? (
                             <Key
                                 action={activeDragAction}
-                                className="opacity-90 scale-110 shadow-2xl cursor-grabbing border-blue-400!"
+                                className={`opacity-90 scale-110 shadow-2xl cursor-grabbing border-blue-400! ${getKeyWidth(activeDragAction.code)}`}
                             />
                         ) : null}
                     </DragOverlay>

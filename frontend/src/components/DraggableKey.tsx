@@ -4,9 +4,10 @@ import { Key } from "./Key";
 
 interface DraggableKeyProps {
     action: IKeyAction;
+    className?: string;
 }
 
-export function DraggableKey({ action }: DraggableKeyProps) {
+export function DraggableKey({ action, className = "" }: DraggableKeyProps) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: `drag-${action.code}`,
         data: { code: action.code, action: action },
@@ -17,9 +18,9 @@ export function DraggableKey({ action }: DraggableKeyProps) {
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            className={`touch-none ${isDragging ? "opacity-30" : "cursor-grab hover:scale-105 transition-transform"}`}
+            className={`touch-none ${isDragging ? "opacity-30" : "cursor-grab hover:scale-105 transition-transform"} ${className}`}
         >
-            <Key action={action} />
+            <Key action={action} className={className} />
         </div>
     );
 }

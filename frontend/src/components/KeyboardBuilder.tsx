@@ -46,19 +46,20 @@ export function KeyboardBuilder({ left, right, sensors }: KeyboardBuilderProps) 
     };
 
     return (
-        <div className="flex flex-col w-full h-full p-8 overflow-y-auto items-center">
-            <div className="flex gap-24 items-start justify-center mt-4 shrink-0">
+        <div className="flex flex-col w-full h-full p-2 overflow-y-auto items-center">
+            <div className="flex gap-6 items-start justify-center mt-4 shrink-0">
                 <div className="flex gap-2">{renderHalf(left)}</div>
+                <div className="flex h-full items-center pt-6">
+                    {sensors && sensors.length > 0 && (
+                        <div className="pt-8 w-full max-w-4xl flex justify-center gap-20">
+                            {sensors.map((sensor) => (
+                                <Sensor key={sensor.id} sensor={sensor} />
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <div className="flex gap-2">{renderHalf(right)}</div>
             </div>
-
-            {sensors && sensors.length > 0 && (
-                <div className="pt-8 w-full max-w-4xl flex justify-center gap-24 px-12">
-                    {sensors.map((sensor) => (
-                        <Sensor key={sensor.id} sensor={sensor} />
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

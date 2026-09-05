@@ -43,7 +43,7 @@ export function Sensor({ sensor }: SensorProps) {
     return (
         <div className="flex flex-col items-center gap-2">
             <span className="text-xs text-gray-400 font-semibold">{sensor.label}</span>
-            <div className="w-20 h-20 rounded-full bg-gray-800 border-2 border-gray-700 flex flex-col overflow-hidden shadow-lg">
+            <div className="w-22 h-22 rounded-full bg-gray-800 border-2 border-gray-700 flex flex-col overflow-hidden shadow-lg">
                 <SensorDropZone
                     id={`${sensor.id}-ccw`}
                     sensorId={sensor.id}

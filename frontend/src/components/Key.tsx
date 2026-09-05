@@ -8,12 +8,15 @@ interface KeyProps {
 
 export function Key({ action, className = "" }: KeyProps) {
     const displayLabel = action.code ? formatKeyLabel(action.code) : "";
+    const widthClass = className.includes("w-") ? "" : "w-14";
+    const heightClass = className.includes("h-") ? "" : "h-14";
 
     return (
         <div
-            className={`w-14 h-14 bg-gray-700 rounded-md flex items-center justify-center cursor-pointer border border-gray-600 shadow-lg hover:bg-gray-600 transition-all active:border-b-0 active:translate-y-1.25 ${className}`}
+            title={action.code}
+            className={`${widthClass} ${heightClass} bg-gray-700 rounded-md flex items-center justify-center cursor-pointer border border-gray-600 shadow-lg hover:bg-gray-600 transition-all active:border-b-0 active:translate-y-1.25 ${className}`}
         >
-            <span className="text-[14px] font-bold text-gray-200 text-center px-1 truncate">{displayLabel}</span>
+            <span className="text-[11px] font-bold text-gray-200 text-center px-1 truncate">{displayLabel}</span>
         </div>
     );
 }

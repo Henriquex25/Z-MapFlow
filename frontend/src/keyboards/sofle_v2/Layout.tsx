@@ -6,10 +6,8 @@ interface SofleLayoutProps {
 }
 
 export function SofleLayout({ layer }: SofleLayoutProps) {
-    // Pegamos a metade esquerda e excluímos a tecla 24 (Clique do Encoder Esquerdo)
     const leftKeys = layer.keys.filter((k) => k.keymapIndex < 29 && k.keymapIndex !== 24);
 
-    // Pegamos a metade direita e excluímos a tecla 57 (Clique do Encoder Direito)
     const rightKeys = layer.keys.filter((k) => k.keymapIndex >= 29 && k.keymapIndex !== 57);
 
     const leftConfig = {
