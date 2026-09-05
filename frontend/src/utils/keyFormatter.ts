@@ -1,5 +1,6 @@
 export function formatKeyLabel(code: string): string {
-    if (!code) return "";
+    if (!code || code === "&none") return "";
+    if (code === "&trans") return "▽";
 
     if (code.startsWith("&kp ")) {
         const key = code.replace("&kp ", "");

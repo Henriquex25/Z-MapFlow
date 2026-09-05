@@ -1,11 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
 import { GetInitialLayout } from "../wailsjs/go/main/App";
 import { useKeyboardStore } from "./store/useKeyboardStore";
 import { SofleLayout } from "./keyboards/sofle_v2/Layout";
+import { ActionTray } from "./components/ActionTray";
+import { IKeyAction } from "./types/keyboard";
+import { Key } from "./components/Key";
 
 export default function App() {
-    const { currentLayout, activeLayerIndex, initializeLayout, setActiveLayer, undoChanges, saveChanges } =
-        useKeyboardStore();
+    const {
+        currentLayout,
+        activeLayerIndex,
+        initializeLayout,
+        setActiveLayer,
+        undoChanges,
+        saveChanges,
+        updateKeyCode,
+        updateSensorCode,
+    } = useKeyboardStore();
+
+    const [activeDragAction, setActiveDragAction] = useState<IKeyAction | null>(null);
 
     useEffect(() => {
         const fetchLayout = async () => {
@@ -19,6 +33,30 @@ export default function App() {
         fetchLayout();
     }, [initializeLayout]);
 
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        if (active.data.current) {
+            setActiveDragAction(active.data.current.action as IKeyAction);
+        }
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        setActiveDragAction(null);
+        const { active, over } = event;
+
+        if (over && active.data.current && over.data.current) {
+            const newCode = active.data.current.code;
+
+            if (over.data.current.isSensor) {
+                const { sensorId, direction } = over.data.current;
+                updateSensorCode(sensorId, direction, newCode);
+            } else {
+                const targetKeymapIndex = over.data.current.keymapIndex;
+                updateKeyCode(targetKeymapIndex, newCode);
+            }
+        }
+    };
+
     if (!currentLayout || currentLayout.layers.length === 0) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -30,8 +68,8 @@ export default function App() {
     const activeLayer = currentLayout.layers[activeLayerIndex];
 
     return (
-        <div className="flex flex-col h-screen p-6">
-            <header className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+        <div className="flex flex-col h-screen px-5 py-4">
+            <header className="flex justify-between items-center mb-4 border-b border-gray-700 pb-4 shrink-0">
                 <h1 className="text-2xl font-bold text-blue-400">Z-MapFlow</h1>
 
                 <div className="flex gap-4">
@@ -53,7 +91,7 @@ export default function App() {
                 </div>
             </header>
 
-            <div className="flex gap-2 pl-2.5">
+            <div className="flex gap-2 pl-2.5 shrink-0">
                 {currentLayout.layers.map((layer, index) => (
                     <button
                         key={index}
@@ -69,10 +107,23 @@ export default function App() {
                 ))}
             </div>
 
-            <main className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 bg-gray-900 rounded-xl border border-gray-700 shadow-inner overflow-auto flex items-start justify-center">
-                    <SofleLayout layer={activeLayer} />
-                </div>
+            <main className="flex-1 flex flex-col min-h-0 bg-gray-900 rounded-xl border border-gray-700 shadow-inner relative">
+                <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                    <div className="flex-1 overflow-auto flex items-start justify-center">
+                        <SofleLayout layer={activeLayer} />
+                    </div>
+
+                    <ActionTray />
+
+                    <DragOverlay dropAnimation={null}>
+                        {activeDragAction ? (
+                            <Key
+                                action={activeDragAction}
+                                className="opacity-90 scale-110 shadow-2xl cursor-grabbing border-blue-400!"
+                            />
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
             </main>
         </div>
     );

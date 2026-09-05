@@ -1,4 +1,5 @@
 import { ISensorAction, IKeyAction } from "../types/keyboard";
+import { DroppableKey } from "./DroppableKey";
 import { Key } from "./Key";
 import { Sensor } from "./Sensor";
 
@@ -35,7 +36,9 @@ export function KeyboardBuilder({ left, right, sensors }: KeyboardBuilderProps) 
                         const isThumb =
                             config.thumbRowStartIndex !== undefined && action.row >= config.thumbRowStartIndex;
 
-                        return <Key key={action.keymapIndex} action={action} className={isThumb ? "mt-6" : ""} />;
+                        return (
+                            <DroppableKey key={action.keymapIndex} action={action} className={isThumb ? "mt-6" : ""} />
+                        );
                     })}
                 </div>
             );
