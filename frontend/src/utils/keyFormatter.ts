@@ -1,89 +1,142 @@
-export function formatKeyLabel(code: string): string {
-    if (!code || code === "&none" || code === "&blank") return "";
-    if (code === "&trans") return "▽";
+export interface KeyVisuals {
+    main: string;
+    shift?: string;
+    modifier?: string;
+    icon?: string;
+}
+
+export function formatKeyVisuals(code: string): KeyVisuals | null {
+    if (!code || code === "&none" || code === "&blank") return null;
+    if (code === "&trans") return { main: "", icon: "ChevronsDown" };
+
+    if (code.startsWith("&mt ") || code.startsWith("&lt ")) {
+        const parts = code.split(" ");
+        if (parts.length >= 3) {
+            const isLayerTap = code.startsWith("&lt ");
+            const holdPart = isLayerTap ? `LT ${parts[1]}` : cleanModName(parts[1]);
+            const tapPart = parts.slice(2).join(" ");
+
+            const tapVisual = formatKeyVisuals(`&kp ${tapPart}`) || { main: tapPart };
+
+            return {
+                modifier: holdPart,
+                main: tapVisual.main,
+                icon: tapVisual.icon,
+                shift: tapVisual.shift,
+            };
+        }
+    }
+
+    const modWrapperMatch = code.match(/^&kp\s+([A-Z]{2})\((.+)\)$/);
+    if (modWrapperMatch) {
+        const mod = cleanModName(modWrapperMatch[1]);
+        const innerKey = modWrapperMatch[2];
+        const innerVisual = formatKeyVisuals(`&kp ${innerKey}`) || { main: innerKey };
+
+        return {
+            modifier: mod,
+            main: innerVisual.main,
+            icon: innerVisual.icon,
+            shift: innerVisual.shift,
+        };
+    }
 
     if (code.startsWith("&bt ")) {
         const btKey = code.replace("&bt ", "");
-        if (btKey === "BT_CLR") return "BT CLR";
-        if (btKey.startsWith("BT_SEL ")) return `BT ${btKey.replace("BT_SEL ", "")}`;
-        return btKey;
+        if (btKey === "BT_CLR") return { main: "CLR", icon: "Bluetooth" };
+        if (btKey.startsWith("BT_SEL ")) return { main: btKey.replace("BT_SEL ", ""), icon: "Bluetooth" };
+        return { main: btKey, icon: "Bluetooth" };
     }
 
     if (code.startsWith("&kp ")) {
         const key = code.replace("&kp ", "");
 
-        const cleanMap: Record<string, string> = {
-            ESC: "ESC",
-            TAB: "TAB",
-            RET: "ENTER",
-            BSPC: "BKSP",
-            SPACE: "SPACE",
-            LSHFT: "SHIFT",
-            RSHFT: "SHIFT",
-            LCTRL: "CTRL",
-            LALT: "ALT",
-            RALT: "ALT",
-            LGUI: "GUI",
-            RGUI: "GUI",
-            MINUS: "- _",
-            EQUAL: "= +",
-            SEMI: "; :",
-            SQT: "' \"",
-            COMMA: ", <",
-            DOT: ". >",
-            FSLH: "/ ?",
-            N1: "1 !",
-            N2: "2 @",
-            N3: "3 #",
-            N4: "4 $",
-            N5: "5 %",
-            N6: "6 ^",
-            N7: "7 &",
-            N8: "8 *",
-            N9: "9 (",
-            N0: "0 )",
-            DEL: "DEL",
-            C_MUTE: "MUTE",
-            C_PP: "PLAY",
-            PSCRN: "PRT SC",
-            SLCK: "SCR LK",
-            PAUSE_BREAK: "PAUSE",
-            INS: "INS",
-            HOME: "HOME",
-            PG_UP: "PG UP",
-            END: "END",
-            PG_DN: "PG DN",
-            UP: "UP",
-            DOWN: "DOWN",
-            LEFT: "LEFT",
-            RIGHT: "RIGHT",
-            KP_NUM: "NUM LK",
-            KP_DIVIDE: "/",
-            KP_MULTIPLY: "*",
-            KP_MINUS: "-",
-            KP_PLUS: "+",
-            KP_ENTER: "ENTER",
-            KP_DOT: ".",
-            KP_N1: "1",
-            KP_N2: "2",
-            KP_N3: "3",
-            KP_N4: "4",
-            KP_N5: "5",
-            KP_N6: "6",
-            KP_N7: "7",
-            KP_N8: "8",
-            KP_N9: "9",
-            KP_N0: "0",
-            K_CMENU: "MENU",
+        const visualMap: Record<string, KeyVisuals> = {
+            ESC: { main: "ESC" },
+            TAB: { main: "TAB", icon: "ArrowRightToLine" },
+            RET: { main: "ENTER", icon: "CornerDownLeft" },
+            BSPC: { main: "BKSP", icon: "Delete" },
+            SPACE: { main: "SPACE" },
+            LSHFT: { main: "SHIFT", icon: "ArrowBigUp" },
+            RSHFT: { main: "SHIFT", icon: "ArrowBigUp" },
+            LCTRL: { main: "CTRL" },
+            RCTRL: { main: "CTRL" },
+            LALT: { main: "ALT", icon: "Option" },
+            RALT: { main: "ALT", icon: "Option" },
+            LGUI: { main: "GUI", icon: "Command" },
+            RGUI: { main: "GUI", icon: "Command" },
+            MINUS: { main: "-", shift: "_" },
+            EQUAL: { main: "=", shift: "+" },
+            SEMI: { main: ";", shift: ":" },
+            SQT: { main: "'", shift: '"' },
+            COMMA: { main: ",", shift: "<" },
+            DOT: { main: ".", shift: ">" },
+            FSLH: { main: "/", shift: "?" },
+            GRAVE: { main: "`", shift: "~" },
+            LBKT: { main: "[", shift: "{" },
+            RBKT: { main: "]", shift: "}" },
+            BSLH: { main: "\\", shift: "|" },
+            N1: { main: "1", shift: "!" },
+            N2: { main: "2", shift: "@" },
+            N3: { main: "3", shift: "#" },
+            N4: { main: "4", shift: "$" },
+            N5: { main: "5", shift: "%" },
+            N6: { main: "6", shift: "^" },
+            N7: { main: "7", shift: "&" },
+            N8: { main: "8", shift: "*" },
+            N9: { main: "9", shift: "(" },
+            N0: { main: "0", shift: ")" },
+            DEL: { main: "DEL" },
+            C_MUTE: { main: "MUTE", icon: "VolumeX" },
+            C_PP: { main: "PLAY", icon: "Play" },
+            UP: { main: "", icon: "ArrowUp" },
+            DOWN: { main: "", icon: "ArrowDown" },
+            LEFT: { main: "", icon: "ArrowLeft" },
+            RIGHT: { main: "", icon: "ArrowRight" },
+            KP_DIVIDE: { main: "/" },
+            KP_MULTIPLY: { main: "*" },
+            KP_MINUS: { main: "-" },
+            KP_PLUS: { main: "+" },
+            KP_ENTER: { main: "ENTER", icon: "CornerDownLeft" },
+            KP_DOT: { main: "." },
+            KP_N1: { main: "1" },
+            KP_N2: { main: "2" },
+            KP_N3: { main: "3" },
+            KP_N4: { main: "4" },
+            KP_N5: { main: "5" },
+            KP_N6: { main: "6" },
+            KP_N7: { main: "7" },
+            KP_N8: { main: "8" },
+            KP_N9: { main: "9" },
+            KP_N0: { main: "0" },
+            K_CMENU: { main: "MENU", icon: "Menu" },
         };
 
-        return cleanMap[key] || key;
+        return visualMap[key] || { main: key };
     }
 
-    if (code.startsWith("&mo ")) return `MO ${code.replace("&mo ", "")}`;
-    if (code.startsWith("&sl ")) return `SL ${code.replace("&sl ", "")}`;
+    if (code.startsWith("&mo ")) return { main: code.replace("&mo ", ""), icon: "Layers" };
+    if (code.startsWith("&sl ")) return { main: code.replace("&sl ", ""), icon: "Layers" };
 
-    return code;
+    return { main: code };
+}
+
+function cleanModName(mod: string): string {
+    const map: Record<string, string> = {
+        LCTRL: "LCtl_T",
+        RCTRL: "RCtl_T",
+        LC: "CTRL",
+        LSHFT: "LSft_T",
+        RSHFT: "RSft_T",
+        LS: "SHIFT",
+        LALT: "LAlt_T",
+        RALT: "RAlt_T",
+        LA: "ALT",
+        LGUI: "LGui_T",
+        RGUI: "RGui_T",
+        LG: "GUI",
+    };
+    return map[mod] || mod;
 }
 
 export function getKeyWidth(code: string): string {
