@@ -1,26 +1,44 @@
+import { useId } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { IKeyAction } from "../types/keyboard";
 import { Key } from "./Key";
-
-interface DraggableKeyProps {
-    action: IKeyAction;
-    className?: string;
-}
-
-export function DraggableKey({ action, className = "" }: DraggableKeyProps) {
-    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-        id: `drag-${action.code}`,
-        data: { code: action.code, action: action },
-    });
-
-    return (
-        <div
-            ref={setNodeRef}
-            {...listeners}
-            {...attributes}
-            className={`touch-none ${isDragging ? "opacity-30" : "cursor-grab hover:scale-105 transition-transform"} ${className}`}
-        >
-            <Key action={action} className={className} />
-        </div>
-    );
+import { useKeyboardStore } from "../store/useKeyboardStore";
+export function DraggableKey({
+  action,
+  className = "",
+}: {
+  action: IKeyAction;
+  className?: string;
+}) {
+  const id = useId();
+  const selectAction = useKeyboardStore((s) => s.selectAction);
+  const selected = useKeyboardStore((s) => s.selectedAction?.code === action.code);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `palette-${id}`,
+    data: { code: action.code, action },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      aria-label={`Arrastar ${action.label || action.code}`}
+      aria-pressed={selected}
+      title="Clique para selecionar ou arraste até o destino"
+      onClick={(event) => {
+        event.stopPropagation();
+        selectAction(action);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.stopPropagation();
+          selectAction(action);
+        } else listeners?.onKeyDown?.(event);
+      }}
+      className={`touch-none ${isDragging ? "opacity-30" : "cursor-grab"} ${selected ? "ring-2 ring-sky-400 rounded-md" : ""} ${className}`}
+    >
+      <Key action={action} className={className} />
+    </div>
+  );
 }

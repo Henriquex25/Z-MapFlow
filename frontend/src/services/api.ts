@@ -1,0 +1,23 @@
+import * as go from "../../wailsjs/go/main/App";
+import { models } from "../../wailsjs/go/models";
+import type { Project, Build, Session, Plugin } from "../types/keyboard";
+const model = (p: Project) => models.Project.createFrom(p);
+export const api = {
+  load: (): Promise<Session> => go.LoadProject(),
+  newProject: (id: string): Promise<Session> => go.NewProject(id),
+  plugins: (): Promise<Plugin[]> => go.ListPlugins(),
+  save: (p: Project): Promise<Project> => go.SaveProject(model(p)),
+  saveAndBuild: (p: Project): Promise<Project> => go.SaveAndBuild(model(p)),
+  build: go.StartBuild,
+  status: (): Promise<Build | null> => go.GetBuildStatus(),
+  cancelBuild: go.CancelBuild,
+  listBuilds: go.ListBuilds,
+  getBuild: (id: string): Promise<Build> => go.GetBuild(id),
+  preview: (p: Project) => go.PreviewSources(model(p)),
+  importProject: (): Promise<Session> => go.ImportProject(),
+  exportProject: (p: Project) => go.ExportProject(model(p)),
+  exportFirmware: go.ExportFirmware,
+  volumes: go.FindBootloaders,
+  selectVolume: go.SelectBootloader,
+  flash: go.FlashFirmware,
+};

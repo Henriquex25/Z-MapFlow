@@ -1,96 +1,70 @@
 import { IKeyAction } from "../types/keyboard";
-import { formatKeyVisuals } from "../utils/keyFormatter";
-import {
-    Delete,
-    CornerDownLeft,
-    ArrowBigUp,
-    ArrowUp,
-    ArrowDown,
-    ArrowLeft,
-    ArrowRight,
-    Command,
-    Option,
-    VolumeX,
-    Play,
-    Bluetooth,
-    Menu,
-    Layers,
-    ChevronsDown,
-    ArrowRightToLine,
-} from "lucide-react";
-
-const IconMap: Record<string, React.ElementType> = {
-    Delete: Delete,
-    CornerDownLeft: CornerDownLeft,
-    ArrowBigUp: ArrowBigUp,
-    ArrowUp: ArrowUp,
-    ArrowDown: ArrowDown,
-    ArrowLeft: ArrowLeft,
-    ArrowRight: ArrowRight,
-    Command: Command,
-    Option: Option,
-    VolumeX: VolumeX,
-    Play: Play,
-    Bluetooth: Bluetooth,
-    Menu: Menu,
-    Layers: Layers,
-    ChevronsDown: ChevronsDown,
-    ArrowRightToLine: ArrowRightToLine,
-};
+import { displayCode, useKeyboardStore } from "../store/useKeyboardStore";
+import { formatKeyVisuals, type KeyVisuals } from "../utils/keyFormatter";
+import { keyIcons } from "../utils/keyIcons";
 
 interface KeyProps {
-    action: IKeyAction;
-    className?: string;
+  action: IKeyAction;
+  className?: string;
+  compact?: boolean;
 }
 
-export function Key({ action, className = "" }: KeyProps) {
-    const visuals = action.code ? formatKeyVisuals(action.code) : null;
-    const widthClass = className.includes("w-") ? "" : "w-14";
-    const heightClass = className.includes("h-") ? "" : "h-14";
+export function Key({ action, className = "", compact = false }: KeyProps) {
+  const project = useKeyboardStore((s) => s.project);
+  const reference = action.code.split(" ")[0]?.slice(1);
+  const custom =
+    project?.layout.macros.find((m) => m.id === reference) ||
+    project?.layout.behaviors.find((b) => b.id === reference);
+  const visuals: KeyVisuals | null = custom
+    ? { main: custom.name }
+    : action.code
+      ? formatKeyVisuals(displayCode(action.code, project))
+      : null;
+  const widthClass = className.includes("w-") ? "" : "w-14";
+  const heightClass = className.includes("h-") ? "" : "h-14";
 
-    const IconComponent = visuals?.icon ? IconMap[visuals.icon] : null;
+  const IconComponent = visuals?.icon ? keyIcons[visuals.icon] : null;
+  const description =
+    custom?.name ||
+    visuals?.description ||
+    [visuals?.modifier, visuals?.main].filter(Boolean).join(" ");
+  const tooltip =
+    description && description !== action.code ? `${description}\n${action.code}` : action.code;
 
-    return (
-        <div
-            title={action.code}
-            className={`${widthClass} ${heightClass} bg-gray-700 rounded-md flex flex-col p-1 cursor-pointer border border-gray-600 shadow-lg hover:bg-gray-600 transition-all active:border-b-0 active:translate-y-1.25 overflow-hidden ${className}`}
-        >
-            {visuals ? (
-                visuals.modifier ? (
-                    <div className="flex flex-col justify-between h-full w-full py-0.5">
-                        <span className="text-[9px] font-bold text-sky-400 text-center leading-none truncate px-0.5">
-                            {visuals.modifier}
-                        </span>
-                        <div className="flex items-center justify-center w-full gap-1 my-auto">
-                            {IconComponent && <IconComponent size={12} className="text-gray-300 shrink-0" />}
-                            {visuals.main && (
-                                <span className="text-xs font-bold text-gray-200 truncate">{visuals.main}</span>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        {visuals.shift && (
-                            <span className="text-[10px] font-bold text-gray-400 self-start leading-none mb-auto pl-0.5 pt-0.5">
-                                {visuals.shift}
-                            </span>
-                        )}
-
-                        <div
-                            className={`flex items-center justify-center w-full h-full gap-1 ${visuals.shift ? "mt-auto pb-0.5" : ""}`}
-                        >
-                            {IconComponent && <IconComponent size={14} className="text-gray-300 shrink-0" />}
-                            {visuals.main && (
-                                <span
-                                    className={`font-bold text-gray-200 truncate ${visuals.shift ? "text-xs" : "text-sm"}`}
-                                >
-                                    {visuals.main}
-                                </span>
-                            )}
-                        </div>
-                    </>
-                )
-            ) : null}
-        </div>
-    );
+  const iconOnly =
+    compact && !!visuals?.icon && ["SHIFT", "ENTER", "BKSP", "TAB"].includes(visuals.main);
+  const behavior = compact ? action.code.trim().match(/^&\S+/)?.[0] : undefined;
+  return (
+    <div
+      title={tooltip}
+      className={`keycap ${widthClass} ${heightClass} ${behavior ? "keycap-with-behavior" : ""} ${behavior && (visuals?.modifier || visuals?.shift) ? "keycap-with-secondary" : ""} ${custom ? "keycap-custom" : ""} ${className}`}
+    >
+      {behavior && (
+        <span className="keycap-behavior" title={behavior}>
+          {behavior}
+        </span>
+      )}
+      {visuals && (
+        <>
+          {(visuals.modifier || visuals.shift) && (
+            <span className={visuals.modifier ? "keycap-modifier" : "keycap-shift"}>
+              {visuals.modifier || visuals.shift}
+            </span>
+          )}
+          <div
+            className={`keycap-content ${behavior || visuals.modifier || visuals.shift ? "has-secondary" : ""}`}
+          >
+            {IconComponent && (
+              <IconComponent size={compact && iconOnly ? 18 : 14} aria-hidden="true" />
+            )}
+            {visuals.main && !iconOnly && (
+              <span className={`keycap-label ${visuals.main.length > 7 ? "is-long" : ""}`}>
+                {visuals.main}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
