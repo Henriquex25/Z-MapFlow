@@ -87,6 +87,20 @@ export namespace firmware {
 
 export namespace flash {
 	
+	export class Result {
+	    status: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Result(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
+	        this.detail = source["detail"];
+	    }
+	}
 	export class Volume {
 	    path: string;
 	    name: string;
@@ -160,11 +174,11 @@ export namespace models {
 	    targetId: string;
 	    snippets?: string[];
 	    cmakeArgs?: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new BuildTarget(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.targetId = source["targetId"];
@@ -203,11 +217,11 @@ export namespace models {
 	    name: string;
 	    ifLayerIds: string[];
 	    thenLayerId: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ConditionalLayer(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -219,11 +233,11 @@ export namespace models {
 	export class HeaderBundle {
 	    name: string;
 	    files: Record<string, string>;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new HeaderBundle(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -234,11 +248,11 @@ export namespace models {
 	    tappingTermMs: number;
 	    quickTapMs: number;
 	    flavor: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new HoldTapSettings(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.tappingTermMs = source["tappingTermMs"];
@@ -252,11 +266,11 @@ export namespace models {
 	    layerIds: string[];
 	    bindings: string[];
 	    processNext: boolean;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new InputProcessorChain(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -508,7 +522,7 @@ export namespace models {
 	        this.sleep = source["sleep"];
 	        this.sleepTimeoutMs = source["sleepTimeoutMs"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -799,7 +813,7 @@ export namespace models {
 }
 
 export namespace updates {
-
+	
 	export class Info {
 	    currentVersion: string;
 	    latestVersion: string;
@@ -808,11 +822,11 @@ export namespace updates {
 	    releaseUrl: string;
 	    notes: string;
 	    message: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Info(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.currentVersion = source["currentVersion"];
@@ -828,11 +842,11 @@ export namespace updates {
 	    stage: string;
 	    downloaded: number;
 	    total: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Progress(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.stage = source["stage"];
@@ -844,15 +858,15 @@ export namespace updates {
 }
 
 export namespace version {
-
+	
 	export class Info {
 	    version: string;
 	    commit: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Info(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.version = source["version"];

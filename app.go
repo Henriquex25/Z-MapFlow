@@ -331,26 +331,26 @@ func (a *App) SelectBootloader(buildID string) (flash.Volume, error) {
 	}
 	return flash.Inspect(path, v)
 }
-func (a *App) FlashFirmware(buildID, targetID, volumePath string) error {
+func (a *App) FlashFirmware(buildID, targetID, volumePath string) (flash.Result, error) {
 	a.operation.Lock()
 	defer a.operation.Unlock()
 	if err := a.ready(); err != nil {
-		return err
+		return flash.Result{}, err
 	}
 	source, artifact, p, err := a.builds.ArtifactPath(buildID, targetID)
 	if err != nil {
-		return err
+		return flash.Result{}, err
 	}
 	d, err := a.registry.Get(p.PluginID)
 	if err != nil {
-		return err
+		return flash.Result{}, err
 	}
 	variant, err := project.Variant(p, d.Descriptor())
 	if err != nil {
-		return err
+		return flash.Result{}, err
 	}
 	if err = firmware.ValidateUF2(source, variant.UF2Family); err != nil {
-		return err
+		return flash.Result{}, err
 	}
 	return flash.Copy(source, volumePath, artifact.Name, variant)
 }

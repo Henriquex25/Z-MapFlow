@@ -18,7 +18,7 @@ export function ExportProject(arg1:models.Project):Promise<string>;
 
 export function FindBootloaders(arg1:string):Promise<Array<flash.Volume>>;
 
-export function FlashFirmware(arg1:string,arg2:string,arg3:string):Promise<void>;
+export function FlashFirmware(arg1:string,arg2:string,arg3:string):Promise<flash.Result>;
 
 export function GetAppInfo():Promise<version.Info>;
 

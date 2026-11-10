@@ -16,6 +16,10 @@ Confira os parâmetros e o código informado. Cada ação aceita uma quantidade 
 
 Confira teclado/variante e o número de teclas. Inclua headers locais ao lado do keymap. Includes `.dtsi`, condicionais e macros de pré-processador com parâmetros no próprio keymap não são expandidos pelo importador. Uma falha mantém a edição anterior.
 
+## Um aviso de gravação final aparece durante o flash
+
+Se o flash informar `sync …: input/output error` ou **Envio não confirmado**, consulte [reinicialização e avisos de gravação final](./firmware#reinicializacao-e-avisos-de-gravacao-final). Uma reinicialização pode causar esse aviso mesmo quando o novo layout funciona, mas uma falha real pode ter a mesma mensagem. Teste o teclado antes de confirmar ou repetir o envio.
+
 ## A atualização não aparece ou falha
 
 A consulta usa releases públicas estáveis e precisa de internet. Pré-releases são ignoradas. Um repositório privado, limite da API, ausência de pacote para sua arquitetura ou instalação sem permissão de escrita pode impedir a atualização. Use o pacote oficial instalado na pasta do usuário e tente novamente pelo cabeçalho.

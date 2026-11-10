@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(api.listBuilds).mockResolvedValue([]);
   vi.mocked(api.volumes).mockResolvedValue([{ path: "/test/UF2", name: "UF2", board: "Test" }]);
-  vi.mocked(api.flash).mockResolvedValue();
+  vi.mocked(api.flash).mockResolvedValue({ status: "sent", detail: "" });
 });
 it("requires the connected half, allows retry, and selects the corresponding artifact", async () => {
   const s = fixture();

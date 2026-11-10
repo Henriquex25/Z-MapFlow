@@ -1156,6 +1156,197 @@ h3 {
 .modal-card.small {
   width: 440px;
 }
+.modal-card.flash-modal {
+  width: 900px;
+}
+.flash-modal .btn {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: var(--type-body);
+  justify-content: center;
+  white-space: normal;
+}
+.flash-modal .section-toolbar {
+  align-items: flex-start;
+}
+.flash-modal .section-toolbar .hint {
+  margin-top: 6px;
+}
+.flash-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+  list-style: none;
+  padding: 0;
+}
+.flash-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--canvas);
+}
+.flash-step.ready {
+  border-color: var(--accent);
+}
+.flash-step-number {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.flash-step-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.flash-modal h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.flash-step p,
+.flash-warning p,
+.flash-success p {
+  font-size: var(--type-body);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.flash-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(85px, 100%), 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.flash-modal .flash-target {
+  min-height: 76px;
+  flex-wrap: wrap;
+  gap: 5px;
+  border: 1px solid var(--border-strong);
+  font-size: 17px;
+}
+.flash-target small {
+  flex-basis: 100%;
+  font-size: var(--type-caption);
+  font-weight: 400;
+}
+.flash-step .field,
+.flash-step > .btn {
+  width: 100%;
+  min-width: 0;
+}
+.flash-step .field {
+  min-height: 44px;
+  padding-right: 8px;
+}
+.flash-step .form-label {
+  margin: 0 0 -6px;
+}
+.flash-modal details {
+  font-size: var(--type-body);
+  width: 100%;
+}
+.flash-modal summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.flash-modal details p,
+.flash-modal details pre {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.flash-warning,
+.flash-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #d7b26666;
+  border-radius: 10px;
+  background: #d7b2660d;
+  color: #edc77c;
+  margin-top: 16px;
+}
+.flash-warning > svg,
+.flash-success > svg,
+.flash-restart-note > svg {
+  flex-shrink: 0;
+}
+.flash-warning > div,
+.flash-success > div {
+  min-width: 0;
+}
+.flash-warning p,
+.flash-success p,
+.flash-warning details {
+  margin-top: 8px;
+}
+.flash-warning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.flash-success {
+  border-color: #7fd3b744;
+  background: #7fd3b70a;
+  color: var(--success);
+}
+.flash-restart-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 16px 0;
+  font-size: var(--type-caption);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.flash-send .hint {
+  margin-bottom: 8px;
+  text-align: center;
+}
+.flash-modal .flash-send-button {
+  width: 100%;
+  min-height: 54px;
+  font-size: 17px;
+}
+.flash-revision {
+  margin-top: 12px;
+  text-align: center;
+}
+.flash-spinner {
+  animation: flash-spin 1s linear infinite;
+}
+@keyframes flash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash-spinner {
+    animation: none;
+  }
+}
+@media (max-width: 700px) {
+  .flash-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flash-warning-actions {
+    flex-direction: column;
+  }
+}
 .context-menu {
   width: 190px;
   padding: 5px;

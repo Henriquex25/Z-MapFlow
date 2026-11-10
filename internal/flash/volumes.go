@@ -123,35 +123,58 @@ func mountPaths() ([]string, error) {
 	return paths, nil
 }
 
-// Copy sends a verified artifact. It does not claim the keyboard booted successfully.
-func Copy(source, destination, name string, variant models.Variant) error {
+// Result separates a completed host transfer from a transfer whose final flush
+// could not be confirmed. Neither state proves the keyboard booted successfully.
+type Result struct {
+	Status string `json:"status"` // sent or unconfirmed
+	Detail string `json:"detail"`
+}
+
+// Copy sends a verified artifact. Final sync/close failures remain unconfirmed:
+// UF2 bootloaders can reboot before the host finishes, but real I/O failures can
+// produce the same error. Interrupted copies always return an error.
+func Copy(source, destination, name string, variant models.Variant) (Result, error) {
 	volume, err := Inspect(destination, variant)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
 	if filepath.Base(name) != name || strings.ToLower(filepath.Ext(name)) != ".uf2" {
-		return fmt.Errorf("nome de firmware inválido")
+		return Result{}, fmt.Errorf("nome de firmware inválido")
 	}
 	dest := filepath.Join(volume.Path, name)
 	if info, e := os.Lstat(dest); e == nil && (!info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0) {
-		return fmt.Errorf("destino de firmware inválido")
+		return Result{}, fmt.Errorf("destino de firmware inválido")
 	}
 	in, err := os.Open(source)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
 	defer in.Close()
 	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
+	return copyToVolume(out, in)
+}
+
+type volumeWriter interface {
+	io.Writer
+	Sync() error
+	Close() error
+}
+
+func copyToVolume(out volumeWriter, in io.Reader) (Result, error) {
+	var err error
 	if _, err = io.Copy(out, in); err != nil {
 		out.Close()
-		return fmt.Errorf("envio interrompido; reconecte em bootloader e tente novamente: %w", err)
+		return Result{}, fmt.Errorf("envio interrompido; reconecte em bootloader e tente novamente: %w", err)
 	}
 	if err = out.Sync(); err != nil {
 		out.Close()
-		return fmt.Errorf("não foi possível confirmar a gravação no volume; confira a reinicialização do teclado: %w", err)
+		return Result{Status: "unconfirmed", Detail: err.Error()}, nil
 	}
-	return out.Close()
+	if err = out.Close(); err != nil {
+		return Result{Status: "unconfirmed", Detail: err.Error()}, nil
+	}
+	return Result{Status: "sent"}, nil
 }

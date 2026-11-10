@@ -1,6 +1,6 @@
 # Instalação e atualização
 
-A distribuição inicial é para **Linux x86_64**, com GTK 3 e WebKitGTK 4.1. Ubuntu/Pop!_OS 22.04 ou mais recente são a base da compilação. Windows, macOS e outras arquiteturas ainda não possuem pacotes oficiais.
+O Z-MapFlow está disponível **somente para Linux x86_64**, com GTK 3 e WebKitGTK 4.1, compilado no Ubuntu 22.04. Windows, macOS e outras arquiteturas estão fora do escopo atual de distribuição. O instalador e o atualizador automático atendem Linux.
 
 ## Instalar em poucos passos
 

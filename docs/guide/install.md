@@ -1,6 +1,6 @@
 # Installation and updates
 
-The initial distribution supports **Linux x86_64**, GTK 3 and WebKitGTK 4.1, built on Ubuntu 22.04. Windows, macOS and other architectures do not have official packages yet.
+Z-MapFlow is currently available for **Linux x86_64 only**, using GTK 3 and WebKitGTK 4.1, built on Ubuntu 22.04. Windows, macOS and other architectures are outside the current release scope. The installer and automatic updater support Linux.
 
 ## Install
 

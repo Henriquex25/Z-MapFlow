@@ -20,6 +20,10 @@ Check the selected keyboard/variant and key count. Keep local headers beside you
 
 ZMK firmware support alone does not provide the app with geometry, binding order or controller metadata. A Z-MapFlow plugin supplies that information. Read the [plugin guide](../plugins) or open a keyboard support issue with public hardware/ZMK references.
 
+## A final write warning appears during flashing
+
+See [restart and final write warnings](./firmware#restart-and-final-write-warnings) if flashing reports `sync …: input/output error` or **Transfer not confirmed**. A controller restart can produce this warning even when the new layout works, but a real I/O failure can look the same. Test the keyboard before confirming or retrying.
+
 ## Updates are unavailable or fail
 
 Updates require public stable releases and internet access. Prereleases are ignored. API limits, a missing asset for your architecture or a non-writable installation may prevent an update. Retry from the header and use the official per-user installation.

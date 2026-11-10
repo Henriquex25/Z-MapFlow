@@ -1,8 +1,20 @@
 # Z-MapFlow
 
-A desktop ZMK keymap editor inspired by VIAL. Configure your keyboard visually, save and build firmware locally, then flash the correct artifact to each controller.
+A desktop ZMK keymap editor inspired by VIAL. **Drag and drop keys, build firmware and flash your keyboard—all in one app.** Keep your layout visible as you make changes, then take the saved configuration through compilation and guided flashing.
 
 **[Documentation](https://henriquex25.github.io/Z-MapFlow/)** · [Install](https://henriquex25.github.io/Z-MapFlow/guide/install) · [Create a keyboard plugin](https://henriquex25.github.io/Z-MapFlow/plugins) · [Releases](https://github.com/Henriquex25/Z-MapFlow/releases) · [Contribute](CONTRIBUTING.md) · [MIT license](LICENSE)
+
+**Currently available for Linux x86_64 only.** Sofle v2 is the first supported keyboard. macOS and Windows releases are outside the current scope.
+
+## Why Z-MapFlow?
+
+- **Edit directly on your layout.** Drag actions from the palette onto keys or encoders, swap assignments, and organize layers, macros and behaviors visually.
+- **Build from the editor.** Save and compile locally with Docker, follow progress and logs, and keep editing while the saved revision builds.
+- **Flash from the same app.** Use the guided UF2 flow to select a half, connect it in bootloader mode and send the matching firmware. Export artifacts whenever you need them later.
+
+![Z-MapFlow showing a Sofle v2 layout, layers on the left, the action palette below and firmware controls at the bottom](docs/public/images/z-mapflow-layout.png)
+
+*The editor keeps your keyboard layout and action palette together, with save and build actions on the right and firmware controls below.*
 
 ## Install and use
 
@@ -39,6 +51,14 @@ Read the **[step-by-step plugin guide](https://henriquex25.github.io/Z-MapFlow/p
 - Export firmware with a completion notification, then follow the UF2 flashing flow for each target.
 
 **Save** persists the current project. **Build** compiles the last saved revision. **Save and build** saves and builds that exact revision. Editing during a build does not change its snapshot.
+
+## UF2 restart warnings
+
+Some UF2 controllers, including the SuperMini nRF52840 tested by the project author, restart and disconnect their bootloader drive as soon as they receive the firmware. The system can then report `sync …: input/output error` even when the keyboard starts with the new firmware.
+
+If the file copy finishes but the final sync or close fails, the app shows **Transfer not confirmed** and keeps the technical error available. Wait for the keyboard to restart and test the new layout. Choose **Keyboard works — confirm** only after checking it; otherwise, reconnect in bootloader mode and retry. An interrupted file copy remains an error. The warning alone cannot distinguish a reboot from a real I/O failure.
+
+See the [flash guide](https://henriquex25.github.io/Z-MapFlow/guide/firmware#restart-and-final-write-warnings) for the complete flow.
 
 ## Development
 
@@ -98,6 +118,6 @@ Place the square PNG app logo in [`build/appicon.png`](build/appicon.png), prefe
 
 ## Current limits
 
-The initial distribution and hardware integration target Linux and Sofle v2. Windows/macOS packaging and physical validation remain future work. UF2 transfer requires manual bootloader entry and selection of the connected half. A successful build or file copy does not prove the firmware works on your hardware.
+Distribution and hardware integration target Linux and Sofle v2. Windows/macOS releases are outside the current scope. UF2 transfer requires manual bootloader entry and selection of the connected half. A successful build or file copy does not prove the firmware works on your hardware.
 
 Keymap import supports a defined subset of Devicetree: local `.dtsi` includes, conditionals and function-like defines in the keymap itself require prior expansion. Advanced module properties still depend on the selected ZMK revision and compiler validation. See [configuration](https://henriquex25.github.io/Z-MapFlow/guide/configuration) and [troubleshooting](https://henriquex25.github.io/Z-MapFlow/guide/troubleshooting).
