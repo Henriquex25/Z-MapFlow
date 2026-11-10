@@ -10,6 +10,7 @@ import (
 	"time"
 	"z-mapflow/internal/devices"
 	"z-mapflow/internal/devices/soflev2"
+	"z-mapflow/internal/keymap"
 	"z-mapflow/internal/models"
 	"z-mapflow/internal/project"
 )
@@ -50,7 +51,7 @@ func TestGenerateDeterministicAndResolved(t *testing.T) {
 		}
 	}
 	keymap := files[0].Content
-	for _, want := range []string{"#binding-cells = <2>", "bindings = <&kp>, <&kp>", "<&macro_press &kp LCTRL>", "layers = <0 >", "&zm_sensor_0_0", "&zm_hold LCTRL ESC"} {
+	for _, want := range []string{"#binding-cells = <2>", "bindings = <&kp>, <&kp>", "<&macro_press>, <&kp LCTRL>", "layers = <0 >", "&zm_sensor_0_0", "&zm_hold LCTRL ESC"} {
 		if !strings.Contains(keymap, want) {
 			t.Fatalf("missing %q", want)
 		}
@@ -145,6 +146,23 @@ func TestDockerIntegration(t *testing.T) {
 	p.Layout.Behaviors[0].HoldTriggerOnRelease = true
 	if variant := os.Getenv("ZMAPFLOW_DOCKER_VARIANT"); variant != "" {
 		p.VariantID = variant
+	}
+	if path := os.Getenv("ZMAPFLOW_DOCKER_KEYMAP"); path != "" {
+		var err error
+		p, err = keymap.ImportFile(path, p, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p.ExtraConfig = strings.ReplaceAll(p.ExtraConfig, "CONFIG_ZMK_STUDIO=y", "")
+		p.BuildTargets = []models.BuildTarget{{TargetID: "left", Snippets: []string{"studio-rpc-usb-uart"}, CMakeArgs: []string{"-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"}}}
+		// Exercise an inherited sensor before a configured sensor as well.
+		p.Layout.Layers[1].Sensors[0].Inherited = true
+	}
+	service := project.Service{Root: t.TempDir(), Registry: r}
+	var saveErr error
+	p, saveErr = service.Save(p)
+	if saveErr != nil {
+		t.Fatal(saveErr)
 	}
 	m := Manager{Root: t.TempDir(), Registry: r}
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)

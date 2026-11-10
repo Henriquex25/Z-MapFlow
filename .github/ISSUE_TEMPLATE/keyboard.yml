@@ -1,0 +1,28 @@
+name: Suporte a um teclado
+description: Proponha um plugin de dispositivo.
+title: "[Teclado]: "
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Modelo e revisão do teclado
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Controladoras, layout e recursos
+      description: Inclua encoders, sensores, splits e referências públicas de hardware.
+    validations:
+      required: true
+  - type: textarea
+    id: zmk
+    attributes:
+      label: Suporte ZMK existente
+      description: Links de shields, módulos, keymap exemplo e matriz de build.
+    validations:
+      required: true
+  - type: textarea
+    id: testing
+    attributes:
+      label: Disponibilidade para testar no hardware

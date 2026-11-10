@@ -5,7 +5,13 @@ import { fixture } from "../test/fixtures";
 import { api } from "../services/api";
 import type { Build } from "../types/keyboard";
 vi.mock("../services/api", () => ({
-  api: { listBuilds: vi.fn(), volumes: vi.fn(), flash: vi.fn(), selectVolume: vi.fn() },
+  api: {
+    listBuilds: vi.fn(),
+    volumes: vi.fn(),
+    flash: vi.fn(),
+    selectVolume: vi.fn(),
+    exportFirmware: vi.fn(),
+  },
 }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,3 +67,42 @@ it("requires the connected half, allows retry, and selects the corresponding art
   fireEvent.click(screen.getByRole("button", { name: "Enviar firmware — Direita" }));
   await waitFor(() => expect(api.flash).toHaveBeenLastCalledWith("123", "right", "/test/UF2"));
 });
+
+it.each(["/tmp/firmwares", ""])(
+  "only shows a success toast after exporting files: %s",
+  async (destination) => {
+    vi.mocked(api.exportFirmware).mockResolvedValue(destination);
+    const build = {
+      id: "export-test",
+      revision: "saved1",
+      pluginId: "test",
+      variantId: "test",
+      status: "success",
+      stage: "finished",
+      startedAt: "2026-10-28",
+      finishedAt: "2026-10-28",
+      error: "",
+      logs: [],
+      artifacts: [],
+    } as Build;
+    render(
+      <BuildPanel
+        build={build}
+        plugins={[fixture().plugin]}
+        currentRevision="saved1"
+        onError={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Exportar firmware" }));
+    await waitFor(() => expect(api.exportFirmware).toHaveBeenCalledWith("export-test"));
+    if (destination) {
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "Firmware exportado com sucesso para /tmp/firmwares",
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Fechar notificação" }));
+      expect(screen.queryByText(/Firmware exportado com sucesso/)).not.toBeInTheDocument();
+    } else {
+      expect(screen.queryByText(/Firmware exportado com sucesso/)).not.toBeInTheDocument();
+    }
+  },
+);

@@ -11,6 +11,7 @@ export function KeyboardLayout({
   onSelect,
   fit = false,
   zoom = 1,
+  onEdit,
 }: {
   plugin: Plugin;
   layer: ILayer;
@@ -18,6 +19,7 @@ export function KeyboardLayout({
   onSelect?: (index: number) => void;
   fit?: boolean;
   zoom?: number;
+  onEdit?: (index: number) => void;
 }) {
   const unit = 62;
   const viewport = useRef<HTMLDivElement>(null);
@@ -83,6 +85,7 @@ export function KeyboardLayout({
                     className="w-full h-full"
                     selected={selection?.includes(position.keymapIndex)}
                     onClick={onSelect ? () => onSelect(position.keymapIndex) : undefined}
+                    onEdit={onEdit ? () => onEdit(position.keymapIndex) : undefined}
                   />
                 )}
               </div>

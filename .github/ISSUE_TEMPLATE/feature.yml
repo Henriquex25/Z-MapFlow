@@ -1,0 +1,22 @@
+name: Sugerir uma melhoria
+description: Proponha uma mudança na experiência ou nos recursos.
+title: "[Melhoria]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema você quer resolver?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Comportamento desejado
+      description: Exemplos concretos e alternativas ajudam a avaliar a ideia.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Referências
+      description: Links da documentação oficial ZMK ou exemplos, quando aplicável.

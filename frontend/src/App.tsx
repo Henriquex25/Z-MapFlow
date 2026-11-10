@@ -8,24 +8,39 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCenter,
 } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
-import { Plus, Minus, Keyboard, Save, Hammer, Download, Upload, Code } from "lucide-react";
+  Plus,
+  Minus,
+  Keyboard,
+  Save,
+  Hammer,
+  Download,
+  Upload,
+  Code,
+  ListOrdered,
+  Combine,
+  Zap,
+  Layers,
+  Settings,
+  RotateCcw,
+  FileDown,
+  SaveAll,
+} from "lucide-react";
+import { WorkspaceSplit } from "./components/WorkspaceSplit";
 import { api } from "./services/api";
+import { projectBindingError, validateBinding } from "./utils/bindingValidation";
 import { content, isDirty, useKeyboardStore } from "./store/useKeyboardStore";
 import type { Build, IKeyAction, Plugin, Session } from "./types/keyboard";
 import { ActionTray } from "./components/ActionTray";
-import { DraggableLayerTab } from "./components/DraggableLayerTab";
+import { LayerSidebar } from "./components/LayerSidebar";
 import { LayerContextMenu } from "./components/LayerContextMenu";
 import { KeyboardLayout } from "./components/KeyboardLayout";
 import { Key } from "./components/Key";
 import { actionName } from "./utils/resourceActions";
+import { ConditionalLayersEditor } from "./components/AdvancedResources";
+import { BindingDrop } from "./components/BindingDrop";
 import { BuildPanel } from "./components/BuildPanel";
 import {
   MacroEditor,
@@ -33,7 +48,22 @@ import {
   ComboEditor,
   SettingsEditor,
 } from "./components/ResourceEditor";
-const tabs = ["Layout", "Macros", "Combos", "Behaviors", "Configurações"] as const;
+const tabs = [
+  "Layout",
+  "Macros",
+  "Combos",
+  "Comportamentos",
+  "Camadas condicionais",
+  "Configurações",
+] as const;
+const tabIcons = {
+  Layout: Keyboard,
+  Macros: ListOrdered,
+  Combos: Combine,
+  Comportamentos: Zap,
+  "Camadas condicionais": Layers,
+  Configurações: Settings,
+};
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export default function App() {
   const store = useKeyboardStore();
@@ -54,12 +84,16 @@ export default function App() {
   } | null>(null);
   const [sources, setSources] = useState<{ name: string; content: string }[] | null>(null);
   const [confirm, setConfirm] = useState<(() => void) | null>(null);
+  const [editingKey, setEditingKey] = useState<number | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+  const pendingErrors = Object.values(store.draftErrors);
+  const projectError = project ? projectBindingError(project, plugin) : "";
+  const cannotSave = pendingErrors.length > 0 || !!projectError;
   const dirty = isDirty(project, savedProject ?? initialProject);
   const report = useCallback((e: unknown) => setError(message(e)), []);
   const initialize = async (session: Session) => {
@@ -121,6 +155,13 @@ export default function App() {
   const save = async (compile = false) => {
     const snapshot = useKeyboardStore.getState().project;
     if (!snapshot || busy) return;
+    const invalid =
+      Object.values(useKeyboardStore.getState().draftErrors)[0] ||
+      projectBindingError(snapshot, useKeyboardStore.getState().plugin);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -173,10 +214,13 @@ export default function App() {
     }
   };
   const importProject = async () => {
+    setError("");
+    setNotice("");
     try {
-      const s = await api.importProject();
-      if (s.plugin.id) {
+      const s = await api.importProject(project?.pluginId, project?.variantId);
+      if (s.plugin?.id) {
         await initialize(s);
+        setTab("Layout");
         setNotice("Projeto importado. Salve para mantê-lo neste computador.");
       }
     } catch (e) {
@@ -205,6 +249,15 @@ export default function App() {
     const from = active.data.current,
       to = over.data.current;
     if (!from?.code || !to) return;
+    const state = useKeyboardStore.getState();
+    if (!state.project) return;
+    if (typeof to.acceptBinding !== "function") {
+      const invalid = validateBinding(from.code, state.project, state.plugin);
+      if (invalid) {
+        useKeyboardStore.setState({ error: invalid });
+        return;
+      }
+    }
     if (typeof to.acceptBinding === "function") {
       to.acceptBinding(from.code);
       return;
@@ -217,8 +270,14 @@ export default function App() {
       const state = useKeyboardStore.getState();
       const l = state.project?.layout.layers.find((l) => l.id === state.activeLayerId);
       const previous = l?.keys.find((k) => k.keymapIndex === to.keymapIndex)?.code;
-      if (typeof from.originIndex === "number" && previous)
+      if (typeof from.originIndex === "number" && previous) {
+        const invalid = state.project ? validateBinding(previous, state.project, state.plugin) : "";
+        if (invalid) {
+          useKeyboardStore.setState({ error: invalid });
+          return;
+        }
         store.updateKeyCode(from.originIndex, previous);
+      }
       store.updateKeyCode(to.keymapIndex, from.code);
     }
   };
@@ -264,83 +323,38 @@ export default function App() {
     );
   const layer =
     project.layout.layers.find((l) => l.id === activeLayerId) || project.layout.layers[0];
-  const layerIds = project.layout.layers.map((l) => l.id);
   const running = build?.status === "running";
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="flex items-center gap-3">
+        <div className="app-brand">
           <div className="brand-mark">
-            <Keyboard size={24} />
+            <Keyboard size={18} />
           </div>
-          <div>
-            <h1>Z-MapFlow</h1>
-            <div className="flex gap-2 items-center">
-              <select
-                className="keyboard-select"
-                aria-label="Plugin do teclado"
-                disabled={busy}
-                value={plugin.id}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  replace(() => {
-                    api.newProject(id).then(initialize).catch(report);
-                  });
-                }}
-              >
-                {plugins.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <span className={`save-state ${dirty || !savedProject ? "unsaved" : ""}`}>
-                {dirty ? "Alterações não salvas" : savedProject ? "Salvo" : "Ainda não salvo"}
-              </span>
-            </div>
+          <h1>Z-MapFlow</h1>
+          <div className="project-identity">
+            <select
+              className="keyboard-select"
+              aria-label="Plugin do teclado"
+              disabled={busy}
+              value={plugin.id}
+              onChange={(e) => {
+                const id = e.target.value;
+                replace(() => {
+                  api.newProject(id).then(initialize).catch(report);
+                });
+              }}
+            >
+              {plugins.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <span className={`save-state ${dirty || !savedProject ? "unsaved" : ""}`}>
+              {dirty ? "Alterações não salvas" : savedProject ? "Salvo" : "Ainda não salvo"}
+            </span>
           </div>
-        </div>
-        <div className="flex gap-2 items-center flex-wrap">
-          <button
-            className="btn icon-btn"
-            title="Importar projeto"
-            aria-label="Importar projeto"
-            disabled={busy}
-            onClick={() => replace(importProject)}
-          >
-            <Upload size={16} />
-          </button>
-          <button
-            className="btn icon-btn"
-            title="Exportar projeto"
-            aria-label="Exportar projeto"
-            onClick={() =>
-              api
-                .exportProject(project)
-                .then((path) => {
-                  if (path) setNotice(`Projeto exportado para ${path}`);
-                })
-                .catch(report)
-            }
-          >
-            <Download size={16} />
-          </button>
-          <button
-            className="btn"
-            disabled={!dirty || busy}
-            onClick={() => replace(store.undoChanges)}
-          >
-            Descartar
-          </button>
-          <button className="btn" disabled={busy} onClick={() => save()}>
-            <Save size={15} /> Salvar
-          </button>
-          <button className="btn" disabled={busy || running || !savedProject} onClick={startBuild}>
-            <Hammer size={15} /> Compilar
-          </button>
-          <button className="btn primary" disabled={busy || running} onClick={() => save(true)}>
-            <Hammer size={15} /> Salvar e compilar
-          </button>
         </div>
       </header>
       {(error || store.error) && (
@@ -357,46 +371,7 @@ export default function App() {
           </button>
         </div>
       )}
-      {notice && (
-        <div className="notice" role="status">
-          <span>{notice}</span>
-          <button aria-label="Fechar mensagem" onClick={() => setNotice("")}>
-            ×
-          </button>
-        </div>
-      )}
-      <nav className="workspace-tabs">
-        {tabs
-          .filter(
-            (t) =>
-              t === "Layout" ||
-              t === "Configurações" ||
-              plugin.capabilities.includes(
-                t === "Macros" ? "macros" : t === "Combos" ? "combos" : "hold-tap",
-              ),
-          )
-          .map((t) => (
-            <button
-              className={`tab ${tab === t ? "active" : ""}`}
-              key={t}
-              onClick={() => setTab(t)}
-            >
-              {t}
-              {t === "Macros" && project.layout.macros.length
-                ? ` (${project.layout.macros.length})`
-                : ""}
-              {t === "Combos" && project.layout.combos.length
-                ? ` (${project.layout.combos.length})`
-                : ""}
-            </button>
-          ))}
-        <button
-          className="btn ml-auto"
-          onClick={() => api.preview(project).then(setSources).catch(report)}
-        >
-          <Code size={15} /> Ver configuração ZMK
-        </button>
-      </nav>
+
       {store.selectedAction && (
         <div className="notice assignment-notice" role="status">
           <span>
@@ -426,117 +401,226 @@ export default function App() {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setDrag(null)}
       >
-        <main className="editor-workspace">
-          {tab === "Layout" ? (
-            <>
-              <div className="layer-toolbar">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  modifiers={[restrictToHorizontalAxis]}
-                  onDragStart={() => setContext(null)}
-                  onDragEnd={({ active, over }) => {
-                    if (over && active.id !== over.id)
-                      store.reorderLayers(
-                        layerIds.indexOf(String(active.id)),
-                        layerIds.indexOf(String(over.id)),
-                      );
-                  }}
-                >
-                  <SortableContext items={layerIds} strategy={horizontalListSortingStrategy}>
-                    {project.layout.layers.map((l, i) => (
-                      <DraggableLayerTab
-                        key={l.id}
-                        id={l.id}
-                        index={i}
-                        layer={l}
-                        isActive={layer.id === l.id}
-                        canRemove={project.layout.layers.length > 1}
-                        onClick={() => store.setActiveLayer(l.id)}
-                        onRemove={() => store.removeLayer(i)}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          setContext({ x: e.clientX, y: e.clientY, index: i });
-                        }}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-                <button
-                  className="btn"
-                  aria-label="Adicionar camada"
-                  disabled={project.layout.layers.length >= 32}
-                  onClick={store.addLayer}
-                >
-                  <Plus size={17} />
-                </button>
-                <input
-                  className="field ml-auto max-w-44"
-                  aria-label="Nome da camada"
-                  value={layer.name}
-                  onChange={(e) =>
-                    store.edit((p) => {
-                      p.layout.layers.find((l) => l.id === layer.id)!.name = e.target.value;
-                    })
-                  }
-                />
-              </div>
-              <div className="keyboard-workspace">
-                <div className="keyboard-toolbar">
-                  <span className="hint">
-                    Clique ou arraste para atribuir · Arraste entre teclas para trocar
-                  </span>
-                  <span className="hint">
-                    Camada {project.layout.layers.findIndex((l) => l.id === layer.id)} ·{" "}
-                    {layer.name}
-                  </span>
-                  <div className="keyboard-zoom" role="group" aria-label="Zoom do teclado">
-                    <button
-                      className="btn icon-btn"
-                      aria-label="Diminuir teclado"
-                      disabled={keyboardZoom <= 0.8}
-                      onClick={() =>
-                        setKeyboardZoom((z) => Math.max(0.8, Math.round((z - 0.1) * 10) / 10))
-                      }
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <output aria-label="Escala do teclado">
-                      {Math.round(keyboardZoom * 100)}%
-                    </output>
-                    <button
-                      className="btn icon-btn"
-                      aria-label="Aumentar teclado"
-                      disabled={keyboardZoom >= 1.6}
-                      onClick={() =>
-                        setKeyboardZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))
-                      }
-                    >
-                      <Plus size={14} />
-                    </button>
-                    <button
-                      className="btn zoom-fit"
-                      aria-label="Ajustar teclado ao espaço disponível"
-                      onClick={() => setKeyboardZoom(1)}
-                    >
-                      Ajustar
-                    </button>
+        <div className="workspace-frame">
+          <nav className="workspace-tabs" aria-label="Recursos do projeto">
+            {tabs
+              .filter(
+                (t) =>
+                  t === "Layout" ||
+                  t === "Configurações" ||
+                  (t === "Camadas condicionais" &&
+                    (plugin.capabilities.includes("layers") || project.layout.layers.length > 1)) ||
+                  plugin.capabilities.includes(
+                    t === "Macros" ? "macros" : t === "Combos" ? "combos" : "hold-tap",
+                  ),
+              )
+              .map((t) => {
+                const Icon = tabIcons[t];
+                const count =
+                  t === "Macros"
+                    ? project.layout.macros.length
+                    : t === "Combos"
+                      ? project.layout.combos.length
+                      : 0;
+                return (
+                  <button
+                    className={`workspace-tab ${tab === t ? "active" : ""}`}
+                    aria-label={t}
+                    title={t}
+                    aria-current={tab === t ? "page" : undefined}
+                    key={t}
+                    onClick={() => setTab(t)}
+                  >
+                    <Icon size={19} aria-hidden="true" />
+                    <span className="workspace-tab-label">{t}</span>
+                    {count > 0 && (
+                      <span className="workspace-tab-count" aria-hidden="true">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+          </nav>
+          <WorkspaceSplit palette={<ActionTray />}>
+            <main className="editor-workspace">
+              {tab === "Layout" ? (
+                <>
+                  <div className="layout-editor">
+                    <LayerSidebar
+                      layers={project.layout.layers}
+                      activeId={layer.id}
+                      onSelect={store.setActiveLayer}
+                      onRemove={store.removeLayer}
+                      onAdd={store.addLayer}
+                      onReorder={store.reorderLayers}
+                      onContextMenu={(e, index) => {
+                        e.preventDefault();
+                        setContext({ x: e.clientX, y: e.clientY, index });
+                      }}
+                    />
+                    <div className="layout-stage">
+                      <div className="layer-toolbar">
+                        <input
+                          className="field layer-name"
+                          title="Renomear camada ativa"
+                          aria-label="Nome da camada"
+                          value={layer.name}
+                          onChange={(e) =>
+                            store.edit((p) => {
+                              p.layout.layers.find((l) => l.id === layer.id)!.name = e.target.value;
+                            })
+                          }
+                        />
+                        <div className="keyboard-zoom" role="group" aria-label="Zoom do teclado">
+                          <button
+                            className="btn icon-btn"
+                            aria-label="Diminuir teclado"
+                            disabled={keyboardZoom <= 0.8}
+                            onClick={() =>
+                              setKeyboardZoom((z) => Math.max(0.8, Math.round((z - 0.1) * 10) / 10))
+                            }
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <output aria-label="Escala do teclado">
+                            {Math.round(keyboardZoom * 100)}%
+                          </output>
+                          <button
+                            className="btn icon-btn"
+                            aria-label="Aumentar teclado"
+                            disabled={keyboardZoom >= 1.6}
+                            onClick={() =>
+                              setKeyboardZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))
+                            }
+                          >
+                            <Plus size={14} />
+                          </button>
+                          <button
+                            className="btn zoom-fit"
+                            aria-label="Ajustar teclado ao espaço disponível"
+                            onClick={() => setKeyboardZoom(1)}
+                          >
+                            Ajustar
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        className="keyboard-workspace"
+                        title="Clique ou arraste para atribuir · Arraste entre teclas para trocar"
+                      >
+                        <KeyboardLayout
+                          plugin={plugin}
+                          layer={layer}
+                          fit
+                          zoom={keyboardZoom}
+                          onEdit={setEditingKey}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <KeyboardLayout plugin={plugin} layer={layer} fit zoom={keyboardZoom} />
-              </div>
-            </>
-          ) : tab === "Macros" ? (
-            <MacroEditor onAssign={assignResource} />
-          ) : tab === "Combos" ? (
-            <ComboEditor />
-          ) : tab === "Behaviors" ? (
-            <BehaviorEditor onAssign={assignResource} />
-          ) : (
-            <SettingsEditor />
-          )}
-        </main>
-        <ActionTray />
+                </>
+              ) : tab === "Macros" ? (
+                <MacroEditor onAssign={assignResource} />
+              ) : tab === "Combos" ? (
+                <ComboEditor />
+              ) : tab === "Comportamentos" ? (
+                <BehaviorEditor onAssign={assignResource} />
+              ) : tab === "Camadas condicionais" ? (
+                <ConditionalLayersEditor />
+              ) : (
+                <SettingsEditor />
+              )}
+            </main>
+          </WorkspaceSplit>
+          <aside className="action-sidebar" aria-label="Ações do projeto">
+            <button
+              className="btn icon-btn"
+              title="Importar projeto JSON ou keymap ZMK (.keymap)"
+              aria-label="Importar projeto"
+              disabled={busy}
+              onClick={() => replace(importProject)}
+            >
+              <Upload size={16} />
+            </button>
+            <button
+              className="btn icon-btn"
+              title="Exportar projeto JSON"
+              aria-label="Exportar projeto"
+              onClick={() =>
+                api
+                  .exportProject(project)
+                  .then((path) => {
+                    if (path) setNotice(`Projeto exportado para ${path}`);
+                  })
+                  .catch(report)
+              }
+            >
+              <Download size={16} />
+            </button>
+            <button
+              className="btn icon-btn"
+              title="Exportar keymap ZMK (.keymap)"
+              aria-label="Exportar keymap"
+              onClick={() =>
+                api
+                  .exportKeymap(project)
+                  .then((path) => {
+                    if (path) setNotice(`Keymap exportado para ${path}`);
+                  })
+                  .catch(report)
+              }
+            >
+              <FileDown size={17} />
+            </button>
+            <button
+              className="btn icon-btn"
+              aria-label="Descartar"
+              title="Descartar alterações"
+              disabled={!dirty || busy}
+              onClick={() => replace(store.undoChanges)}
+            >
+              <RotateCcw size={15} />
+            </button>
+            <button
+              className="btn icon-btn"
+              aria-label="Salvar"
+              title={pendingErrors[0] || projectError || "Salvar (Ctrl+S)"}
+              disabled={busy || cannotSave}
+              onClick={() => save()}
+            >
+              <Save size={15} />
+            </button>
+            <button
+              className="btn icon-btn"
+              aria-label="Compilar"
+              title="Compilar a última configuração salva"
+              disabled={busy || running || !savedProject || cannotSave}
+              onClick={startBuild}
+            >
+              <Hammer size={15} />
+            </button>
+            <button
+              className="btn icon-btn primary"
+              aria-label="Salvar e compilar"
+              title={
+                pendingErrors[0] || projectError || "Salvar edição atual e compilar (Ctrl+Shift+S)"
+              }
+              disabled={busy || running || cannotSave}
+              onClick={() => save(true)}
+            >
+              <SaveAll size={18} />
+            </button>
+            <button
+              className="btn icon-btn"
+              aria-label="Ver configuração ZMK"
+              title="Ver configuração ZMK"
+              onClick={() => api.preview(project).then(setSources).catch(report)}
+            >
+              <Code size={15} />
+            </button>
+          </aside>
+        </div>
         <DragOverlay dropAnimation={null}>
           {drag && <Key action={drag} className="w-14 h-14 opacity-90 ring-2 ring-sky-400" />}
         </DragOverlay>
@@ -546,6 +630,8 @@ export default function App() {
         plugins={plugins}
         currentRevision={savedProject?.revision || ""}
         onError={report}
+        notice={notice}
+        onDismissNotice={() => setNotice("")}
       />
       {context && (
         <LayerContextMenu
@@ -579,6 +665,43 @@ export default function App() {
                 <pre className="source-code">{f.content}</pre>
               </details>
             ))}
+          </section>
+        </div>
+      )}
+      {editingKey !== null && (
+        <div className="modal-backdrop">
+          <section
+            className="modal-card binding-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editar binding da tecla"
+          >
+            <div className="section-toolbar">
+              <h2>
+                Tecla {editingKey} — {layer.name}
+              </h2>
+              <button
+                className="btn"
+                disabled={pendingErrors.length > 0}
+                onClick={() => setEditingKey(null)}
+              >
+                Concluir
+              </button>
+            </div>
+            <p className="hint">
+              Ajuste a ação e os parâmetros desta tecla. Cada uso de uma macro ou comportamento pode
+              ter argumentos diferentes.
+            </p>
+            {pendingErrors.length > 0 && (
+              <button className="btn binding-cancel" onClick={() => setEditingKey(null)}>
+                Descartar rascunho
+              </button>
+            )}
+            <BindingDrop
+              label="Ação da tecla"
+              code={layer.keys.find((k) => k.keymapIndex === editingKey)?.code ?? "&none"}
+              onChange={(code) => store.updateKeyCode(editingKey, code)}
+            />
           </section>
         </div>
       )}

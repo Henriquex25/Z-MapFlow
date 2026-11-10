@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { Toast } from "./Toast";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Build, Plugin, Volume } from "../types/keyboard";
 import { api } from "../services/api";
 
@@ -22,16 +23,22 @@ export function BuildPanel({
   plugins,
   currentRevision,
   onError,
+  notice = "",
+  onDismissNotice,
 }: {
   build: Build | null;
   plugins: Plugin[];
   currentRevision: string;
   onError: (error: unknown) => void;
+  notice?: string;
+  onDismissNotice?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [flash, setFlash] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState("");
+  const [toast, setToast] = useState("");
+  const closeToast = useCallback(() => setToast(""), []);
   const [history, setHistory] = useState<Build[]>([]);
   const [selected, setSelected] = useState<Build | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -53,7 +60,10 @@ export function BuildPanel({
     setExporting(true);
     try {
       const dir = await api.exportFirmware(shown.id);
-      if (dir) setExported(dir);
+      if (dir) {
+        setExported(dir);
+        setToast(`Firmware exportado com sucesso para ${dir}`);
+      }
     } catch (e) {
       onError(e);
     } finally {
@@ -62,11 +72,22 @@ export function BuildPanel({
   };
   return (
     <section className="build-panel">
+      <Toast message={toast} onClose={closeToast} />
       <div className="flex gap-3 items-center flex-wrap">
         <span className={`status-dot ${shown?.status || "idle"}`} />
-        <strong className="text-sm">
-          {shown ? statusLabels[shown.status] : "Pronto para configurar"}
-        </strong>
+        {(shown || !notice) && (
+          <strong className="text-sm">
+            {shown ? statusLabels[shown.status] : "Pronto para configurar"}
+          </strong>
+        )}
+        {notice && (
+          <div className="build-notice" role="status">
+            <span title={notice}>{notice}</span>
+            <button aria-label="Fechar mensagem" onClick={onDismissNotice}>
+              ×
+            </button>
+          </div>
+        )}
         {shown && (
           <>
             <span className="hint">{stageLabels[shown.stage] || shown.stage}</span>

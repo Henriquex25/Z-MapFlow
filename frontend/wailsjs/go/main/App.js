@@ -6,8 +6,16 @@ export function CancelBuild() {
   return window['go']['main']['App']['CancelBuild']();
 }
 
+export function CheckForUpdates() {
+  return window['go']['main']['App']['CheckForUpdates']();
+}
+
 export function ExportFirmware(arg1) {
   return window['go']['main']['App']['ExportFirmware'](arg1);
+}
+
+export function ExportKeymap(arg1) {
+  return window['go']['main']['App']['ExportKeymap'](arg1);
 }
 
 export function ExportProject(arg1) {
@@ -30,8 +38,20 @@ export function GetBuildStatus() {
   return window['go']['main']['App']['GetBuildStatus']();
 }
 
-export function ImportProject() {
-  return window['go']['main']['App']['ImportProject']();
+export function GetUpdateProgress() {
+  return window['go']['main']['App']['GetUpdateProgress']();
+}
+
+export function ImportHeaders() {
+  return window['go']['main']['App']['ImportHeaders']();
+}
+
+export function ImportProject(arg1, arg2) {
+  return window['go']['main']['App']['ImportProject'](arg1, arg2);
+}
+
+export function InstallUpdate(arg1) {
+  return window['go']['main']['App']['InstallUpdate'](arg1);
 }
 
 export function ListBuilds() {

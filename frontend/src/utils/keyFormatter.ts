@@ -6,6 +6,92 @@ export interface KeyVisuals {
   description?: string;
 }
 
+// Display aliases only: the source binding remains unchanged.
+const aliases: Record<string, string> = {
+  LWIN: "LGUI",
+  RWIN: "RGUI",
+  LEFT_WIN: "LGUI",
+  RIGHT_WIN: "RGUI",
+  LEFT_CONTROL: "LCTRL",
+  RIGHT_CONTROL: "RCTRL",
+  LEFT_SHIFT: "LSHFT",
+  RIGHT_SHIFT: "RSHFT",
+  LSHIFT: "LSHFT",
+  RSHIFT: "RSHFT",
+  LEFT_ALT: "LALT",
+  RIGHT_ALT: "RALT",
+  LEFT_GUI: "LGUI",
+  RIGHT_GUI: "RGUI",
+  ENTER: "RET",
+  RETURN: "RET",
+  BACKSPACE: "BSPC",
+  DELETE: "DEL",
+  INSERT: "INS",
+  CAPSLOCK: "CLCK",
+  PAGE_UP: "PG_UP",
+  PAGE_DOWN: "PG_DN",
+  PRINTSCREEN: "PSCRN",
+  SCROLLLOCK: "SLCK",
+  K_MENU: "K_CMENU",
+  K_VOLUME_UP: "K_VOL_UP",
+  K_VOLUME_DOWN: "K_VOL_DN",
+  C_VOLUME_UP: "C_VOL_UP",
+  C_VOLUME_DOWN: "C_VOL_DN",
+  C_PLAY_PAUSE: "C_PP",
+  K_MUTE: "C_MUTE",
+  LEFT_BRACKET: "LBKT",
+  RIGHT_BRACKET: "RBKT",
+  BACKSLASH: "BSLH",
+  PT_DOUBLE_QUOTES: "DQT",
+  PT_DQT: "DQT",
+  PT_SINGLE_QUOTE: "PT_SQT",
+  PT_APOSTROPHE: "PT_SQT",
+  PT_APOS: "PT_SQT",
+  PT_SEMICOLON: "PT_SEMI",
+  PT_PERIOD: "PT_DOT",
+  PT_UNDERSCORE: "UNDER",
+  PT_CARET: "CARET",
+  PT_GRAVE: "GRAVE_SYMBOL",
+  PT_LPAR: "LPAR",
+  PT_RPAR: "RPAR",
+  PT_LBRC: "LBRC",
+  PT_RBRC: "RBRC",
+  PT_STAR: "STAR",
+  PT_ASTRK: "STAR",
+  PT_LT: "LT",
+  PT_GT: "GT",
+  PT_LESS_THAN: "LT",
+  PT_GREATER_THAN: "GT",
+  PT_AT_SIGN: "AT",
+  PT_QMARK: "QUESTION",
+  PT_AMPERSAND: "AMPS",
+  PT_POUND: "HASH",
+  PT_DLLR: "DLLR",
+  PT_PRCNT: "PRCNT",
+  PT_SLASH: "PT_FSLH",
+  PT_BACKSLASH: "PT_BSLH",
+  PT_LEFT_BRACKET: "PT_LBKT",
+  PT_RIGHT_BRACKET: "PT_RBKT",
+  PT_QUESTION: "QUESTION",
+  PT_COLON: "COLON",
+  PT_UNDER: "UNDER",
+  PT_PLUS: "PLUS",
+  PT_ASTERISK: "STAR",
+  PT_LEFT_PARENTHESIS: "LPAR",
+  PT_RIGHT_PARENTHESIS: "RPAR",
+  PT_LEFT_BRACE: "LBRC",
+  PT_RIGHT_BRACE: "RBRC",
+  PT_DOLLAR: "DLLR",
+  PT_PERCENT: "PRCNT",
+  PT_AMPS: "AMPS",
+  PT_PIPE: "PIPE",
+  PT_HASH: "HASH",
+  PT_AT: "AT",
+  PT_EXCLAMATION: "EXCL",
+  PT_DEG: "DEG",
+  PT_SPACE: "SPACE",
+};
+
 export function formatKeyVisuals(code: string): KeyVisuals | null {
   if (!code || code === "&blank") return null;
   if (code === "&none")
@@ -106,7 +192,7 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
     };
 
     return {
-      modifier: mod,
+      modifier: [mod, innerVisual.modifier].filter(Boolean).join("+"),
       main: innerVisual.main,
       icon: innerVisual.icon,
       shift: innerVisual.shift,
@@ -114,6 +200,58 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
     };
   }
 
+  if (code.startsWith("&sk ")) {
+    const key = code.slice(4);
+    const visual = formatKeyVisuals(`&kp ${key}`);
+    return {
+      main: visual?.main ?? key,
+      modifier: "Sticky",
+      description: `Manter ${visual?.main ?? key} até a próxima tecla`,
+    };
+  }
+  const lighting = code.match(/^&(rgb_ug|bl|ext_power) (.+)$/);
+  if (lighting) {
+    const actions: Record<string, string> = {
+      RGB_TOG: "Alternar",
+      RGB_BRI: "Brilho +",
+      RGB_BRD: "Brilho −",
+      BL_TOG: "Alternar",
+      BL_INC: "Brilho +",
+      BL_DEC: "Brilho −",
+      EP_ON: "Ligar",
+      EP_OFF: "Desligar",
+      EP_TOG: "Alternar",
+    };
+    const group = lighting[1] === "rgb_ug" ? "RGB" : lighting[1] === "bl" ? "Luz" : "Energia";
+    return {
+      main: lighting[2].startsWith("RGB_COLOR_HSB") ? "Cor" : (actions[lighting[2]] ?? lighting[2]),
+      modifier: group,
+      description: `${group}: ${lighting[2]}`,
+    };
+  }
+  if (code === "&soft_off")
+    return {
+      main: "Desligar",
+      modifier: "Teclado",
+      description: "Desligar o teclado (requer suporte do hardware)",
+    };
+  if (code === "&gresc")
+    return {
+      main: "Esc / `",
+      description: "Escape ou grave conforme os modificadores pressionados",
+    };
+  if (code === "&studio_unlock")
+    return {
+      main: "Liberar",
+      modifier: "Studio",
+      description: "Desbloquear alterações pelo ZMK Studio",
+    };
+  if (code === "&out OUT_TOG")
+    return {
+      main: "USB / BT",
+      modifier: "Alternar",
+      description: "Alternar a saída USB / Bluetooth",
+    };
   if (code.startsWith("&bt ")) {
     const btKey = code.replace("&bt ", "");
     if (btKey === "BT_CLR")
@@ -121,6 +259,20 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
         main: "Limpar",
         modifier: "BT",
         description: "Apagar o pareamento do perfil Bluetooth atual",
+      };
+    if (btKey === "BT_CLR_ALL")
+      return {
+        main: "Limpar",
+        modifier: "Todos BT",
+        icon: "Bluetooth",
+        description: "Apagar os pareamentos de todos os perfis Bluetooth",
+      };
+    if (btKey.startsWith("BT_DISC "))
+      return {
+        main: btKey.slice(8),
+        modifier: "Descon.",
+        icon: "Bluetooth",
+        description: `Desconectar o perfil Bluetooth ${btKey.slice(8)}`,
       };
     if (btKey === "BT_NXT")
       return {
@@ -145,9 +297,36 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
   }
 
   if (code.startsWith("&kp ")) {
-    const key = code.replace("&kp ", "");
+    const source = code.replace("&kp ", "").replace(/^\(([A-Z][A-Z0-9_]*)\)$/, "$1");
+    const key =
+      aliases[source] ?? (/^PT_(?:[A-Z]|N[0-9])$/.test(source) ? source.slice(3) : source);
 
     const visualMap: Record<string, KeyVisuals> = {
+      INS: { main: "Ins" },
+      HOME: { main: "Home" },
+      END: { main: "End" },
+      DQT: { main: '"' },
+      CARET: { main: "^" },
+      GRAVE_SYMBOL: { main: "`" },
+      LT: { main: "<" },
+      GT: { main: ">" },
+      QUESTION: { main: "?" },
+      COLON: { main: ":" },
+      UNDER: { main: "_" },
+      PLUS: { main: "+" },
+      STAR: { main: "*" },
+      LPAR: { main: "(" },
+      RPAR: { main: ")" },
+      LBRC: { main: "{" },
+      RBRC: { main: "}" },
+      DLLR: { main: "$" },
+      PRCNT: { main: "%" },
+      AMPS: { main: "&" },
+      PIPE: { main: "|" },
+      HASH: { main: "#" },
+      AT: { main: "@" },
+      EXCL: { main: "!" },
+      DEG: { main: "°" },
       PT_SQT: { main: "'", shift: '"' },
       PT_SEMI: { main: ";", shift: ":" },
       PT_TILDE: { main: "~", shift: "^" },
@@ -270,6 +449,18 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
 
 function cleanModName(mod: string): string {
   const map: Record<string, string> = {
+    LEFT_CONTROL: "Ctrl",
+    RIGHT_CONTROL: "Ctrl",
+    LEFT_SHIFT: "Shift",
+    RIGHT_SHIFT: "Shift",
+    LEFT_ALT: "Alt",
+    RIGHT_ALT: "AltGr",
+    RA: "AltGr",
+    RC: "Ctrl",
+    RS: "Shift",
+    RG: "GUI",
+    LSHIFT: "Shift",
+    RSHIFT: "Shift",
     LCTRL: "Ctrl",
     RCTRL: "Ctrl",
     LC: "CTRL",

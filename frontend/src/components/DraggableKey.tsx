@@ -2,20 +2,26 @@ import { useId } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { IKeyAction } from "../types/keyboard";
 import { Key } from "./Key";
+import { validateBinding, type BindingContext } from "../utils/bindingValidation";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 export function DraggableKey({
   action,
   className = "",
+  validationContext = "binding",
 }: {
   action: IKeyAction;
   className?: string;
+  validationContext?: BindingContext;
 }) {
   const id = useId();
+  const { project, plugin } = useKeyboardStore();
+  const error = project ? validateBinding(action.code, project, plugin, validationContext) : "";
   const selectAction = useKeyboardStore((s) => s.selectAction);
   const selected = useKeyboardStore((s) => s.selectedAction?.code === action.code);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${id}`,
     data: { code: action.code, action },
+    disabled: !!error,
   });
   return (
     <div
@@ -24,7 +30,8 @@ export function DraggableKey({
       {...attributes}
       aria-label={`Arrastar ${action.label || action.code}`}
       aria-pressed={selected}
-      title="Clique para selecionar ou arraste até o destino"
+      title={error || "Clique para selecionar ou arraste até o destino"}
+      aria-invalid={!!error}
       onClick={(event) => {
         event.stopPropagation();
         selectAction(action);
@@ -36,7 +43,7 @@ export function DraggableKey({
           selectAction(action);
         } else listeners?.onKeyDown?.(event);
       }}
-      className={`touch-none ${isDragging ? "opacity-30" : "cursor-grab"} ${selected ? "ring-2 ring-sky-400 rounded-md" : ""} ${className}`}
+      className={`touch-none ${error ? "invalid-action" : ""} ${isDragging ? "opacity-30" : "cursor-grab"} ${selected ? "ring-2 ring-sky-400 rounded-md" : ""} ${className}`}
     >
       <Key action={action} className={className} />
     </div>

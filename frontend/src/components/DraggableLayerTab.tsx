@@ -16,6 +16,7 @@ interface DraggableLayerTabProps {
 
 export function DraggableLayerTab({
   id,
+  index,
   layer,
   isActive,
   canRemove,
@@ -39,6 +40,7 @@ export function DraggableLayerTab({
       style={style}
       {...attributes}
       {...listeners}
+      aria-label={`Reordenar camada ${layer.name}`}
       onContextMenu={onContextMenu}
       className={`layer-tab ${isDragging ? "is-dragging" : ""} ${isActive ? "is-active" : ""}`}
     >
@@ -48,8 +50,14 @@ export function DraggableLayerTab({
           onClick();
         }}
         className="layer-tab-label"
+        aria-label={layer.name}
+        aria-current={isActive ? "true" : undefined}
+        title={layer.name}
       >
-        {layer.name}
+        <span className="layer-index" aria-hidden="true">
+          {index}
+        </span>
+        <span className="layer-name-text">{layer.name}</span>
       </button>
 
       {canRemove && (

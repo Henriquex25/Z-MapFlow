@@ -1,3 +1,4 @@
+import { headerSymbols } from "../utils/firmwareSettings";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DraggableKey } from "./DraggableKey";
@@ -5,7 +6,7 @@ import { BindingDrop } from "./BindingDrop";
 import { getPaletteKeyWidth, formatKeyVisuals } from "../utils/keyFormatter";
 import { useKeyboardStore, layerReference, displayCode } from "../store/useKeyboardStore";
 import { action, IKeyAction } from "../types/keyboard";
-import { behaviorAction } from "../utils/resourceActions";
+import { behaviorAction, macroAction } from "../utils/resourceActions";
 
 const generateKeys = (codes: string[]): IKeyAction[] => {
   return codes.map((code) => ({
@@ -202,6 +203,7 @@ const tabs = [
   "Bluetooth",
   "Mouse",
   "Recursos",
+  "Idiomas",
 ] as const;
 export function ActionTray() {
   const p = useKeyboardStore((s) => s.project)!;
@@ -266,13 +268,17 @@ export function ActionTray() {
       ))}
     </div>
   );
+  const languages = headerSymbols(p.headers).map((symbol) => ({
+    ...action(`&kp ${symbol}`),
+    label: symbol,
+  }));
   const custom = [
     ...(plugin?.actions ?? []).map((a) => ({ ...action(a.code), label: a.name })),
-    ...p.layout.macros.map((m) => ({ ...action(`&${m.id}`), label: m.name })),
+    ...p.layout.macros.map(macroAction),
     ...p.layout.behaviors.map(behaviorAction),
   ];
   return (
-    <section aria-label="Paleta de ações" className="palette">
+    <section aria-label="Paleta de ações" className="palette" data-collapsed={collapsed}>
       <div className="palette-toolbar">
         {tabs.map((t) => (
           <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
@@ -284,7 +290,10 @@ export function ActionTray() {
           aria-label="Buscar ações"
           placeholder="Buscar ação…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            if (e.target.value.trim()) setCollapsed(false);
+          }}
         />
         <button
           className="btn icon-btn palette-collapse"
@@ -308,6 +317,7 @@ export function ActionTray() {
                   "&bt BT_CLR",
                   "&bt BT_NXT",
                   "&bt BT_PRV",
+                  "&bt BT_CLR_ALL",
                   ...Array.from(
                     { length: p.options.bluetoothProfiles },
                     (_, i) => `&bt BT_SEL ${i}`,
@@ -328,7 +338,7 @@ export function ActionTray() {
                   "&sys_reset",
                 ]),
               ].filter((c) => c !== "&blank"),
-            ).concat(custom),
+            ).concat(custom, languages),
           )
         ) : tab === "Teclas" ? (
           <div className="palette-keyboard">
@@ -357,6 +367,17 @@ export function ActionTray() {
                 ))}
               </div>
             ))}
+          </div>
+        ) : tab === "Idiomas" ? (
+          <div>
+            {languages.length ? (
+              list(languages)
+            ) : (
+              <p className="hint">
+                Adicione um header em Configurações → Headers e idiomas. Português ABNT2 também está
+                disponível no seletor de layout do sistema.
+              </p>
+            )}
           </div>
         ) : tab === "Modificadores" ? (
           list(generateKeys(modifiers.map((m) => `&kp ${m}`)))
@@ -389,7 +410,9 @@ export function ActionTray() {
               "&bt BT_CLR",
               "&bt BT_NXT",
               "&bt BT_PRV",
+              "&bt BT_CLR_ALL",
               ...Array.from({ length: p.options.bluetoothProfiles }, (_, i) => `&bt BT_SEL ${i}`),
+              ...Array.from({ length: p.options.bluetoothProfiles }, (_, i) => `&bt BT_DISC ${i}`),
               "&out OUT_USB",
               "&out OUT_BLE",
             ]),
@@ -420,13 +443,30 @@ export function ActionTray() {
                 "&none",
                 "&caps_word",
                 "&key_repeat",
+                "&gresc",
+                "&studio_unlock",
+                ...modifiers.map((m) => `&sk ${m}`),
+                ...modifiers.map((m) => `&kt ${m}`),
+                "&out OUT_TOG",
+                "&ext_power EP_ON",
+                "&ext_power EP_OFF",
+                "&ext_power EP_TOG",
+                "&rgb_ug RGB_TOG",
+                "&rgb_ug RGB_BRI",
+                "&rgb_ug RGB_BRD",
+                "&rgb_ug RGB_COLOR_HSB(128,100,100)",
+                "&bl BL_TOG",
+                "&bl BL_INC",
+                "&bl BL_DEC",
+                "&soft_off",
                 "&kt CLCK",
                 "&bootloader",
                 "&sys_reset",
               ]),
             ])}
             <p className="hint">
-              Macros e behaviors criados nas abas acima aparecem aqui para arrastar até o teclado.
+              Macros e comportamentos criados nas abas acima aparecem aqui para arrastar até o
+              teclado.
             </p>
           </div>
         ) : (

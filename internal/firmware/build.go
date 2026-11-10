@@ -53,16 +53,16 @@ func (DockerProvider) Run(ctx context.Context, dir string, p models.Project, plu
 		return fmt.Errorf("Docker indisponível. Inicie o Docker e confira o acesso do seu usuário: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
 	variant, _ := project.Variant(p, plugin)
-	// Only plugin-owned constants enter this script. Project bindings are data files.
+	// Every argument is shell-quoted; keymap and headers remain data files.
 	var script strings.Builder
-	script.WriteString("set -eu\necho ZMAPFLOW_STAGE:cache\nexec 9>/workspace/.zmapflow.lock\nflock -x 9\nmkdir -p /workspace/config /output\ncp -R /input/. /workspace/config/\ncd /workspace\nif [ ! -d .west ]; then west init -l config; fi\nif [ ! -f .dependencies-ready ]; then\n echo ZMAPFLOW_STAGE:dependencies\n west update --fetch-opt=--filter=tree:0\n touch .dependencies-ready\nfi\nwest zephyr-export\n")
+	script.WriteString("set -eu\necho ZMAPFLOW_STAGE:cache\nexec 9>/workspace/.zmapflow.lock\nflock -x 9\nrm -rf /workspace/config\nmkdir -p /workspace/config /output\ncp -R /input/. /workspace/config/\ncd /workspace\nif [ ! -d .west ]; then west init -l config; fi\nif [ ! -f .dependencies-ready ]; then\n echo ZMAPFLOW_STAGE:dependencies\n west update --fetch-opt=--filter=tree:0\n touch .dependencies-ready\nfi\nwest zephyr-export\n")
 	for _, target := range variant.Targets {
 		for _, s := range []string{variant.ID, target.ID, target.Board, target.Shield, target.Artifact} {
 			if strings.ContainsAny(s, "'\n\r") {
 				return fmt.Errorf("alvo inválido no plugin")
 			}
 		}
-		fmt.Fprintf(&script, "echo ZMAPFLOW_STAGE:%s\nwest build -s zmk/app -d 'build/%s' -b '%s' -- '-DSHIELD=%s' -DZMK_CONFIG=/workspace/config\ncp 'build/%s/zephyr/zmk.uf2' '/output/%s'\n", target.ID, variant.ID+"/"+target.ID, target.Board, target.Shield, variant.ID+"/"+target.ID, target.Artifact)
+		fmt.Fprintf(&script, "echo ZMAPFLOW_STAGE:%s\n%s\ncp %s %s\n", target.ID, TargetBuildCommand(p, variant, target), shellQuote("build/"+variant.ID+"/"+target.ID+"/zephyr/zmk.uf2"), shellQuote("/output/"+target.Artifact))
 	}
 	cacheIdentity := plugin.ID + plugin.Version + plugin.ZMKRevision + plugin.BuildImage
 	if len(plugin.Modules) > 0 {

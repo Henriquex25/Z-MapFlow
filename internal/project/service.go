@@ -26,7 +26,7 @@ func (s *Service) New(pluginID string) (models.Project, error) {
 		return models.Project{}, err
 	}
 	p := d.Descriptor()
-	return models.Project{SchemaVersion: 1, PluginID: p.ID, PluginVersion: p.Version, VariantID: p.Variants[0].ID, Layout: d.GetDefaultLayout(), Options: models.Options{Locale: "us", Display: hasCapability(p, "display"), Pointing: hasCapability(p, "pointing"), TappingTermMs: 200, QuickTapMs: 0, Flavor: "hold-preferred", BluetoothProfiles: 5, Sleep: true, SleepTimeoutMs: 900000}}, nil
+	return models.Project{SchemaVersion: SchemaVersion, PluginID: p.ID, PluginVersion: p.Version, VariantID: p.Variants[0].ID, Layout: d.GetDefaultLayout(), Options: models.Options{ModTap: NativeHoldTap("hold-preferred"), LayerTap: NativeHoldTap("tap-preferred"), Locale: "us", Display: hasCapability(p, "display"), Pointing: hasCapability(p, "pointing"), TappingTermMs: 200, QuickTapMs: 0, Flavor: "hold-preferred", BluetoothProfiles: 5, Sleep: true, SleepTimeoutMs: 900000}}, nil
 }
 func (s *Service) Load() (models.Session, error) {
 	data, err := os.ReadFile(s.path())
@@ -45,6 +45,7 @@ func (s *Service) Load() (models.Session, error) {
 	if err != nil {
 		return models.Session{}, fmt.Errorf("não foi possível abrir a configuração: %w", err)
 	}
+	p = Migrate(p)
 	if err = Validate(p, s.Registry); err != nil {
 		return models.Session{}, fmt.Errorf("configuração incompatível: %w", err)
 	}
@@ -52,6 +53,7 @@ func (s *Service) Load() (models.Session, error) {
 	return models.Session{Project: p, Plugin: d.Descriptor(), HasSaved: hasSaved}, nil
 }
 func (s *Service) Save(p models.Project) (models.Project, error) {
+	p = Migrate(p)
 	if err := Validate(p, s.Registry); err != nil {
 		return p, err
 	}

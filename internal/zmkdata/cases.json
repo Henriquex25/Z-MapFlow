@@ -1,0 +1,176 @@
+[
+  {
+    "code": "&kp LCTRL",
+    "valid": true
+  },
+  {
+    "code": "&kp LC(LS(A))",
+    "valid": true
+  },
+  {
+    "code": "&mt LCTRL A",
+    "valid": true
+  },
+  {
+    "code": "&lt @{base} SPACE",
+    "valid": true
+  },
+  {
+    "code": "&kp (RIGHT_ALT)",
+    "valid": true
+  },
+  {
+    "code": "&trans",
+    "valid": true
+  },
+  {
+    "code": "&bt BT_CLR",
+    "valid": true
+  },
+  {
+    "code": "&bt BT_SEL 2",
+    "valid": true
+  },
+  {
+    "code": "&rgb_ug RGB_COLOR_HSB(128,100,100)",
+    "valid": true
+  },
+  {
+    "code": "&rgb_ug RGB_EFS_CMD 3",
+    "valid": true
+  },
+  {
+    "code": "&mmv (MOVE_UP|MOVE_LEFT)",
+    "valid": true
+  },
+  {
+    "code": "&mkp (MB4|MB5)",
+    "valid": true
+  },
+  {
+    "code": "&bl BL_INC",
+    "valid": true
+  },
+  {
+    "code": "&out OUT_USB",
+    "valid": true
+  },
+  {
+    "code": "&kp MY_KEY",
+    "valid": true
+  },
+  {
+    "code": "&kp MY_WRAP(A)",
+    "valid": true
+  },
+  {
+    "code": "&kp ZMK_HID_USAGE(HID_USAGE_KEY,0x04)",
+    "valid": true
+  },
+  {
+    "code": "&kp PT_C_CEDILLA",
+    "valid": true
+  },
+  {
+    "code": "fdsfsd",
+    "valid": false
+  },
+  {
+    "code": "&kp FDSFSD",
+    "valid": false
+  },
+  {
+    "code": "&kp A B",
+    "valid": false
+  },
+  {
+    "code": "&mt LCTRL",
+    "valid": false
+  },
+  {
+    "code": "&mt LCTRL A B",
+    "valid": false
+  },
+  {
+    "code": "&lt @{missing} A",
+    "valid": false
+  },
+  {
+    "code": "&bt BT_SEL 3",
+    "valid": false
+  },
+  {
+    "code": "&bt BT_CLR 2",
+    "valid": false
+  },
+  {
+    "code": "&out WHATEVER",
+    "valid": false
+  },
+  {
+    "code": "&kp LC(A,B)",
+    "valid": false
+  },
+  {
+    "code": "&kp LC()",
+    "valid": false
+  },
+  {
+    "code": "&kp LC(fdsfsd)",
+    "valid": false
+  },
+  {
+    "code": "&kp (A B)",
+    "valid": false
+  },
+  {
+    "code": "&kp 0x100000000",
+    "valid": false
+  },
+  {
+    "code": "&kp MACRO_PLACEHOLDER",
+    "valid": false
+  },
+  {
+    "code": "&rgb_ug RGB_COLOR_HSB(128,101,100)",
+    "valid": false
+  },
+  {
+    "code": "&rgb_ug RGB_FAKE",
+    "valid": false
+  },
+  {
+    "code": "&kp MY_STRING",
+    "valid": false
+  },
+  {
+    "code": "&unknown A",
+    "valid": false
+  },
+  {
+    "code": "&kp MACRO_PLACEHOLDER",
+    "valid": true,
+    "macro": true
+  },
+  {
+    "code": "&bt MACRO_PLACEHOLDER MACRO_PLACEHOLDER",
+    "valid": true,
+    "macro": true
+  },
+  {
+    "code": "&bl BL_SET 50",
+    "valid": true
+  },
+  {
+    "code": "&bl BL_SET",
+    "valid": false
+  },
+  {
+    "code": "&bl BL_SET 101",
+    "valid": false
+  },
+  {
+    "code": "&rgb_ug RGB_COLOR_HSV(128,100,50)",
+    "valid": true
+  }
+]

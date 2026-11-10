@@ -1,0 +1,13 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: Novidades
+      labels: [enhancement, feature]
+    - title: Correções
+      labels: [bug, fix]
+    - title: Documentação e manutenção
+      labels: [documentation, dependencies]
+    - title: Outras contribuições
+      labels: ["*"]

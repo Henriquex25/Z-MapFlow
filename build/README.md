@@ -33,3 +33,9 @@ build with `wails build`.
 - `info.json` - Application details used for Windows builds. The data here will be used by the Windows installer,
   as well as the application itself (right click the exe -> properties -> details)
 - `wails.exe.manifest` - The main application manifest file.
+
+## Source icon
+
+Replace `build/appicon.png` with the project's square PNG logo (1024×1024 recommended). Linux embeds this file as the window icon and the release installer uses it for the application launcher. Preserve vector sources, when available, under `assets/branding/`.
+
+The existing `build/windows/icon.ico` is a derived default icon. Regenerate/remove it when preparing Windows packaging with a new logo so Wails does not reuse an old derivative. See `docs/community/branding.md`.

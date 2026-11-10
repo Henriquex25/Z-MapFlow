@@ -155,7 +155,7 @@ docs/plugins.md                especificação do contrato e contribuição
 ### Funcionalidades existentes
 
 - Projeto JSON com versão de schema, plugin, versão do plugin, variante, revisão de conteúdo, data e todas as configurações editáveis.
-- Salvamento local atômico, carregamento na abertura e importação/exportação de projetos JSON. Arquivos incompatíveis ou corrompidos geram erro; o aplicativo não os substitui silenciosamente.
+- Salvamento local atômico, carregamento na abertura e importação/exportação de projetos JSON e keymaps ZMK. O importador `.keymap` usa o plugin/variante selecionado e converte camadas, referências estáveis, macros, combos, hold-taps, tap-dances, encoders e overrides `&mt`/`&lt`; rejeita conteúdo fora do modelo sem alterar o editor. Exportação `.keymap` usa a edição atual e acompanha o header ABNT2 quando necessário. Arquivos incompatíveis ou corrompidos geram erro; o aplicativo não os substitui silenciosamente.
 - Snapshots separados de edição e salvamento. Descartar restaura a configuração salva e uma camada ativa válida. Alterações feitas durante um salvamento permanecem no editor.
 - Geometria e mapeamento fornecidos pelo backend via descriptor; o frontend não importa um componente Sofle. A composição em `app.go` é o local de registro dos plugins.
 - O teclado abre com ajuste automático à largura e à altura disponíveis, em escala relativa de 100%, com zoom manual entre 80% e 160%. A paleta usa menos altura para priorizar o teclado; as teclas exibem seu behavior no canto superior esquerdo.
@@ -182,14 +182,24 @@ O autor forneceu https://github.com/Henriquex25/zmk-config. Seu `build.yaml` con
 
 O perfil atual fixa ZMK em `4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85` e imagem `zmkfirmware/zmk-build-arm:4.1`; o perfil legado usa `v0.3.0`, `nice_nano_v2` e imagem `:3.5`. O header ABNT2 é distribuído com sua licença original e foi obtido do repositório do autor.
 
+### Evolução de compatibilidade ZMK — 09/11/2026
+
+- Schema 2 com migração imutável de v1, revisão de conteúdo recalculada e manutenção dos padrões históricos de projetos antigos. Novos projetos usam configurações independentes de `&mt` e `&lt`.
+- Correções de herança de overrides, preservação de defines/includes, espera exata de macros, validação de bindings expandidos e dimensionamento da fila incluindo macros compostas.
+- Behaviors genéricos com parâmetros por uso, mod-morphs, sticky keys, Caps Word/Key Repeat personalizados, opções avançadas de hold-tap, combos com inatividade anterior e camadas condicionais com referências estáveis.
+- Input processors por listener/camada, configurações de encoders e recursos de iluminação/soft off. Campos avançados preservam DTS, subnós e Kconfig de módulos.
+- `Variant.features` declara suporte opcional específico da revisão (`layer-locking` no perfil atual; ausente no legado). Essa extensão é opcional e mantém o contrato de plugins v1.
+- A API de importação recebe plugin/variante ativos. Exportação de keymap inclui Kconfig e header localizado, com confirmação de conflitos dos arquivos auxiliares.
+- A auditoria anterior está em `docs/zmk-audit.md`; ela registra o estado anterior às correções. Novos testes verificam migração, composição, parâmetros, temporização gerada, reimportações e edição pela interface. A suíte Go com race detector, os 33 testes do frontend, go vet, formatação e o build desktop passaram nesta evolução. O executável foi atualizado em `build/bin/z-mapflow`. Na evolução inicial, a integração encontrou Docker inacessível; na continuação de 09/11, o Docker ficou acessível e a importação real do keymap do autor foi compilada nos dois alvos com Studio USB no central e herança de encoders. Os firmwares compilaram; não houve flash nem validação física.
+
 ## 6. Limites e próximas melhorias
 
-- A importação disponível aceita projetos JSON do aplicativo. Ainda não existe importador de `.keymap`, Kconfig ou repositórios ZMK externos.
+- A importação aceita JSON, keymaps, o `.conf` de mesmo nome, headers locais `.h` com dependências e a matriz `include` explícita do `build.yaml` próximo. Defines de objetos, includes padrão e extensões Devicetree são preservados. Includes locais `.dtsi`, condicionais e defines com parâmetros no próprio keymap ainda requerem expansão prévia; repositórios completos não são importados. O JSON preserva a identidade de hardware; a exportação `.keymap` acompanha `.conf` e headers necessários.
 - O layout padrão continua básico; não é uma migração automática das nove camadas do autor.
 - A entrada em bootloader é manual. Envio de comandos de bootloader depende de suporte específico ainda não implementado.
 - GitHub Actions é um provedor futuro; a implementação funcional usa Docker.
 - O transporte atual é UF2 por volume. Outros formatos/protocolos precisam de adaptadores no core.
-- O editor cobre macros sem parâmetros, hold-taps de tecla/camada para tecla e tap-dances. Outros behaviors ZMK e configurações avançadas precisam ser modelados conforme a demanda.
+- O editor cobre macros parametrizadas, controles de pressão/liberação, hold-taps genéricos, tap-dances, mod-morphs, sticky behaviors, camadas condicionais, input processors e propriedades nativas. As opções dependem do suporte real do hardware e da revisão do perfil. Extensões sem formulário dedicado podem ser editadas nos campos ZMK avançados.
 - O fluxo principal não depende do ZMK Studio. Ainda não há sincronização com configurações gravadas por ele.
 - Builds e caches permanecem em disco; ainda não existe política de limpeza automática nem interface de gerenciamento de espaço.
 - O core possui persistência de um projeto ativo e importação/exportação. Uma biblioteca de múltiplos projetos/perfis ainda não foi implementada.
@@ -238,3 +248,55 @@ Ao alterar o código:
 - Executar os testes pertinentes à alteração. Testes de flash devem usar volumes simulados; ensaios no teclado real devem ser explícitos.
 - Distinguir validade estrutural da configuração, compilação bem-sucedida, envio concluído e funcionamento confirmado no hardware.
 - Atualizar este documento e as limitações públicas quando novas funcionalidades forem implementadas.
+
+### Continuação: configuração e importação real — 09/11/2026
+
+- Corrigida a exigência de quantidade exata de encoders por camada. Omissões preservam herança e continuam editáveis; encoder herdado antes de um configurado é gerado como sensor transparente.
+- Importação real e ciclo exportar/reimportar validados com nove camadas, quatro macros, dezesseis behaviors e header ABNT2 do repositório local do autor. O conteúdo pessoal não foi incorporado ao template público.
+- Flags Kconfig adicionais editáveis, snippets e argumentos CMake por alvo, importação/exportação de `build.yaml` e aplicação equivalente pelo Docker. Metadado opcional `Target.role` identifica central/periférico no plugin; preset Studio USB atua no central, mantendo o bloqueio de segurança.
+- Headers `.h` locais são incluídos no projeto e nos arquivos gerados, com dependências confinadas à pasta da configuração. Interface permite importar/criar/editar headers; aliases entram na aba Idiomas da paleta.
+- Teste opt-in da configuração pessoal: `ZMAPFLOW_KEYMAP_TEST=/caminho/config/sofle.keymap go test ./internal/keymap -run TestImportExternalProject -v`. Integração com Studio USB: `ZMAPFLOW_DOCKER_TEST=1 ZMAPFLOW_DOCKER_KEYMAP=/caminho/config/sofle.keymap go test ./internal/firmware -run '^TestDockerIntegration$' -v -timeout 45m`.
+
+- Verificação final desta continuação: 43 testes do frontend, build TypeScript/Vite e formatação passaram; `go test -race ./...`, `go vet ./...`, importação real e integração Docker das duas metades também passaram.
+
+### Correção de renderização e uso do espaço — 09/11/2026
+
+- Reproduzida no navegador a tela vazia após importar o retorno real do keymap do autor: o behavior `&caps_word` chegava com `bindings: null`, e `behaviorAction` percorria esse valor. A leitura de bindings vazios agora retorna array Go inicializado, e o frontend normaliza listas nulas ao receber sessões novas e projetos anteriores.
+- A normalização ocorre antes de substituir o estado. Uma importação sem camadas válidas gera erro e mantém a edição anterior. Um boundary de renderização fornece mensagem, exportação da edição atual e reabertura do editor em caso de outra falha de exibição.
+- Abas de recursos foram movidas para uma barra lateral compacta. Cabeçalho e rodapé menores; camadas/nome/zoom na mesma linha; mensagens de sucesso no rodapé. Paleta com todas as linhas visíveis em 1366×768 e 1440×900, com divisória ajustável por mouse/teclado e restauração automática.
+- A interface foi inspecionada no Chrome usando o JSON real retornado pela importação, incluindo a forma anterior com listas nulas. Foram percorridas as nove camadas, todas as abas de recursos e da paleta, e testado o arraste da divisória sem exceções JavaScript. Esse ensaio usa uma ponte simulada com payload real, além dos testes Go/React.
+
+- Validação nativa adicional: o executável Wails/WebKit foi aberto em um display Xvfb com diretório de configuração temporário. A importação do `.keymap` real pelo seletor GTK concluiu e exibiu as nove camadas e a paleta, sem tela vazia. O perfil e os arquivos pessoais não foram alterados. Os 46 testes frontend, build TypeScript/Vite, formatação, Go com race detector e go vet passaram; o executável desktop foi recompilado.
+
+### Tipografia, camadas e ações laterais — 09/11/2026
+
+- Fira Sans regular/medium e Fira Sans Condensed medium foram incorporadas como assets locais com a licença SIL OFL original. Teclas usam fonte condensada, etiquetas menores e rótulos de behavior compactos; o layout não depende das fontes instaladas no sistema.
+- Apresentação de bindings separada em `keyPresentation.ts`: hold-taps mostram seus parâmetros efetivos de toque/hold; tap-dances e mod-morphs mostram alternativas; aliases longos de ZMK/ABNT2 são reconhecidos na apresentação. Nomes, IDs, bindings e fonte persistida permanecem preservados. Há testes de parâmetros encaminhados a filhos sem argumentos, modificadores compostos e referências estáveis.
+- `LayerSidebar` organiza camadas verticalmente e cria colunas com rolagem horizontal quando falta altura. A rolagem tem espaço reservado; botões permitem avançar/voltar. Seleção acompanha a camada ativa, e reordenação usa estratégia de retângulos para permitir movimento entre linhas/colunas.
+- Ações de importar/exportar, descartar, salvar, compilar e salvar/compilar foram movidas para a sidebar direita com ícones, tooltips e os mesmos estados de habilitação. O nome da camada e zoom continuam acessíveis acima do teclado.
+- Inspeção no Chrome com o retorno real da importação em 1366×768, 1440×900 e 1920×1080, além de 32 camadas: sem exceções, sem sobreposição da barra nas abas, seleção da última camada visível e arraste real para reordenar funcionando.
+- Docker Desktop foi verificado pelo contexto CLI ativo `desktop-linux`. O workflow local do autor delega a `zmkfirmware/zmk/.github/workflows/build-user-config.yml@main`; a sequência west init/update/export/build foi conferida no workflow oficial. A integração do aplicativo com keymap importado e Studio USB compilou os dois UF2 em 88 s, usando a revisão/imagem fixadas pelo perfil. Não houve alteração do repositório pessoal nem flash.
+
+- Validação final desta etapa: 54 testes frontend, TypeScript/Vite, formatação, `go test -race ./...` e `go vet ./...` passaram. A interface Wails/WebKit foi aberta com configuração temporária; o `.keymap` real foi importado pelo seletor GTK e a navegação foi conferida também com um projeto de 32 camadas. As fontes e sidebars renderizaram corretamente em 1366×768. Licenças de fontes anteriores foram preservadas, e a OFL da Fira é distribuída em `public/licenses/Fira-OFL.txt` para acompanhar o executável.
+
+### Validação durante a edição — 09/11/2026
+
+- Catálogo versionado em `internal/zmkdata` extraído dos headers oficiais ZMK, compartilhado por Go e TypeScript. Casos de aceitação/rejeição comuns verificam nomes, quantidade e tipos de parâmetros, funções, códigos de tecla, camadas, perfis Bluetooth e comandos com argumentos dependentes.
+- Campos de ações e propriedades gerenciadas mantêm rascunhos locais, sinalizam erros e só atualizam o projeto com valores válidos. Rascunhos inválidos bloqueiam salvar/salvar e compilar, inclusive por atalho. Cancelar a edição descarta o rascunho. Backend repete a validação ao salvar/gerar.
+- Cliques, arrastes, trocas entre teclas, encoders e composição validam antes de aplicar. Ações base de hold-tap/sticky aceitam zero ou um parâmetro; ciclos e quantidades incompatíveis são rejeitados. Bindings inválidos já presentes recebem indicação vermelha.
+- Formulário da tecla com grid e largura maior, código avançado em textarea expansível. Interface traduzida para Comportamentos, tipos explicados e controles agrupados no cabeçalho dos cards. Digitar uma busca expande a paleta recolhida.
+- Extensões de módulos e propriedades nativas sem esquema dedicado continuam dependendo da compilação para validar regras específicas da revisão/hardware. O catálogo possui atualização manual explícita e não faz downloads durante o uso.
+- Validação: 106 testes frontend, TypeScript/Vite, formatação, `go test -race ./...`, `go vet ./...`, importação/exportação real (9 camadas, 4 macros, 16 comportamentos), inspeção no Chrome e importação nativa Wails/WebKit. O teste Docker com keymap real e Studio USB gerou os dois firmwares. Executável recompilado; não houve flash nem alteração do repositório pessoal.
+
+### Comunidade, distribuição e atualizações — 09/11/2026
+
+- Licença MIT escolhida pelo autor. Guias de contribuição e segurança, template de PR, formulários de bugs/melhorias/teclados e Dependabot para Go, frontend, docs e Actions preparados em `.github/`.
+- Documentação de usuário e mantenedor em Markdown/VitePress, com busca local e base `/Z-MapFlow/`. `docs/package.json` mantém VitePress estável e override de Vite corrigido, validado pelo build e npm audit. Workflows separam CI de PRs, publicação Pages da branch principal e releases por tags estáveis `vMAJOR.MINOR.PATCH`.
+- A primeira distribuição é Linux x86_64, construída no Ubuntu 22.04 com WebKitGTK 4.1. Script gera pacote de instalação por usuário, binário de atualização e checksums. Instalador confere o pacote e a execução de `--version`, cria atalho no menu e preserva o diretório de configuração. Windows/macOS continuam sem pacotes oficiais.
+- Atualizador consulta a última release pública estável de `Henriquex25/Z-MapFlow` ao iniciar, sem token, e permite adiar. Antes de instalar, salva projetos editados ou importados ainda não persistidos; rascunhos inválidos, builds e flash ativos impedem a operação.
+- Download tem origem fixa, limite, tamanho, SHA-256 e digest GitHub quando disponível. ELF, arquitetura, versão e bibliotecas de runtime são conferidos antes de instalar. Backup completo `.previous`, substituição atômica e restauração em falhas imediatas. Novo processo aguarda o anterior encerrar. Falhas posteriores de funcionamento da GUI exigem restauração manual; não há promessa de detectar todo problema após inicialização.
+- Toast de exportação de firmware aparece apenas após sucesso, com pasta de destino e fechamento automático/manual. Cancelamento não é reportado como sucesso.
+- `build/appicon.png` é a fonte do ícone (PNG quadrado, 1024px recomendado). Linux incorpora esse arquivo na janela e no pacote; documentação explica os derivados de outras plataformas.
+- Os arquivos locais não alteram visibilidade do repositório nem publicam versões. O mantenedor precisa disponibilizar releases públicas, habilitar Pages com GitHub Actions e enviar uma tag para a primeira publicação.
+
+- Verificação desta etapa: 116 testes frontend; Go com race detector e vet; dois testes do pacote/instalador com perfil temporário; actionlint nos três workflows; build VitePress e audit sem vulnerabilidades. Toast/pop-up e falha de integridade inspecionados no Chrome, com salvamento antes da atualização; abertura Wails/WebKit e consulta pública real conferidas em Xvfb. Build Linux/WebKitGTK 4.1, testes do atualizador, pacote versionado e checksums também passaram num container Ubuntu 22.04. Os workflows não foram enviados/executados no GitHub e nenhuma release foi publicada.

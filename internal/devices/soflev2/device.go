@@ -28,7 +28,7 @@ func (d *Device) Descriptor() models.Plugin {
 		Variants: []models.Variant{{ID: "nice_nano_v2", Name: "nice!nano v2 / SuperMini compatível", UF2Family: 0xADA52840,
 			BootloaderBoards: []string{"nRF52840", "nrf52840", "Nice!Nano", "nice_nano"},
 			Instructions:     "Conecte uma metade por USB e pressione RESET duas vezes rapidamente. Aguarde aparecer o volume UF2 e informe qual metade foi conectada. A compatibilidade da SuperMini depende do bootloader e da pinagem usados na montagem.",
-			Targets:          []models.Target{{ID: "left", Name: "Esquerda", Board: "nice_nano_v2", Shield: "sofle_left", Artifact: "sofle-left.uf2"}, {ID: "right", Name: "Direita", Board: "nice_nano_v2", Shield: "sofle_right", Artifact: "sofle-right.uf2"}},
+			Targets:          []models.Target{{ID: "left", Role: "central", Name: "Esquerda", Board: "nice_nano_v2", Shield: "sofle_left", Artifact: "sofle-left.uf2"}, {ID: "right", Role: "peripheral", Name: "Direita", Board: "nice_nano_v2", Shield: "sofle_right", Artifact: "sofle-right.uf2"}},
 		}},
 	}
 	offsets := []float64{0.5, 0.5, 0.25, 0, 0.25, 0.5}
@@ -63,6 +63,7 @@ func (d *Device) Descriptor() models.Plugin {
 	legacy.BuildImage = p.BuildImage
 	modern := p.Variants[0]
 	modern.Name = "nice!nano v2 / SuperMini — ZMK atual"
+	modern.Features = []string{"layer-locking"}
 	modern.ZMKRevision = "4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85"
 	modern.BuildImage = "zmkfirmware/zmk-build-arm:4.1"
 	modern.Targets = append([]models.Target(nil), modern.Targets...)

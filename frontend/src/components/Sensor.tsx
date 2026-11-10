@@ -1,7 +1,8 @@
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDndContext } from "@dnd-kit/core";
+import { validateBinding } from "../utils/bindingValidation";
 import { ISensorAction } from "../types/keyboard";
 import { displayCode, useKeyboardStore } from "../store/useKeyboardStore";
-import { formatKeyVisuals } from "../utils/keyFormatter";
+import { presentKey, visualSummary } from "../utils/keyPresentation";
 import { RotateCcw, RotateCw, MousePointer2 } from "lucide-react";
 import { keyIcons } from "../utils/keyIcons";
 
@@ -23,6 +24,8 @@ function SensorDropZone({ id, sensorId, direction, code, label }: DropZoneProps)
     },
   });
 
+  const { active } = useDndContext();
+  const plugin = useKeyboardStore((s) => s.plugin);
   const project = useKeyboardStore((s) => s.project);
   const selectedAction = useKeyboardStore((s) => s.selectedAction);
   const updateSensorCode = useKeyboardStore((s) => s.updateSensorCode);
@@ -30,15 +33,16 @@ function SensorDropZone({ id, sensorId, direction, code, label }: DropZoneProps)
   const custom =
     project?.layout.macros.find((m) => m.id === reference) ||
     project?.layout.behaviors.find((b) => b.id === reference);
-  const visuals = custom
-    ? { main: custom.name }
-    : code
-      ? formatKeyVisuals(displayCode(code, project))
-      : null;
+  const visuals = presentKey(code, project).visuals;
   const DirectionIcon =
     direction === "cw" ? RotateCw : direction === "ccw" ? RotateCcw : MousePointer2;
   const IconComponent = visuals?.icon ? keyIcons[visuals.icon] : null;
 
+  const candidate = active?.data.current?.code ?? selectedAction?.code;
+  const error = project
+    ? validateBinding(code, project, plugin) ||
+      (isOver && candidate ? validateBinding(candidate, project, plugin) : "")
+    : "";
   return (
     <button
       type="button"
@@ -47,13 +51,14 @@ function SensorDropZone({ id, sensorId, direction, code, label }: DropZoneProps)
       onClick={() => {
         if (selectedAction) updateSensorCode(sensorId, direction, selectedAction.code);
       }}
-      className={`encoder-zone ${isOver ? "is-over" : ""}`}
-      title={`${label} — ${custom?.name || displayCode(code, project)}`}
+      aria-invalid={!!error}
+      className={`encoder-zone ${error ? "invalid-action" : ""} ${isOver ? "is-over" : ""}`}
+      title={error || `${label} — ${custom?.name || displayCode(code, project)}`}
     >
       <DirectionIcon size={14} className="encoder-direction" aria-hidden="true" />
       <span className="encoder-binding">
         {IconComponent && <IconComponent size={13} aria-hidden="true" />}
-        {visuals?.main && <span>{visuals.main}</span>}
+        {visuals?.main && <span>{visualSummary(visuals)}</span>}
       </span>
     </button>
   );

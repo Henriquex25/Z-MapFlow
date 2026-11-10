@@ -131,7 +131,7 @@ describe("stable references", () => {
         name: "Macro",
         tapMs: 0,
         waitMs: 0,
-        steps: [],
+        steps: [{ kind: "tap", binding: "&kp A", durationMs: 0 }],
       });
     });
     state().updateKeyCode(0, "&zm_macro");
@@ -153,4 +153,110 @@ describe("stable references", () => {
     const p = state().project!;
     expect(content({ ...p, revision: "new", savedAt: "now" })).toBe(content(p));
   });
+});
+
+it("migrates legacy projects without conflating their historical settings with new defaults", () => {
+  const session = fixture();
+  session.project.schemaVersion = 1;
+  delete session.project.options.modTap;
+  delete session.project.options.layerTap;
+  session.project.options.flavor = "balanced";
+  session.project.options.tappingTermMs = 310;
+  state().initialize(session);
+  expect(state().project!.schemaVersion).toBe(2);
+  expect(state().project!.options.modTap).toEqual({
+    tappingTermMs: 310,
+    quickTapMs: 0,
+    flavor: "balanced",
+  });
+  expect(state().project!.options.layerTap).toEqual(state().project!.options.modTap);
+  expect(session.project.schemaVersion).toBe(1);
+});
+
+it("normalizes numeric layer arguments routed through macros and blocks deletion of used layers", () => {
+  state().edit((p) => {
+    p.layout.layers.push({ ...structuredClone(p.layout.layers[0]), id: "nav", name: "Nav" });
+    p.layout.macros.push({
+      id: "zm_param_layer",
+      name: "Layer",
+      parameterCount: 1,
+      tapMs: 0,
+      waitMs: 0,
+      steps: [
+        { kind: "control", binding: "&macro_param_1to1", durationMs: 0 },
+        { kind: "press", binding: "&mo MACRO_PLACEHOLDER", durationMs: 0 },
+      ],
+    });
+  });
+  state().updateKeyCode(0, "&zm_param_layer 1");
+  expect(state().project!.layout.layers[0].keys[0].code).toBe("&zm_param_layer @{nav}");
+  state().reorderLayers(1, 0);
+  expect(displayCode(state().project!.layout.layers[1].keys[0].code, state().project)).toBe(
+    "&zm_param_layer 0",
+  );
+  state().removeLayer(0);
+  expect(state().error).toContain("é usada");
+  expect(state().project!.layout.layers).toHaveLength(2);
+});
+
+it("assigning an encoder rotation replaces its inherited binding", () => {
+  const session = fixture();
+  session.project.layout.layers[0].sensors = [
+    {
+      id: "encoder",
+      label: "Encoder",
+      codeCW: "&trans",
+      codeCCW: "&trans",
+      codeClick: "&kp A",
+      clickKeymapIndex: 0,
+      inherited: true,
+    },
+  ];
+  useKeyboardStore.getState().initialize(session);
+  useKeyboardStore.getState().updateSensorCode("encoder", "cw", "&kp C_VOL_UP");
+  const sensor = useKeyboardStore.getState().project!.layout.layers[0].sensors[0];
+  expect(sensor.inherited).toBe(false);
+  expect(sensor.codeCW).toBe("&kp C_VOL_UP");
+  expect(useKeyboardStore.getState().initialProject!.layout.layers[0].sensors[0].inherited).toBe(
+    true,
+  );
+});
+
+it("does not mark saved firmware settings dirty when Go omits empty values", () => {
+  const current = fixture().project;
+  current.extraConfig = "";
+  current.headers = {};
+  current.buildTargets = [{ targetId: "left", snippets: [], cmakeArgs: [] }];
+  current.options.softOff = false;
+  current.layout.layers[0].sensors = [
+    {
+      id: "encoder",
+      label: "Encoder",
+      codeCW: "&kp A",
+      codeCCW: "&kp B",
+      codeClick: "&kp A",
+      clickKeymapIndex: 0,
+      inherited: false,
+    },
+  ];
+  const saved = structuredClone(current);
+  delete saved.extraConfig;
+  delete saved.headers;
+  delete saved.options.softOff;
+  delete saved.buildTargets![0].snippets;
+  delete saved.buildTargets![0].cmakeArgs;
+  delete saved.layout.layers[0].sensors[0].inherited;
+  expect(isDirty(current, saved)).toBe(false);
+  current.buildTargets[0].snippets = ["studio-rpc-usb-uart"];
+  expect(isDirty(current, saved)).toBe(true);
+});
+
+it("rejects invalid assignment before touching the current or saved layout", () => {
+  const before = structuredClone(state().project);
+  state().updateKeyCode(0, "fdsfsd");
+  expect(state().project).toEqual(before);
+  expect(state().error).toContain("ação ZMK");
+  state().updateKeyCode(0, "&kp UNKNOWN_KEY");
+  expect(state().project).toEqual(before);
+  expect(state().error).toContain("Código não reconhecido");
 });

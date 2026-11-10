@@ -7,30 +7,41 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"z-mapflow/internal/devices"
 	"z-mapflow/internal/devices/soflev2"
 	"z-mapflow/internal/firmware"
 	"z-mapflow/internal/flash"
+	"z-mapflow/internal/keymap"
 	"z-mapflow/internal/models"
 	"z-mapflow/internal/project"
 	"z-mapflow/internal/storage"
+	"z-mapflow/internal/updates"
+	"z-mapflow/internal/version"
 )
 
 type App struct {
-	ctx       context.Context
-	projects  *project.Service
-	builds    *firmware.Manager
-	registry  *devices.Registry
-	initErr   error
-	mu        sync.Mutex
-	operation sync.Mutex
+	ctx          context.Context
+	projects     *project.Service
+	builds       *firmware.Manager
+	registry     *devices.Registry
+	initErr      error
+	mu           sync.Mutex
+	operation    sync.Mutex
+	updater      *updates.Manager
+	updating     atomic.Bool
+	restartReady atomic.Bool
 }
 
 func NewApp() *App { return &App{} }
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.updater = updates.New(version.Version)
 	root, err := storage.DataDir()
 	if err != nil {
 		a.initErr = err
@@ -53,6 +64,9 @@ func (a *App) shutdown(context.Context) {
 	}
 }
 func (a *App) ready() error {
+	if a.updating.Load() {
+		return fmt.Errorf("aguarde a conclusão da atualização")
+	}
 	if a.initErr != nil {
 		return a.initErr
 	}
@@ -141,11 +155,11 @@ func (a *App) PreviewSources(p models.Project) ([]firmware.SourceFile, error) {
 	}
 	return firmware.Generate(p, a.registry)
 }
-func (a *App) ImportProject() (models.Session, error) {
+func (a *App) ImportProject(pluginID, variantID string) (models.Session, error) {
 	if err := a.ready(); err != nil {
 		return models.Session{}, err
 	}
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Importar projeto", Filters: []runtime.FileFilter{{DisplayName: "Projeto Z-MapFlow", Pattern: "*.json"}}})
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Importar projeto ou keymap", Filters: []runtime.FileFilter{{DisplayName: "Projetos e keymaps", Pattern: "*.json;*.keymap"}, {DisplayName: "Projeto Z-MapFlow", Pattern: "*.json"}, {DisplayName: "Keymap ZMK", Pattern: "*.keymap"}}})
 	if err != nil || path == "" {
 		return models.Session{}, err
 	}
@@ -154,14 +168,39 @@ func (a *App) ImportProject() (models.Session, error) {
 		return models.Session{}, err
 	}
 	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, 4*1024*1024))
+	data, err := io.ReadAll(io.LimitReader(f, 4*1024*1024+1))
 	if err != nil {
 		return models.Session{}, err
 	}
-	var p models.Project
-	if err = json.Unmarshal(data, &p); err != nil {
-		return models.Session{}, fmt.Errorf("arquivo de projeto inválido: %w", err)
+	if len(data) > 4*1024*1024 {
+		return models.Session{}, fmt.Errorf("o arquivo excede o limite de 4 MB")
 	}
+	var p models.Project
+	if strings.EqualFold(filepath.Ext(path), ".keymap") {
+		if pluginID == "" {
+			plugins := a.registry.List()
+			if len(plugins) != 1 {
+				return models.Session{}, fmt.Errorf("selecione um teclado antes de importar o .keymap")
+			}
+			pluginID = plugins[0].ID
+		}
+		p, err = a.projects.New(pluginID)
+		if err != nil {
+			return models.Session{}, err
+		}
+		if variantID != "" {
+			p.VariantID = variantID
+		}
+		p, err = keymap.ImportFile(path, p, a.registry)
+		if err != nil {
+			return models.Session{}, err
+		}
+	} else {
+		if err = json.Unmarshal(data, &p); err != nil {
+			return models.Session{}, fmt.Errorf("arquivo de projeto inválido: %w", err)
+		}
+	}
+	p = project.Migrate(p)
 	if err = project.Validate(p, a.registry); err != nil {
 		return models.Session{}, err
 	}
@@ -182,6 +221,38 @@ func (a *App) ExportProject(p models.Project) (string, error) {
 		return "", err
 	}
 	return path, storage.AtomicJSON(path, p)
+}
+
+func (a *App) ExportKeymap(p models.Project) (string, error) {
+	if err := a.ready(); err != nil {
+		return "", err
+	}
+	files, err := firmware.Generate(p, a.registry)
+	if err != nil {
+		return "", err
+	}
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Exportar keymap ZMK", DefaultFilename: files[0].Name, Filters: []runtime.FileFilter{{DisplayName: "Keymap ZMK", Pattern: "*.keymap"}}})
+	if err != nil || path == "" {
+		return "", err
+	}
+	if !strings.EqualFold(filepath.Ext(path), ".keymap") {
+		path += ".keymap"
+	}
+	bundle := firmware.KeymapBundle(path, files)
+	conflicts, err := firmware.BundleConflicts(path, bundle)
+	if err != nil {
+		return "", err
+	}
+	if len(conflicts) > 0 {
+		answer, e := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{Type: runtime.QuestionDialog, Title: "Substituir arquivos da exportação?", Message: "O keymap inclui .conf, build.yaml e headers necessários. Estes arquivos já existem com conteúdo diferente:\n" + strings.Join(conflicts, "\n"), Buttons: []string{"Substituir arquivos", "Cancelar"}, DefaultButton: "Cancelar", CancelButton: "Cancelar"})
+		if e != nil {
+			return "", e
+		}
+		if answer != "Substituir arquivos" {
+			return "", nil
+		}
+	}
+	return path, firmware.WriteKeymapBundle(path, bundle, true)
 }
 func (a *App) ExportFirmware(buildID string) (string, error) {
 	if err := a.ready(); err != nil {
@@ -294,3 +365,62 @@ func (a *App) GetBuild(id string) (*firmware.Build, error) {
 	}
 	return a.builds.Result(id)
 }
+
+// ImportHeaders bundles a language header and its local dependencies.
+func (a *App) ImportHeaders() (models.HeaderBundle, error) {
+	if err := a.ready(); err != nil {
+		return models.HeaderBundle{}, err
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Adicionar header de idioma", Filters: []runtime.FileFilter{{DisplayName: "Headers ZMK", Pattern: "*.h"}}})
+	if err != nil || path == "" {
+		return models.HeaderBundle{}, err
+	}
+	files, err := keymap.LoadHeaders(filepath.Dir(path), "#include "+fmt.Sprintf("%q", filepath.Base(path)))
+	return models.HeaderBundle{Name: filepath.Base(path), Files: files}, err
+}
+
+// CheckForUpdates always uses the fixed official public repository.
+func (a *App) CheckForUpdates() (updates.Info, error) {
+	if a.updater == nil {
+		return updates.Info{}, fmt.Errorf("o aplicativo ainda não iniciou")
+	}
+	return a.updater.Check(a.ctx)
+}
+func (a *App) GetUpdateProgress() updates.Progress {
+	if a.updater == nil {
+		return updates.Progress{}
+	}
+	return a.updater.Status()
+}
+func (a *App) InstallUpdate(expectedVersion string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := a.ready(); err != nil {
+		return err
+	}
+	if !a.operation.TryLock() {
+		return fmt.Errorf("aguarde o envio do firmware antes de atualizar")
+	}
+	defer a.operation.Unlock()
+	if b := a.builds.Current(); b != nil && b.Status == "running" {
+		return fmt.Errorf("aguarde ou cancele a compilação antes de atualizar")
+	}
+	a.updating.Store(true)
+	err := a.updater.Install(a.ctx, expectedVersion, func(exe string) error {
+		cmd := exec.Command(exe, "--wait-for-parent", strconv.Itoa(os.Getpid()))
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		go cmd.Wait()
+		return nil
+	})
+	if err != nil {
+		a.updating.Store(false)
+		return err
+	}
+	a.restartReady.Store(true)
+	runtime.Quit(a.ctx)
+	return nil
+}
+
+func (a *App) beforeClose(context.Context) bool { return a.updating.Load() && !a.restartReady.Load() }

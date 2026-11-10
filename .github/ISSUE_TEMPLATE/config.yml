@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentação e dúvidas frequentes
+    url: https://henriquex25.github.io/Z-MapFlow/
+    about: Consulte o guia de uso, instalação e solução de problemas.
+  - name: Relatar vulnerabilidade em privado
+    url: https://github.com/Henriquex25/Z-MapFlow/security/advisories/new
+    about: Siga SECURITY.md; não publique detalhes exploráveis em issues abertas.

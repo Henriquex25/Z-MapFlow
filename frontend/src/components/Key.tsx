@@ -1,6 +1,7 @@
 import { IKeyAction } from "../types/keyboard";
-import { displayCode, useKeyboardStore } from "../store/useKeyboardStore";
-import { formatKeyVisuals, type KeyVisuals } from "../utils/keyFormatter";
+import { useKeyboardStore } from "../store/useKeyboardStore";
+import { type KeyVisuals } from "../utils/keyFormatter";
+import { presentKey, readableName } from "../utils/keyPresentation";
 import { keyIcons } from "../utils/keyIcons";
 
 interface KeyProps {
@@ -11,36 +12,32 @@ interface KeyProps {
 
 export function Key({ action, className = "", compact = false }: KeyProps) {
   const project = useKeyboardStore((s) => s.project);
-  const reference = action.code.split(" ")[0]?.slice(1);
-  const custom =
-    project?.layout.macros.find((m) => m.id === reference) ||
-    project?.layout.behaviors.find((b) => b.id === reference);
-  const visuals: KeyVisuals | null = custom
-    ? { main: custom.name }
-    : action.code
-      ? formatKeyVisuals(displayCode(action.code, project))
-      : null;
+  const presentation = presentKey(action.code, project);
+  const custom = presentation.name;
+  const visuals: KeyVisuals | null =
+    !compact && custom
+      ? { main: readableName(action.label || custom), description: custom }
+      : presentation.visuals;
+  const alternatives = compact ? presentation.alternatives : undefined;
   const widthClass = className.includes("w-") ? "" : "w-14";
   const heightClass = className.includes("h-") ? "" : "h-14";
 
   const IconComponent = visuals?.icon ? keyIcons[visuals.icon] : null;
   const description =
-    custom?.name ||
-    visuals?.description ||
-    [visuals?.modifier, visuals?.main].filter(Boolean).join(" ");
+    visuals?.description || custom || [visuals?.modifier, visuals?.main].filter(Boolean).join(" ");
   const tooltip =
     description && description !== action.code ? `${description}\n${action.code}` : action.code;
 
   const iconOnly =
     compact && !!visuals?.icon && ["SHIFT", "ENTER", "BKSP", "TAB"].includes(visuals.main);
-  const behavior = compact ? action.code.trim().match(/^&\S+/)?.[0] : undefined;
+  const behavior = compact ? presentation.badge : undefined;
   return (
     <div
       title={tooltip}
-      className={`keycap ${widthClass} ${heightClass} ${behavior ? "keycap-with-behavior" : ""} ${behavior && (visuals?.modifier || visuals?.shift) ? "keycap-with-secondary" : ""} ${custom ? "keycap-custom" : ""} ${className}`}
+      className={`keycap ${compact ? "keycap-layout" : ""} ${widthClass} ${heightClass} ${behavior ? "keycap-with-behavior" : ""} ${behavior && (visuals?.modifier || visuals?.shift) ? "keycap-with-secondary" : ""} ${custom ? "keycap-custom" : ""} ${className}`}
     >
       {behavior && (
-        <span className="keycap-behavior" title={behavior}>
+        <span className="keycap-behavior" title={action.code.split(/\s+/)[0]}>
           {behavior}
         </span>
       )}
@@ -51,18 +48,30 @@ export function Key({ action, className = "", compact = false }: KeyProps) {
               {visuals.modifier || visuals.shift}
             </span>
           )}
-          <div
-            className={`keycap-content ${behavior || visuals.modifier || visuals.shift ? "has-secondary" : ""}`}
-          >
-            {IconComponent && (
-              <IconComponent size={compact && iconOnly ? 18 : 14} aria-hidden="true" />
-            )}
-            {visuals.main && !iconOnly && (
-              <span className={`keycap-label ${visuals.main.length > 7 ? "is-long" : ""}`}>
-                {visuals.main}
-              </span>
-            )}
-          </div>
+          {alternatives ? (
+            <div className="keycap-alternatives">
+              {alternatives.map((text, i) => (
+                <span className={text.length > 9 ? "is-dense" : ""} key={i}>
+                  {text}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={`keycap-content ${behavior || visuals.modifier || visuals.shift ? "has-secondary" : ""}`}
+            >
+              {IconComponent && (
+                <IconComponent size={compact && iconOnly ? 18 : 14} aria-hidden="true" />
+              )}
+              {visuals.main && !iconOnly && (
+                <span
+                  className={`keycap-label ${visuals.main.length > 14 ? "is-long" : ""} ${visuals.main.length <= 2 ? "is-short" : ""}`}
+                >
+                  {visuals.main}
+                </span>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

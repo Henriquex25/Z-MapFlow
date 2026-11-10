@@ -1,26 +1,107 @@
 import { create } from "zustand";
 import type { Project, Plugin, Session, ILayer, IKeyAction } from "../types/keyboard";
 import { uid } from "../types/keyboard";
+import { validateBinding } from "../utils/bindingValidation";
+import { normalizeBinding } from "../utils/bindingParameters";
 
 const clone = <T>(v: T): T => structuredClone(v);
 const canonical = (source: Project): Project => {
   const p = clone(source);
+  if (!p.layout || !Array.isArray(p.layout.layers) || p.layout.layers.length === 0) {
+    throw new Error("O projeto importado não contém camadas válidas.");
+  }
+  if (p.schemaVersion === 1) {
+    p.schemaVersion = 2;
+    const legacy = {
+      tappingTermMs: p.options.tappingTermMs,
+      quickTapMs: p.options.quickTapMs,
+      flavor: p.options.flavor,
+    };
+    p.options.modTap = { ...legacy };
+    p.options.layerTap = { ...legacy };
+  }
+  p.options.modTap ??= { tappingTermMs: 200, quickTapMs: -1, flavor: "hold-preferred" };
+  p.options.layerTap ??= { tappingTermMs: 200, quickTapMs: -1, flavor: "tap-preferred" };
   p.layout.macros ??= [];
   p.layout.combos ??= [];
   p.layout.behaviors ??= [];
+  p.layout.conditionalLayers ??= [];
+  p.layout.inputProcessors ??= [];
   p.layout.layers.forEach((l) => {
     l.sensors ??= [];
   });
   p.layout.behaviors.forEach((b) => {
+    b.bindings ??= [];
     b.holdTriggerPositions ??= [];
   });
+  p.layout.macros.forEach((m) => {
+    m.steps ??= [];
+  });
+  p.layout.conditionalLayers.forEach((c) => {
+    c.ifLayerIds ??= [];
+  });
+  p.layout.inputProcessors.forEach((c) => {
+    c.layerIds ??= [];
+    c.bindings ??= [];
+  });
   p.layout.combos.forEach((c) => {
+    c.positions ??= [];
     c.layerIds ??= [];
   });
   return p;
 };
 export const layerReference = (id: string) => `@{${id}}`;
-export const content = (p: Project) => JSON.stringify({ ...p, revision: "", savedAt: "" });
+// Match Go's optional defaults when comparing snapshots. Wails may omit zero
+// values in a save response; that must not leave a saved project marked dirty.
+export const content = (source: Project) => {
+  const p = canonical(source);
+  p.revision = "";
+  p.savedAt = "";
+  p.preamble ??= "";
+  p.extraDts ??= "";
+  p.extraConfig ??= "";
+  p.headers ??= {};
+  p.buildTargets ??= [];
+  p.buildTargets.forEach((t) => {
+    t.snippets ??= [];
+    t.cmakeArgs ??= [];
+  });
+  p.options.rgbUnderglow ??= false;
+  p.options.backlight ??= false;
+  p.options.softOff ??= false;
+  p.layout.layers.forEach((l) =>
+    l.sensors.forEach((s) => {
+      s.inherited ??= false;
+      s.triggersPerRotation ??= 0;
+    }),
+  );
+  p.layout.macros.forEach((m) => {
+    m.parameterCount ??= 0;
+    m.parameters ??= [];
+  });
+  p.layout.behaviors.forEach((b) => {
+    b.retroTap ??= false;
+    b.holdWhileUndecided ??= false;
+    b.holdWhileUndecidedLinger ??= false;
+    b.children ??= "";
+    b.compatible ??= "";
+    b.target ??= "";
+    b.parameterCount ??= 0;
+    b.parameters ??= [];
+    b.properties ??= {};
+  });
+  return JSON.stringify(p, (_, value: unknown) => {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const object = value as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.keys(object)
+          .sort()
+          .map((key) => [key, object[key]]),
+      );
+    }
+    return value;
+  });
+};
 export const isDirty = (p: Project | null, saved: Project | null) =>
   !!p && (!saved || content(p) !== content(saved));
 export function displayCode(code: string, p: Project | null) {
@@ -37,6 +118,8 @@ interface State {
   plugin: Plugin | null;
   activeLayerId: string;
   error: string;
+  draftErrors: Record<string, string>;
+  setDraftError: (id: string, error: string) => void;
   selectedAction: IKeyAction | null;
   selectAction: (action: IKeyAction | null) => void;
   initialize: (s: Session) => void;
@@ -63,6 +146,10 @@ function codes(p: Project): string[] {
     ...p.layout.macros.flatMap((m) => m.steps.map((s) => s.binding)),
     ...p.layout.combos.map((c) => c.binding),
     ...p.layout.behaviors.flatMap((b) => b.bindings),
+    ...p.layout.behaviors.flatMap((b) => Object.values(b.properties ?? {})),
+    ...p.layout.behaviors.map((b) => b.children ?? ""),
+    ...(p.layout.inputProcessors ?? []).flatMap((c) => c.bindings),
+    p.extraDts ?? "",
   ];
 }
 function syncClick(layer: ILayer, index: number, code: string) {
@@ -79,10 +166,28 @@ export const useKeyboardStore = create<State>((set, get) => ({
   plugin: null,
   activeLayerId: "",
   error: "",
+  draftErrors: {},
+  setDraftError: (id, error) =>
+    set((s) => {
+      if ((s.draftErrors[id] ?? "") === error) return s;
+      const errors = { ...s.draftErrors };
+      if (error) errors[id] = error;
+      else delete errors[id];
+      return { draftErrors: errors };
+    }),
   selectedAction: null,
-  selectAction: (action) => set({ selectedAction: action ? clone(action) : null }),
+  selectAction: (action) => {
+    const s = get();
+    const error = action && s.project ? validateBinding(action.code, s.project, s.plugin) : "";
+    if (error) {
+      set({ error });
+      return;
+    }
+    set({ selectedAction: action ? clone(action) : null });
+  },
   initialize: (s) =>
     set({
+      draftErrors: {},
       project: canonical(s.project),
       savedProject: s.hasSaved ? canonical(s.project) : null,
       initialProject: canonical(s.project),
@@ -105,20 +210,40 @@ export const useKeyboardStore = create<State>((set, get) => ({
     fn(draft);
     set({ project: draft, error: "" });
   },
-  updateKeyCode: (index, code) =>
+  updateKeyCode: (index, code) => {
+    const state = get();
+    if (!state.project) return;
+    const error = validateBinding(code, state.project, state.plugin);
+    if (error) {
+      set({ error });
+      return;
+    }
     get().edit((p) => {
       const l = p.layout.layers.find((l) => l.id === get().activeLayerId);
-      if (l) syncClick(l, index, code);
-    }),
-  updateSensorCode: (id, direction, code) =>
+      if (l) syncClick(l, index, normalizeBinding(code, p));
+    });
+  },
+  updateSensorCode: (id, direction, code) => {
+    const state = get();
+    if (!state.project) return;
+    const error = validateBinding(code, state.project, state.plugin);
+    if (error) {
+      set({ error });
+      return;
+    }
     get().edit((p) => {
-      const l = p.layout.layers.find((l) => l.id === get().activeLayerId);
-      const s = l?.sensors.find((s) => s.id === id);
+      const l = p.layout.layers.find((l) => l.id === get().activeLayerId),
+        s = l?.sensors.find((s) => s.id === id);
       if (!l || !s) return;
+      code = normalizeBinding(code, p);
       if (direction === "click") syncClick(l, s.clickKeymapIndex, code);
-      else if (direction === "cw") s.codeCW = code;
-      else s.codeCCW = code;
-    }),
+      else {
+        s.inherited = false;
+        if (direction === "cw") s.codeCW = code;
+        else s.codeCCW = code;
+      }
+    });
+  },
   setActiveLayer: (id) => {
     if (get().project?.layout.layers.some((l) => l.id === id)) set({ activeLayerId: id });
   },
@@ -148,6 +273,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
       l.sensors.forEach((s) => {
         s.codeCW = "&trans";
         s.codeCCW = "&trans";
+        s.inherited = true;
         s.codeClick = "&trans";
       });
       p.layout.layers.push(l);
@@ -163,7 +289,11 @@ export const useKeyboardStore = create<State>((set, get) => ({
     other.layout.layers.splice(index, 1);
     if (
       codes(other).some((c) => c.includes(layerReference(layer.id))) ||
-      other.layout.combos.some((c) => c.layerIds.includes(layer.id))
+      other.layout.combos.some((c) => c.layerIds.includes(layer.id)) ||
+      other.layout.conditionalLayers?.some(
+        (c) => c.ifLayerIds.includes(layer.id) || c.thenLayerId === layer.id,
+      ) ||
+      other.layout.inputProcessors?.some((c) => c.layerIds.includes(layer.id))
     ) {
       set({
         error: `A camada “${layer.name}” é usada por outras ações ou combos. Remova essas referências antes de excluí-la.`,
@@ -200,6 +330,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
       l.sensors.forEach((s) => {
         s.codeCW = "&trans";
         s.codeCCW = "&trans";
+        s.inherited = true;
         s.codeClick = "&trans";
       });
     }),
@@ -217,7 +348,10 @@ export const useKeyboardStore = create<State>((set, get) => ({
     if (kind === "macros") p.layout.macros = p.layout.macros.filter((v) => v.id !== id);
     else if (kind === "combos") p.layout.combos = p.layout.combos.filter((v) => v.id !== id);
     else p.layout.behaviors = p.layout.behaviors.filter((v) => v.id !== id);
-    if (kind !== "combos" && codes(p).some((c) => c.split(/\s+/)[0] === `&${id}`)) {
+    if (
+      kind !== "combos" &&
+      codes(p).some((c) => new RegExp(`&${id}(?=$|[^a-zA-Z0-9_])`).test(c))
+    ) {
       set({
         error: "Este recurso está em uso. Remova as ações que o referenciam antes de excluí-lo.",
       });

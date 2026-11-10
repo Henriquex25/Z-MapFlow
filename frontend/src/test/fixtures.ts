@@ -63,7 +63,7 @@ export function fixture(): Session {
     capabilities: [],
   };
   const project: Project = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     pluginId: "test",
     pluginVersion: "1",
     variantId: "test",
@@ -85,8 +85,12 @@ export function fixture(): Session {
       macros: [],
       combos: [],
       behaviors: [],
+      conditionalLayers: [],
+      inputProcessors: [],
     },
     options: {
+      modTap: { tappingTermMs: 200, quickTapMs: -1, flavor: "hold-preferred" },
+      layerTap: { tappingTermMs: 200, quickTapMs: -1, flavor: "tap-preferred" },
       locale: "us",
       display: false,
       pointing: true,

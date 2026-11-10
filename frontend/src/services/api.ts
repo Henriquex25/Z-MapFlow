@@ -3,6 +3,9 @@ import { models } from "../../wailsjs/go/models";
 import type { Project, Build, Session, Plugin } from "../types/keyboard";
 const model = (p: Project) => models.Project.createFrom(p);
 export const api = {
+  checkUpdates: go.CheckForUpdates,
+  updateProgress: go.GetUpdateProgress,
+  installUpdate: go.InstallUpdate,
   load: (): Promise<Session> => go.LoadProject(),
   newProject: (id: string): Promise<Session> => go.NewProject(id),
   plugins: (): Promise<Plugin[]> => go.ListPlugins(),
@@ -14,8 +17,11 @@ export const api = {
   listBuilds: go.ListBuilds,
   getBuild: (id: string): Promise<Build> => go.GetBuild(id),
   preview: (p: Project) => go.PreviewSources(model(p)),
-  importProject: (): Promise<Session> => go.ImportProject(),
+  importProject: (pluginId = "", variantId = ""): Promise<Session> =>
+    go.ImportProject(pluginId, variantId),
+  importHeaders: go.ImportHeaders,
   exportProject: (p: Project) => go.ExportProject(model(p)),
+  exportKeymap: (p: Project) => go.ExportKeymap(model(p)),
   exportFirmware: go.ExportFirmware,
   volumes: go.FindBootloaders,
   selectVolume: go.SelectBootloader,

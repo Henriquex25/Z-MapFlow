@@ -7,10 +7,10 @@ import (
 	"strings"
 	"z-mapflow/internal/devices"
 	"z-mapflow/internal/models"
+	"z-mapflow/internal/zmkdata"
 )
 
 var IDPattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
-var tokenPattern = regexp.MustCompile(`^(?:[A-Za-z0-9_()+]+|@\{[a-z][a-z0-9_]*\})$`)
 var layerPattern = regexp.MustCompile(`@\{([a-z][a-z0-9_]*)\}`)
 
 func Resolve(code string, layers []models.LayerData) (string, error) {
@@ -28,15 +28,18 @@ func Resolve(code string, layers []models.LayerData) (string, error) {
 	return result, resolveErr
 }
 func EachBinding(p models.Project, visit func(string) error) error {
+	return EachBindingContext(p, func(code string, _ bool) error { return visit(code) })
+}
+func EachBindingContext(p models.Project, visit func(string, bool) error) error {
 	for _, l := range p.Layout.Layers {
 		for _, k := range l.Keys {
-			if err := visit(k.Code); err != nil {
+			if err := visit(k.Code, false); err != nil {
 				return fmt.Errorf("%s, tecla %d: %w", l.Name, k.KeymapIndex, err)
 			}
 		}
 		for _, s := range l.Sensors {
 			for _, c := range []string{s.CodeCW, s.CodeCCW, s.CodeClick} {
-				if err := visit(c); err != nil {
+				if err := visit(c, false); err != nil {
 					return fmt.Errorf("%s, %s: %w", l.Name, s.Label, err)
 				}
 			}
@@ -44,21 +47,26 @@ func EachBinding(p models.Project, visit func(string) error) error {
 	}
 	for _, m := range p.Layout.Macros {
 		for _, step := range m.Steps {
-			if step.Kind != "wait" {
-				if err := visit(step.Binding); err != nil {
+			if step.Kind != "wait" && step.Kind != "control" {
+				if err := visit(step.Binding, true); err != nil {
 					return fmt.Errorf("macro %s: %w", m.Name, err)
 				}
 			}
 		}
 	}
 	for _, c := range p.Layout.Combos {
-		if err := visit(c.Binding); err != nil {
+		if err := visit(c.Binding, false); err != nil {
 			return fmt.Errorf("combo %s: %w", c.Name, err)
 		}
 	}
 	for _, b := range p.Layout.Behaviors {
 		for _, c := range b.Bindings {
-			if err := visit(c); err != nil {
+			// Hold-tap definitions name child behaviors; their parameters are supplied
+			// by each use. Optional template parameters are only assignment defaults.
+			if b.Kind == "hold-tap" || b.Kind == "sticky-key" {
+				continue
+			}
+			if err := visit(c, false); err != nil {
 				return fmt.Errorf("behavior %s: %w", b.Name, err)
 			}
 		}
@@ -74,7 +82,8 @@ func Variant(p models.Project, plugin models.Plugin) (models.Variant, error) {
 	return models.Variant{}, fmt.Errorf("variante de hardware não encontrada")
 }
 func Validate(p models.Project, r *devices.Registry) error {
-	if p.SchemaVersion != 1 {
+	p = Migrate(p)
+	if p.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("versão de projeto não suportada: %d", p.SchemaVersion)
 	}
 	d, err := r.Get(p.PluginID)
@@ -86,6 +95,9 @@ func Validate(p models.Project, r *devices.Registry) error {
 		return fmt.Errorf("versão do plugin incompatível: %s", p.PluginVersion)
 	}
 	if _, err = Variant(p, plugin); err != nil {
+		return err
+	}
+	if err = ValidateBuild(p, plugin); err != nil {
 		return err
 	}
 	if len(p.Layout.Layers) == 0 || len(p.Layout.Layers) > 32 {
@@ -115,6 +127,16 @@ func Validate(p models.Project, r *devices.Registry) error {
 		}
 		seenSensors := map[string]bool{}
 		for _, sensor := range l.Sensors {
+			if sensor.TapMs != nil && (*sensor.TapMs < 0 || *sensor.TapMs > 60000) || sensor.TriggersPerRotation < 0 || sensor.TriggersPerRotation > 10000 {
+				return fmt.Errorf("parâmetros do encoder inválidos")
+			}
+			if len(p.Layout.Layers) > 0 {
+				for _, first := range p.Layout.Layers[0].Sensors {
+					if first.ID == sensor.ID && first.TriggersPerRotation != sensor.TriggersPerRotation {
+						return fmt.Errorf("resolução do encoder deve ser a mesma em todas as camadas")
+					}
+				}
+			}
 			found := false
 			for _, expected := range plugin.Sensors {
 				if sensor.ID == expected.ID && sensor.ClickKeymapIndex == expected.ClickKeymapIndex {
@@ -136,17 +158,23 @@ func Validate(p models.Project, r *devices.Registry) error {
 	if !hasCapability(plugin, "display") && p.Options.Display {
 		return fmt.Errorf("o plugin não oferece display")
 	}
-	if p.Options.Locale != "us" && p.Options.Locale != "pt-br" {
+	_, customLocale := p.Headers[strings.TrimPrefix(p.Options.Locale, "header:")]
+	customLocale = customLocale && strings.HasPrefix(p.Options.Locale, "header:")
+	if p.Options.Locale != "us" && p.Options.Locale != "pt-br" && !customLocale {
 		return fmt.Errorf("layout do sistema não suportado")
 	}
-	if p.Options.TappingTermMs < 1 || p.Options.TappingTermMs > 5000 || p.Options.QuickTapMs < 0 || p.Options.QuickTapMs > 5000 || !validFlavor(p.Options.Flavor) {
-		return fmt.Errorf("parâmetros de tap/hold inválidos")
+	for _, name := range []string{"mt", "lt"} {
+		v := HoldTapOptions(p, name)
+		if v.TappingTermMs < 1 || v.TappingTermMs > 5000 || v.QuickTapMs < -1 || v.QuickTapMs > 5000 || !validFlavor(v.Flavor) {
+			return fmt.Errorf("parâmetros de %s inválidos", name)
+		}
 	}
 	if p.Options.BluetoothProfiles < 1 || p.Options.BluetoothProfiles > 5 || p.Options.SleepTimeoutMs < 1000 || p.Options.SleepTimeoutMs > 86400000 {
 		return fmt.Errorf("configuração de Bluetooth/repouso inválida")
 	}
 	ids := map[string]bool{}
-	arity := map[string]int{"kp": 1, "none": 0, "trans": 0, "mt": 2, "lt": 2, "mo": 1, "to": 1, "tog": 1, "sl": 1, "sk": 1, "bt": -1, "out": 1, "bootloader": 0, "caps_word": 0, "key_repeat": 0, "sys_reset": 0, "studio_unlock": 0, "kt": 1, "mkp": 1, "mmv": 1, "msc": 1, "rgb_ug": 1, "ext_power": 1}
+	targets := map[string]bool{}
+	arity := BuiltinArities()
 	for name, n := range plugin.BindingArities {
 		if _, exists := arity[name]; exists {
 			return fmt.Errorf("plugin redefine behavior padrão: %s", name)
@@ -164,31 +192,56 @@ func Validate(p models.Project, r *devices.Registry) error {
 		if err = reserve(m.ID); err != nil {
 			return err
 		}
-		arity[m.ID] = 0
-		if len(m.Steps) == 0 || len(m.Steps) > 512 || m.TapMs < 0 || m.TapMs > 5000 || m.WaitMs < 0 || m.WaitMs > 5000 {
+		arity[m.ID] = m.ParameterCount
+		if m.ParameterCount < 0 || m.ParameterCount > 2 || len(m.Steps) == 0 || m.TapMs < 0 || m.TapMs > 60000 || m.WaitMs < 0 || m.WaitMs > 60000 {
 			return fmt.Errorf("macro %s: duração ou quantidade de passos inválida", m.Name)
 		}
-		for _, s := range m.Steps {
-			switch s.Kind {
-			case "tap", "press", "release":
-			case "wait":
-				if s.DurationMs < 0 || s.DurationMs > 60000 {
-					return fmt.Errorf("espera inválida na macro %s", m.Name)
-				}
-			default:
-				return fmt.Errorf("passo de macro inválido")
-			}
+		if _, e := MacroBindings(m); e != nil {
+			return e
 		}
 	}
 	for _, b := range p.Layout.Behaviors {
 		if err = reserve(b.ID); err != nil {
 			return err
 		}
-		arity[b.ID] = 0
-		if b.TappingTermMs < 1 || b.TappingTermMs > 5000 {
+		if b.Target != "" {
+			if !referencePattern.MatchString("&"+b.Target) || targets[b.Target] {
+				return fmt.Errorf("personalização de behavior inválida ou duplicada: %s", b.Target)
+			}
+			targets[b.Target] = true
+		}
+		if value, ok := b.Properties["locking"]; ok && value != "/delete-property/" {
+			v, _ := Variant(p, plugin)
+			supported := false
+			for _, f := range v.Features {
+				supported = supported || f == "layer-locking"
+			}
+			if !supported {
+				return fmt.Errorf("o perfil selecionado não oferece layer locking; selecione um perfil compatível")
+			}
+		}
+		arity[BehaviorReference(b)] = BehaviorArity(b)
+		if b.ParameterCount < 0 || b.ParameterCount > 2 {
+			return fmt.Errorf("behavior aceita de 0 a 2 parâmetros")
+		}
+		if err := ValidateBehaviorValues(b, p); err != nil {
+			return fmt.Errorf("%s: %w", b.Name, err)
+		}
+		if err := ValidateProperties(b.Properties); err != nil {
+			return err
+		}
+		for _, value := range b.Properties {
+			if _, err := Resolve(value, p.Layout.Layers); err != nil {
+				return err
+			}
+		}
+		if _, err := Resolve(b.Children, p.Layout.Layers); err != nil {
+			return err
+		}
+		if (b.Kind == "hold-tap" || b.Kind == "tap-dance") && (b.TappingTermMs < 1 || b.TappingTermMs > 5000) {
 			return fmt.Errorf("tempo inválido em %s", b.Name)
 		}
-		if b.RequirePriorIdleMs < 0 || b.RequirePriorIdleMs > 5000 {
+		if b.RequirePriorIdleMs < -1 || b.RequirePriorIdleMs > 5000 {
 			return fmt.Errorf("tempo de inatividade inválido")
 		}
 		seenPositions := map[int]bool{}
@@ -200,21 +253,49 @@ func Validate(p models.Project, r *devices.Registry) error {
 		}
 		switch b.Kind {
 		case "hold-tap":
-			arity[b.ID] = 2
-			if len(b.Bindings) != 2 || !validFlavor(b.Flavor) || b.QuickTapMs < 0 || b.QuickTapMs > 5000 {
+			if len(b.Bindings) != 2 || !validFlavor(b.Flavor) || b.QuickTapMs < -1 || b.QuickTapMs > 5000 {
 				return fmt.Errorf("hold-tap inválido")
 			}
-			hold := strings.Fields(b.Bindings[0])
-			tap := strings.Fields(b.Bindings[1])
-			if len(hold) != 2 || len(tap) != 2 || (hold[0] != "&kp" && hold[0] != "&mo") || tap[0] != "&kp" {
-				return fmt.Errorf("hold deve ser uma tecla/modificador ou camada; tap deve ser uma tecla")
-			}
 		case "tap-dance":
-			if len(b.Bindings) < 1 || len(b.Bindings) > 16 {
-				return fmt.Errorf("tap-dance precisa de 1 a 16 ações")
+			if len(b.Bindings) < 1 || len(b.Bindings) > 256 {
+				return fmt.Errorf("tap-dance precisa de 1 a 256 ações")
+			}
+		case "mod-morph":
+			if len(b.Bindings) != 2 || b.Properties["mods"] == "" {
+				return fmt.Errorf("mod-morph requer duas ações e modificadores")
+			}
+		case "sticky-key":
+			if b.Target == "" && b.Properties["release-after-ms"] == "" {
+				return fmt.Errorf("sticky key requer release-after-ms")
+			}
+			if b.Target == "" && len(b.Bindings) != 1 {
+				return fmt.Errorf("sticky key requer uma ação base")
+			}
+		case "caps-word", "key-repeat", "key-toggle", "toggle-layer", "momentary-layer", "to-layer", "mouse-move", "mouse-scroll":
+		case "native":
+			if n, known := zmkdata.Catalog.NativeArities[b.Compatible]; known && n != b.ParameterCount {
+				return fmt.Errorf("%s exige %d parâmetros", b.Compatible, n)
+			}
+			if !compatiblePattern.MatchString(b.Compatible) {
+				return fmt.Errorf("compatible inválido")
 			}
 		default:
 			return fmt.Errorf("tipo de behavior não suportado")
+		}
+	}
+	// Validate composition after all arities are registered, allowing forward refs.
+	for _, b := range p.Layout.Behaviors {
+		if b.Kind == "hold-tap" {
+			for _, code := range b.Bindings {
+				f, e := BindingParts(code)
+				if e != nil {
+					return e
+				}
+				n, ok := arity[strings.TrimPrefix(f[0], "&")]
+				if !ok || n < 0 || n > 1 {
+					return fmt.Errorf("hold-tap %s requer children de zero ou um parâmetro; use uma macro para comandos", b.Name)
+				}
+			}
 		}
 	}
 	for _, c := range p.Layout.Combos {
@@ -223,6 +304,9 @@ func Validate(p models.Project, r *devices.Registry) error {
 		}
 		if len(c.Positions) < 2 || c.TimeoutMs < 1 || c.TimeoutMs > 5000 {
 			return fmt.Errorf("combo %s: selecione ao menos duas teclas e um timeout válido", c.Name)
+		}
+		if c.RequirePriorIdleMs != nil && (*c.RequirePriorIdleMs < -1 || *c.RequirePriorIdleMs > 60000) {
+			return fmt.Errorf("inatividade de combo inválida")
 		}
 		seen := map[int]bool{}
 		for _, pos := range c.Positions {
@@ -237,17 +321,36 @@ func Validate(p models.Project, r *devices.Registry) error {
 			}
 		}
 	}
-	check := func(code string) error {
-		parts := strings.Fields(code)
-		if len(parts) == 0 || !strings.HasPrefix(parts[0], "&") {
-			return fmt.Errorf("binding inválido: %q", code)
+	if err := validateConditionalLayers(p); err != nil {
+		return err
+	}
+	for _, chain := range p.Layout.InputProcessors {
+		if !IDPattern.MatchString(chain.ID) || !referencePattern.MatchString("&"+chain.Listener) || len(chain.Bindings) == 0 {
+			return fmt.Errorf("cadeia de input processors inválida")
+		}
+		for _, code := range chain.Bindings {
+			if _, err := BindingParts(code); err != nil {
+				return err
+			}
+			if _, err := Resolve(code, p.Layout.Layers); err != nil {
+				return err
+			}
+		}
+		for _, id := range chain.LayerIDs {
+			if !layers[id] {
+				return fmt.Errorf("camada de input processor não existe")
+			}
+		}
+	}
+	validateInvocation := NewBindingValidator(p, plugin)
+	check := func(code string, macro bool) error {
+		parts, e := BindingParts(code)
+		if e != nil {
+			return e
 		}
 		name := strings.TrimPrefix(parts[0], "&")
 		if (name == "mkp" || name == "mmv" || name == "msc") && !p.Options.Pointing {
 			return fmt.Errorf("ative ações de mouse nas configurações")
-		}
-		if strings.Contains(code, "PT_") && p.Options.Locale != "pt-br" {
-			return fmt.Errorf("selecione o layout ABNT2 para usar códigos PT_")
 		}
 
 		expected, ok := arity[name]
@@ -257,90 +360,59 @@ func Validate(p models.Project, r *devices.Registry) error {
 		if expected >= 0 && len(parts) != expected+1 {
 			return fmt.Errorf("%s espera %d parâmetros", parts[0], expected)
 		}
-		if name == "bt" {
-			if len(parts) < 2 {
-				return fmt.Errorf("ação Bluetooth incompleta")
-			}
-			switch parts[1] {
-			case "BT_CLR", "BT_NXT", "BT_PRV", "BT_CLR_ALL":
-				if len(parts) != 2 {
-					return fmt.Errorf("ação Bluetooth inválida")
-				}
-			case "BT_SEL":
-				if len(parts) != 3 {
-					return fmt.Errorf("perfil Bluetooth ausente")
-				}
-				n, e := strconv.Atoi(parts[2])
-				if e != nil || n < 0 || n >= p.Options.BluetoothProfiles {
-					return fmt.Errorf("perfil Bluetooth inexistente")
-				}
-			default:
-				return fmt.Errorf("ação Bluetooth desconhecida")
-			}
-		}
-		for _, t := range parts[1:] {
-			if !tokenPattern.MatchString(t) {
-				return fmt.Errorf("parâmetro inválido: %s", t)
-			}
-			depth := 0
-			for _, ch := range t {
-				if ch == '(' {
-					depth++
-				}
-				if ch == ')' {
-					depth--
-				}
-				if depth < 0 {
-					return fmt.Errorf("parênteses inválidos")
-				}
-			}
-			if depth != 0 {
-				return fmt.Errorf("parênteses inválidos")
-			}
-		}
 		resolved, e := Resolve(code, p.Layout.Layers)
 		if e != nil {
 			return e
 		}
-		resolvedParts := strings.Fields(resolved)
-		layerArg := name == "mo" || name == "to" || name == "tog" || name == "sl" || name == "lt"
-		for _, b := range p.Layout.Behaviors {
-			if b.ID == name && b.Kind == "hold-tap" && strings.HasPrefix(b.Bindings[0], "&mo ") {
-				layerArg = true
+		resolvedParts, _ := BindingParts(resolved)
+		for _, index := range LayerArgumentIndices(name, p) {
+			if index >= len(parts) {
+				return fmt.Errorf("parâmetro de camada ausente")
 			}
-		}
-		if layerArg {
-			n, e := strconv.Atoi(resolvedParts[1])
+			if parts[index] == "MACRO_PLACEHOLDER" {
+				continue
+			}
+			n, e := strconv.Atoi(resolvedParts[index])
 			if e != nil || n < 0 || n >= len(p.Layout.Layers) {
-				return fmt.Errorf("camada de destino inexistente: %s", parts[1])
+				return fmt.Errorf("camada de destino inexistente: %s", parts[index])
 			}
 		}
-		return nil
+		return validateInvocation(code, macro)
 	}
-	if err = EachBinding(p, check); err != nil {
+	if err = EachBindingContext(p, check); err != nil {
+		return err
+	}
+	if _, err := Resolve(p.ExtraDTS, p.Layout.Layers); err != nil {
 		return err
 	}
 	// Recursive macro/tap-dance graphs cannot be executed safely by firmware.
 	graph := map[string][]string{}
+	refs := map[string]bool{}
+	for _, m := range p.Layout.Macros {
+		refs[m.ID] = true
+	}
+	for _, b := range p.Layout.Behaviors {
+		refs[BehaviorReference(b)] = true
+	}
 	addEdge := func(id, code string) {
 		f := strings.Fields(code)
 		if len(f) > 0 {
 			ref := strings.TrimPrefix(f[0], "&")
-			if ids[ref] {
+			if refs[ref] {
 				graph[id] = append(graph[id], ref)
 			}
 		}
 	}
 	for _, m := range p.Layout.Macros {
 		for _, s := range m.Steps {
-			if s.Kind != "wait" {
+			if s.Kind != "wait" && s.Kind != "control" {
 				addEdge(m.ID, s.Binding)
 			}
 		}
 	}
 	for _, b := range p.Layout.Behaviors {
 		for _, c := range b.Bindings {
-			addEdge(b.ID, c)
+			addEdge(BehaviorReference(b), c)
 		}
 	}
 	visiting := map[string]bool{}
@@ -363,9 +435,22 @@ func Validate(p models.Project, r *devices.Registry) error {
 		done[id] = true
 		return nil
 	}
-	for id := range graph {
+	for id := range refs {
 		if err = visit(id); err != nil {
 			return err
+		}
+	}
+	required := MacroQueueSize(p)
+	if required > 32768 {
+		return fmt.Errorf("a expansão da macro exige uma fila muito grande; divida a sequência")
+	}
+	for _, line := range strings.Split(p.ExtraConfig, "\n") {
+		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if ok && key == "CONFIG_ZMK_BEHAVIORS_QUEUE_SIZE" {
+			n, e := strconv.Atoi(strings.TrimSpace(value))
+			if e != nil || n < required {
+				return fmt.Errorf("a fila de behaviors deve ter ao menos %d eventos para estas macros", required)
+			}
 		}
 	}
 	return nil

@@ -1,0 +1,34 @@
+name: Relatar um problema
+description: Erro no aplicativo, importação ou compilação.
+title: "[Bug]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema e o resultado esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      placeholder: "1. Abra..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Z-MapFlow e sistema operacional
+      placeholder: "v0.1.0; Ubuntu 24.04 x86_64"
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Teclado, controladora e variante
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs e imagens
+      description: Remova tokens e dados pessoais antes de anexar arquivos. Informe a revisão ZMK em problemas de firmware.

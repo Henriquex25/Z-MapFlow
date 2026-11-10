@@ -109,6 +109,15 @@ export namespace flash {
 export namespace models {
 	
 	export class Behavior {
+	    children?: string;
+	    retroTap?: boolean;
+	    holdWhileUndecided?: boolean;
+	    holdWhileUndecidedLinger?: boolean;
+	    parameterCount?: number;
+	    parameters?: string[];
+	    compatible?: string;
+	    target?: string;
+	    properties?: Record<string, string>;
 	    requirePriorIdleMs: number;
 	    holdTriggerPositions: number[];
 	    holdTriggerOnRelease: boolean;
@@ -126,6 +135,15 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.children = source["children"];
+	        this.retroTap = source["retroTap"];
+	        this.holdWhileUndecided = source["holdWhileUndecided"];
+	        this.holdWhileUndecidedLinger = source["holdWhileUndecidedLinger"];
+	        this.parameterCount = source["parameterCount"];
+	        this.parameters = source["parameters"];
+	        this.compatible = source["compatible"];
+	        this.target = source["target"];
+	        this.properties = source["properties"];
 	        this.requirePriorIdleMs = source["requirePriorIdleMs"];
 	        this.holdTriggerPositions = source["holdTriggerPositions"];
 	        this.holdTriggerOnRelease = source["holdTriggerOnRelease"];
@@ -138,7 +156,24 @@ export namespace models {
 	        this.flavor = source["flavor"];
 	    }
 	}
+	export class BuildTarget {
+	    targetId: string;
+	    snippets?: string[];
+	    cmakeArgs?: string[];
+
+	    static createFrom(source: any = {}) {
+	        return new BuildTarget(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.targetId = source["targetId"];
+	        this.snippets = source["snippets"];
+	        this.cmakeArgs = source["cmakeArgs"];
+	    }
+	}
 	export class Combo {
+	    requirePriorIdleMs?: number;
 	    id: string;
 	    name: string;
 	    positions: number[];
@@ -153,6 +188,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.requirePriorIdleMs = source["requirePriorIdleMs"];
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.positions = source["positions"];
@@ -160,6 +196,74 @@ export namespace models {
 	        this.layerIds = source["layerIds"];
 	        this.timeoutMs = source["timeoutMs"];
 	        this.slowRelease = source["slowRelease"];
+	    }
+	}
+	export class ConditionalLayer {
+	    id: string;
+	    name: string;
+	    ifLayerIds: string[];
+	    thenLayerId: string;
+
+	    static createFrom(source: any = {}) {
+	        return new ConditionalLayer(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.ifLayerIds = source["ifLayerIds"];
+	        this.thenLayerId = source["thenLayerId"];
+	    }
+	}
+	export class HeaderBundle {
+	    name: string;
+	    files: Record<string, string>;
+
+	    static createFrom(source: any = {}) {
+	        return new HeaderBundle(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.files = source["files"];
+	    }
+	}
+	export class HoldTapSettings {
+	    tappingTermMs: number;
+	    quickTapMs: number;
+	    flavor: string;
+
+	    static createFrom(source: any = {}) {
+	        return new HoldTapSettings(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tappingTermMs = source["tappingTermMs"];
+	        this.quickTapMs = source["quickTapMs"];
+	        this.flavor = source["flavor"];
+	    }
+	}
+	export class InputProcessorChain {
+	    id: string;
+	    listener: string;
+	    layerIds: string[];
+	    bindings: string[];
+	    processNext: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new InputProcessorChain(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.listener = source["listener"];
+	        this.layerIds = source["layerIds"];
+	        this.bindings = source["bindings"];
+	        this.processNext = source["processNext"];
 	    }
 	}
 	export class KeyAction {
@@ -199,6 +303,8 @@ export namespace models {
 	    }
 	}
 	export class Macro {
+	    parameterCount?: number;
+	    parameters?: string[];
 	    id: string;
 	    name: string;
 	    tapMs: number;
@@ -211,6 +317,8 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.parameterCount = source["parameterCount"];
+	        this.parameters = source["parameters"];
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.tapMs = source["tapMs"];
@@ -237,6 +345,9 @@ export namespace models {
 		}
 	}
 	export class SensorAction {
+	    inherited?: boolean;
+	    tapMs?: number;
+	    triggersPerRotation?: number;
 	    id: string;
 	    label: string;
 	    codeCW: string;
@@ -250,6 +361,9 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.inherited = source["inherited"];
+	        this.tapMs = source["tapMs"];
+	        this.triggersPerRotation = source["triggersPerRotation"];
 	        this.id = source["id"];
 	        this.label = source["label"];
 	        this.codeCW = source["codeCW"];
@@ -295,6 +409,8 @@ export namespace models {
 		}
 	}
 	export class KeyboardLayout {
+	    inputProcessors?: InputProcessorChain[];
+	    conditionalLayers?: ConditionalLayer[];
 	    name: string;
 	    layers: LayerData[];
 	    macros: Macro[];
@@ -307,6 +423,8 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.inputProcessors = this.convertValues(source["inputProcessors"], InputProcessorChain);
+	        this.conditionalLayers = this.convertValues(source["conditionalLayers"], ConditionalLayer);
 	        this.name = source["name"];
 	        this.layers = this.convertValues(source["layers"], LayerData);
 	        this.macros = this.convertValues(source["macros"], Macro);
@@ -354,6 +472,11 @@ export namespace models {
 	    }
 	}
 	export class Options {
+	    rgbUnderglow?: boolean;
+	    backlight?: boolean;
+	    softOff?: boolean;
+	    modTap?: HoldTapSettings;
+	    layerTap?: HoldTapSettings;
 	    locale: string;
 	    display: boolean;
 	    pointing: boolean;
@@ -370,6 +493,11 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.rgbUnderglow = source["rgbUnderglow"];
+	        this.backlight = source["backlight"];
+	        this.softOff = source["softOff"];
+	        this.modTap = this.convertValues(source["modTap"], HoldTapSettings);
+	        this.layerTap = this.convertValues(source["layerTap"], HoldTapSettings);
 	        this.locale = source["locale"];
 	        this.display = source["display"];
 	        this.pointing = source["pointing"];
@@ -380,8 +508,27 @@ export namespace models {
 	        this.sleep = source["sleep"];
 	        this.sleepTimeoutMs = source["sleepTimeoutMs"];
 	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class Target {
+	    role?: string;
 	    id: string;
 	    name: string;
 	    board: string;
@@ -394,6 +541,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.role = source["role"];
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.board = source["board"];
@@ -402,6 +550,7 @@ export namespace models {
 	    }
 	}
 	export class Variant {
+	    features?: string[];
 	    zmkRevision: string;
 	    buildImage: string;
 	    id: string;
@@ -417,6 +566,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.features = source["features"];
 	        this.zmkRevision = source["zmkRevision"];
 	        this.buildImage = source["buildImage"];
 	        this.id = source["id"];
@@ -564,6 +714,11 @@ export namespace models {
 	    savedAt: string;
 	    layout: KeyboardLayout;
 	    options: Options;
+	    preamble?: string;
+	    extraDts?: string;
+	    extraConfig?: string;
+	    headers?: Record<string, string>;
+	    buildTargets?: BuildTarget[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Project(source);
@@ -579,6 +734,11 @@ export namespace models {
 	        this.savedAt = source["savedAt"];
 	        this.layout = this.convertValues(source["layout"], KeyboardLayout);
 	        this.options = this.convertValues(source["options"], Options);
+	        this.preamble = source["preamble"];
+	        this.extraDts = source["extraDts"];
+	        this.extraConfig = source["extraConfig"];
+	        this.headers = source["headers"];
+	        this.buildTargets = this.convertValues(source["buildTargets"], BuildTarget);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -635,6 +795,51 @@ export namespace models {
 		}
 	}
 	
+
+}
+
+export namespace updates {
+
+	export class Info {
+	    currentVersion: string;
+	    latestVersion: string;
+	    available: boolean;
+	    supported: boolean;
+	    releaseUrl: string;
+	    notes: string;
+	    message: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Info(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.available = source["available"];
+	        this.supported = source["supported"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.notes = source["notes"];
+	        this.message = source["message"];
+	    }
+	}
+	export class Progress {
+	    stage: string;
+	    downloaded: number;
+	    total: number;
+
+	    static createFrom(source: any = {}) {
+	        return new Progress(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stage = source["stage"];
+	        this.downloaded = source["downloaded"];
+	        this.total = source["total"];
+	    }
+	}
 
 }
 

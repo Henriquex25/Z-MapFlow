@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { fixture } from "./test/fixtures";
 import { api } from "./services/api";
@@ -14,6 +14,9 @@ vi.mock("./services/api", () => ({
     save: vi.fn(),
     saveAndBuild: vi.fn(),
     build: vi.fn(),
+    importProject: vi.fn(),
+    exportProject: vi.fn(),
+    exportKeymap: vi.fn(),
   },
 }));
 beforeEach(() => {
@@ -42,6 +45,69 @@ beforeEach(() => {
     ...p,
     revision: "saved2",
   }));
+});
+
+it("imports into the selected hardware and replaces all editable resources", async () => {
+  const imported = fixture();
+  imported.hasSaved = false;
+  imported.project.layout.layers[0].name = "Importado";
+  imported.project.layout.layers[0].keys[0].code = "&kp Z";
+  imported.project.layout.macros = [
+    {
+      id: "zm_imported",
+      name: "Importada",
+      tapMs: 10,
+      waitMs: 10,
+      steps: [{ kind: "tap", binding: "&kp A", durationMs: 0 }],
+    },
+  ];
+  vi.mocked(api.importProject).mockResolvedValue(imported);
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Importar projeto" }));
+  await waitFor(() =>
+    expect(screen.getByRole("textbox", { name: "Nome da camada" })).toHaveValue("Importado"),
+  );
+  expect(api.importProject).toHaveBeenCalledWith(
+    imported.project.pluginId,
+    imported.project.variantId,
+  );
+  expect(useKeyboardStore.getState().project!.layout.macros).toHaveLength(1);
+  expect(useKeyboardStore.getState().savedProject).toBeNull();
+  expect(screen.getByRole("button", { name: /^Posição 0:/ })).toHaveAccessibleName(
+    "Posição 0: &kp Z",
+  );
+});
+
+it("exports the current unsaved layout as keymap and keeps JSON export available", async () => {
+  vi.mocked(api.exportKeymap).mockResolvedValue("/tmp/sofle.keymap");
+  vi.mocked(api.exportProject).mockResolvedValue("/tmp/project.json");
+  render(<App />);
+  const name = await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.change(name, { target: { value: "Edição atual" } });
+  fireEvent.click(screen.getByRole("button", { name: "Exportar keymap" }));
+  await waitFor(() => expect(api.exportKeymap).toHaveBeenCalledTimes(1));
+  expect(vi.mocked(api.exportKeymap).mock.calls[0][0].layout.layers[0].name).toBe("Edição atual");
+  expect(api.save).not.toHaveBeenCalled();
+  expect(await screen.findByText("Keymap exportado para /tmp/sofle.keymap")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Exportar projeto" }));
+  await waitFor(() => expect(api.exportProject).toHaveBeenCalledTimes(1));
+});
+
+it("keeps the current layout when import fails or the file dialog is cancelled", async () => {
+  vi.mocked(api.importProject).mockRejectedValueOnce(new Error("Keymap incompatível"));
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Importar projeto" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Keymap incompatível");
+  expect(screen.getByRole("textbox", { name: "Nome da camada" })).toHaveValue("Base");
+  vi.mocked(api.importProject).mockResolvedValueOnce(
+    {} as Awaited<ReturnType<typeof api.importProject>>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Importar projeto" }));
+  await waitFor(() => expect(api.importProject).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "Nome da camada" })).toHaveValue("Base");
 });
 it("distinguishes save, build saved, and save-and-build", async () => {
   render(<App />);
@@ -132,9 +198,7 @@ it("enables discard before the first save and restores the latest saved revision
     "aria-label",
     "Posição 0: &kp A",
   );
-  expect(
-    within(screen.getByRole("button", { name: /^Posição 0:/ })).getByText("&kp"),
-  ).toBeVisible();
+  expect(within(screen.getByRole("button", { name: /^Posição 0:/ })).getByText("KP")).toBeVisible();
   expect(screen.getByText("Ainda não salvo")).toBeVisible();
   expect(screen.getByRole("button", { name: "Descartar" })).toBeDisabled();
   expect(api.save).not.toHaveBeenCalled();
@@ -197,27 +261,33 @@ it("creates a macro, fills its steps, assigns it to keys on different layers, an
 it("creates and assigns hold-tap and tap-dance behaviors with the configured actions", async () => {
   render(<App />);
   await screen.findByRole("textbox", { name: "Nome da camada" });
-  fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
-  fireEvent.click(screen.getByRole("button", { name: "+ Hold-tap" }));
+  fireEvent.click(screen.getByRole("button", { name: "Comportamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Toque / segurar" }));
   fireEvent.click(palette().getByRole("button", { name: "Modificadores" }));
   selectKey("&kp LSHFT");
   fireEvent.click(
-    screen.getByRole("button", { name: "Atribuir ação a Segurar: tecla/modificador ou MO" }),
+    screen.getByRole("button", {
+      name: "Atribuir ação a Ação ao segurar (padrão para atribuição)",
+    }),
   );
   fireEvent.click(palette().getByRole("button", { name: "Teclas" }));
   selectKey("&kp B");
-  fireEvent.click(screen.getByRole("button", { name: "Atribuir ação a Tocar: tecla" }));
-  fireEvent.click(screen.getByRole("button", { name: "Atribuir Novo hold-tap ao teclado" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Atribuir ação a Ação ao tocar (padrão para atribuição)" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Atribuir Novo toque/segurar ao teclado" }));
   fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
   const holdTap = getProject().layout.behaviors[0];
   expect(holdTap.bindings).toEqual(["&kp LSHFT", "&kp B"]);
   expect(getProject().layout.layers[0].keys[0].code).toBe(`&${holdTap.id} LSHFT B`);
 
-  fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
-  fireEvent.click(screen.getByRole("button", { name: "+ Tap-dance" }));
+  fireEvent.click(screen.getByRole("button", { name: "Comportamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Sequência de toques" }));
   selectKey("&kp F1");
   fireEvent.click(screen.getByRole("button", { name: "Atribuir ação a Adicionar toque" }));
-  fireEvent.click(screen.getByRole("button", { name: "Atribuir Novo tap-dance ao teclado" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Atribuir Nova sequência de toques ao teclado" }),
+  );
   fireEvent.click(screen.getByRole("button", { name: /^Posição 1:/ }));
   const dance = getProject().layout.behaviors[1];
   expect(dance.bindings).toEqual(["&kp A", "&kp B", "&kp F1"]);
@@ -308,16 +378,321 @@ it("assigns a macro to encoder rotation and click while keeping its physical bin
   expect(useKeyboardStore.getState().savedProject!.layout.layers[0].keys[2].code).toBe("&kp E");
 });
 
-it("rejects an incompatible hold action immediately and preserves the existing configuration", async () => {
+it("accepts zero-parameter behavior composition for hold actions", async () => {
   render(<App />);
   await screen.findByRole("textbox", { name: "Nome da camada" });
-  fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
-  fireEvent.click(screen.getByRole("button", { name: "+ Hold-tap" }));
+  fireEvent.click(screen.getByRole("button", { name: "Comportamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Toque / segurar" }));
   fireEvent.click(palette().getByRole("button", { name: "Recursos" }));
   selectKey("&trans");
   fireEvent.click(
-    screen.getByRole("button", { name: "Atribuir ação a Segurar: tecla/modificador ou MO" }),
+    screen.getByRole("button", {
+      name: "Atribuir ação a Ação ao segurar (padrão para atribuição)",
+    }),
   );
-  expect(screen.getByRole("alert")).toHaveTextContent("Para segurar, selecione uma tecla");
-  expect(getProject().layout.behaviors[0].bindings[0]).toBe("&kp LCTRL");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(getProject().layout.behaviors[0].bindings[0]).toBe("&trans");
+});
+
+it("edits native mod-tap and layer-tap settings independently", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Resolução — Mod-tap (&mt)" }), {
+    target: { value: "balanced" },
+  });
+  expect(getProject().options.modTap!.flavor).toBe("balanced");
+  expect(getProject().options.layerTap!.flavor).toBe("tap-preferred");
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Tempo de toque — Layer-tap (&lt)" }), {
+    target: { value: "310" },
+  });
+  expect(getProject().options.layerTap!.tappingTermMs).toBe(310);
+  expect(getProject().options.modTap!.tappingTermMs).toBe(200);
+});
+
+it("creates mod-morphs and edits a key binding without replacing its reusable definition", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Comportamentos" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Adicionar tipo de comportamento" }), {
+    target: { value: "mod-morph" },
+  });
+  const morph = getProject().layout.behaviors[0];
+  expect(morph.properties!.mods).toContain("MOD_LSFT");
+  fireEvent.click(screen.getByRole("button", { name: `Atribuir ${morph.name} ao teclado` }));
+  fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
+  expect(getProject().layout.layers[0].keys[0].code).toBe(`&${morph.id}`);
+  fireEvent.keyDown(window, { key: "Escape" });
+  fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
+  const dialog = within(screen.getByRole("dialog", { name: "Editar binding da tecla" }));
+  fireEvent.click(dialog.getByText("Código ZMK avançado"));
+  fireEvent.change(dialog.getByRole("textbox", { name: "Binding ZMK: Ação da tecla" }), {
+    target: { value: "&kp LC(A)" },
+  });
+  fireEvent.keyDown(dialog.getByRole("textbox", { name: "Binding ZMK: Ação da tecla" }), {
+    key: "Enter",
+  });
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp LC(A)");
+  expect(getProject().layout.behaviors[0].id).toBe(morph.id);
+  fireEvent.click(dialog.getByRole("button", { name: "Concluir" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+it("creates parameter routing and release continuation controls and assigns macro arguments", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Macros" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Nova macro" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Tipo do passo 1" }), {
+    target: { value: "control" },
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Controle da macro" }), {
+    target: { value: "&macro_param_1to1" },
+  });
+  expect(getProject().layout.macros[0].parameterCount).toBe(1);
+  const add = within(screen.getByRole("group", { name: "Adicionar passo" }));
+  fireEvent.click(add.getByText("Código ZMK avançado"));
+  fireEvent.change(add.getByRole("textbox", { name: "Binding ZMK: Adicionar passo" }), {
+    target: { value: "&kp MACRO_PLACEHOLDER" },
+  });
+  fireEvent.keyDown(add.getByRole("textbox", { name: "Binding ZMK: Adicionar passo" }), {
+    key: "Enter",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "+ Espera" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Tipo do passo 3" }), {
+    target: { value: "control" },
+  });
+  fireEvent.click(screen.getByText("Parâmetros para novas atribuições"));
+  fireEvent.change(
+    screen.getByRole("combobox", { name: "Parâmetros para novas atribuições — argumento 1" }),
+    {
+      target: { value: "ESC" },
+    },
+  );
+  const macro = getProject().layout.macros[0];
+  expect(macro.steps[2].binding).toBe("&macro_pause_for_release");
+  fireEvent.click(screen.getByRole("button", { name: "Atribuir Nova macro ao teclado" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
+  expect(getProject().layout.layers[0].keys[0].code).toBe(`&${macro.id} ESC`);
+});
+
+it("creates conditional layers with references to the actual project layers", async () => {
+  const session = fixture();
+  const base = session.project.layout.layers[0];
+  for (const id of ["lower", "raise", "adjust"])
+    session.project.layout.layers.push({ ...structuredClone(base), id, name: id });
+  vi.mocked(api.load).mockResolvedValue(session);
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Camadas condicionais" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Nova regra" }));
+  const rule = getProject().layout.conditionalLayers![0];
+  expect(rule.ifLayerIds).toEqual(["lower", "raise"]);
+  expect(rule.thenLayerId).toBe("adjust");
+});
+
+it("configures encoder timings, hardware resolution and native pointing chains", async () => {
+  const session = fixture();
+  const sensor = {
+    id: "encoder",
+    label: "Encoder",
+    codeCW: "&kp A",
+    codeCCW: "&kp B",
+    codeClick: "&kp A",
+    clickKeymapIndex: 0,
+  };
+  session.project.layout.layers[0].sensors = [sensor];
+  session.project.layout.layers.push({
+    ...structuredClone(session.project.layout.layers[0]),
+    id: "nav",
+    name: "Nav",
+  });
+  vi.mocked(api.load).mockResolvedValue(session);
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Tempo do toque (ms)" }), {
+    target: { value: "11" },
+  });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Acionamentos por rotação" }), {
+    target: { value: "18" },
+  });
+  expect(getProject().layout.layers[0].sensors[0].tapMs).toBe(11);
+  expect(getProject().layout.layers.every((l) => l.sensors[0].triggersPerRotation === 18)).toBe(
+    true,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "+ Cadeia de apontamento" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Listener do dispositivo" }), {
+    target: { value: "mmv_input_listener" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "+ Converter em rolagem" }));
+  expect(getProject().layout.inputProcessors![0].bindings).toEqual([
+    "&zip_xy_scaler 3 2",
+    "&zip_xy_to_scroll_mapper",
+  ]);
+  expect(getProject().layout.inputProcessors![0].listener).toBe("mmv_input_listener");
+  fireEvent.click(screen.getByRole("checkbox", { name: "RGB underglow" }));
+  expect(getProject().options.rgbUnderglow).toBe(true);
+});
+
+it("imports native behaviors whose empty Go slices arrive as null without blanking the editor", async () => {
+  const imported = fixture();
+  imported.hasSaved = false;
+  imported.project.layout.layers[0].name = "Importado do ZMK";
+  // This is the JSON shape returned by Wails for a native caps-word override.
+  imported.project.layout.behaviors = JSON.parse(
+    JSON.stringify([
+      {
+        id: "zm_native_caps",
+        name: "Caps Word importado",
+        kind: "caps-word",
+        target: "caps_word",
+        bindings: null,
+        holdTriggerPositions: null,
+        tappingTermMs: 0,
+        quickTapMs: 0,
+        flavor: "",
+        requirePriorIdleMs: 0,
+        holdTriggerOnRelease: false,
+      },
+    ]),
+  );
+  vi.mocked(api.importProject).mockResolvedValue(imported);
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Importar projeto" }));
+  await waitFor(() =>
+    expect(screen.getByRole("textbox", { name: "Nome da camada" })).toHaveValue("Importado do ZMK"),
+  );
+  expect(screen.getByRole("region", { name: "Paleta de ações" })).toBeVisible();
+  expect(getProject().layout.behaviors[0].bindings).toEqual([]);
+  expect(imported.project.layout.behaviors[0].bindings).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Recursos" }));
+  expect(screen.getByRole("button", { name: "Arrastar Caps Word importado" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+  await waitFor(() => expect(api.save).toHaveBeenCalled());
+  expect(vi.mocked(api.save).mock.calls[0][0].layout.behaviors[0].bindings).toEqual([]);
+});
+
+it("keeps project actions in the right sidebar with accessible names and tooltips", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  const actions = within(screen.getByRole("complementary", { name: "Ações do projeto" }));
+  for (const name of [
+    "Importar projeto",
+    "Exportar projeto",
+    "Exportar keymap",
+    "Descartar",
+    "Salvar",
+    "Compilar",
+    "Salvar e compilar",
+  ]) {
+    const button = actions.getByRole("button", { name });
+    expect(button).toHaveAttribute("title");
+    expect(button.textContent).toBe("");
+  }
+  expect(screen.getByRole("complementary", { name: "Camadas do keymap" })).toBeVisible();
+  fireEvent.click(actions.getByRole("button", { name: "Salvar" }));
+  await waitFor(() => expect(api.save).toHaveBeenCalledTimes(1));
+});
+
+it("keeps invalid raw code out of the project and blocks save until corrected", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
+  const dialog = within(screen.getByRole("dialog", { name: "Editar binding da tecla" }));
+  fireEvent.click(dialog.getByText("Código ZMK avançado"));
+  const raw = dialog.getByRole("textbox", { name: "Binding ZMK: Ação da tecla" });
+  fireEvent.change(raw, { target: { value: "fdsfsd" } });
+  fireEvent.blur(raw);
+  expect(raw).toHaveAttribute("aria-invalid", "true");
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp A");
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
+  expect(dialog.getByRole("button", { name: "Concluir" })).toBeDisabled();
+  fireEvent.change(raw, { target: { value: "&kp LC(A)" } });
+  fireEvent.keyDown(raw, { key: "Enter" });
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp LC(A)");
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled();
+  expect(api.save).not.toHaveBeenCalled();
+  fireEvent.change(raw, { target: { value: "&kp INVALID" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Descartar rascunho" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp LC(A)");
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled();
+});
+
+it("validates a single keycode argument before changing the mapping", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: /^Posição 0:/ }));
+  const input = screen.getByRole("combobox", { name: "Ação da tecla — argumento 1" });
+  fireEvent.change(input, { target: { value: "A B" } });
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp A");
+  fireEvent.change(input, { target: { value: "LCTRL" } });
+  expect(input).toHaveAttribute("aria-invalid", "false");
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp LCTRL");
+});
+
+it("expands a collapsed palette when a search is entered", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Recolher paleta" }));
+  expect(screen.getByRole("button", { name: "Expandir paleta" })).toBeVisible();
+  fireEvent.change(screen.getByRole("textbox", { name: "Buscar ações" }), {
+    target: { value: "F1" },
+  });
+  expect(screen.getByRole("button", { name: "Recolher paleta" })).toBeVisible();
+  expect(palette().getByRole("button", { name: "Arrastar &kp F1" })).toBeVisible();
+});
+
+it("refuses an incompatible hold child before assigning it", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Comportamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Toque / segurar" }));
+  fireEvent.click(palette().getByRole("button", { name: "Tap/hold" }));
+  fireEvent.click(palette().getByRole("button", { name: "Arrastar &mt LCTRL TAB" }));
+  const target = screen.getByRole("button", {
+    name: "Atribuir ação a Ação ao segurar (padrão para atribuição)",
+  });
+  expect(target).toBeDisabled();
+  expect(target).toHaveAttribute("title", expect.stringContaining("zero ou um"));
+  expect(getProject().layout.behaviors[0].bindings).toEqual(["&kp LCTRL", "&kp ESC"]);
+});
+
+it("marks an existing invalid mapping red and prevents saving it", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  act(() =>
+    useKeyboardStore.getState().edit((p) => {
+      p.layout.layers[0].keys[0].code = "&kp FDSFSD";
+    }),
+  );
+  expect(screen.getByRole("button", { name: "Posição 0: &kp FDSFSD" })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
+});
+
+it("keeps the last valid macro control duration and prevents saving an invalid draft", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Nome da camada" });
+  fireEvent.click(screen.getByRole("button", { name: "Macros" }));
+  fireEvent.click(screen.getByRole("button", { name: "+ Nova macro" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Tipo do passo 1" }), {
+    target: { value: "control" },
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Controle da macro" }), {
+    target: { value: "&macro_wait_time" },
+  });
+  const duration = screen.getByRole("spinbutton", { name: "Tempo do controle (ms)" });
+  fireEvent.change(duration, { target: { value: "60001" } });
+  expect(duration).toHaveAttribute("aria-invalid", "true");
+  expect(getProject().layout.macros[0].steps[0].binding).toBe("&macro_wait_time 20");
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
+  fireEvent.change(duration, { target: { value: "35" } });
+  expect(getProject().layout.macros[0].steps[0].binding).toBe("&macro_wait_time 35");
+  expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled();
 });
