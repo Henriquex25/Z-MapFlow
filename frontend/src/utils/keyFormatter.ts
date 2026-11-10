@@ -1,3 +1,4 @@
+import { tr } from "../i18n";
 export interface KeyVisuals {
   main: string;
   shift?: string;
@@ -95,39 +96,45 @@ const aliases: Record<string, string> = {
 export function formatKeyVisuals(code: string): KeyVisuals | null {
   if (!code || code === "&blank") return null;
   if (code === "&none")
-    return { main: "Ação", modifier: "Sem", icon: "Ban", description: "Não executar nenhuma ação" };
-  if (code === "&trans") return { main: "Transp.", description: "Usar a ação da camada inferior" };
+    return {
+      main: tr("Action"),
+      modifier: tr("No"),
+      icon: "Ban",
+      description: tr("Do not perform any action"),
+    };
+  if (code === "&trans")
+    return { main: "Transp.", description: tr("Use the action from the lower layer") };
 
   const mouseClick = code.match(/^&mkp (LCLK|RCLK|MCLK)$/);
   if (mouseClick) {
     const clicks: Record<string, [string, string]> = {
-      LCLK: ["Esq.", "esquerdo"],
-      RCLK: ["Dir.", "direito"],
-      MCLK: ["Meio", "central"],
+      LCLK: [tr("Left"), tr("left")],
+      RCLK: [tr("Right"), tr("right")],
+      MCLK: [tr("Middle"), tr("middle")],
     };
     const [main, name] = clicks[mouseClick[1]];
     return {
       main,
       modifier: "Mouse",
       icon: "MousePointer2",
-      description: `Clique do botão ${name} do mouse`,
+      description: tr("Mouse {0} button click", name),
     };
   }
   const mouseDirection = code.match(/^&(mmv|msc) (?:MOVE|SCRL)_(UP|DOWN|LEFT|RIGHT)$/);
   if (mouseDirection) {
     const directions: Record<string, [string, string]> = {
-      UP: ["ArrowUp", "cima"],
-      DOWN: ["ArrowDown", "baixo"],
-      LEFT: ["ArrowLeft", "a esquerda"],
-      RIGHT: ["ArrowRight", "a direita"],
+      UP: ["ArrowUp", tr("up")],
+      DOWN: ["ArrowDown", tr("down")],
+      LEFT: ["ArrowLeft", tr("leftward")],
+      RIGHT: ["ArrowRight", tr("rightward")],
     };
     const [icon, direction] = directions[mouseDirection[2]];
     const scrolling = mouseDirection[1] === "msc";
     return {
       main: "",
-      modifier: scrolling ? "Rolar" : "Mover",
+      modifier: scrolling ? tr("Scroll") : tr("Move"),
       icon,
-      description: `${scrolling ? "Rolar" : "Mover o ponteiro"} para ${direction}`,
+      description: tr("{0} {1}", scrolling ? tr("Scroll") : tr("Move pointer"), direction),
     };
   }
 
@@ -135,31 +142,31 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
     "&caps_word": {
       main: "Word",
       modifier: "Caps",
-      description: "Digitar a próxima palavra em maiúsculas",
+      description: tr("Type the next word in uppercase"),
     },
     "&key_repeat": {
-      main: "Tecla",
-      modifier: "Repetir",
+      main: tr("Key"),
+      modifier: tr("Repeat"),
       icon: "Repeat2",
-      description: "Repetir a última tecla",
+      description: tr("Repeat the last key"),
     },
     "&bootloader": {
       main: "Boot",
       icon: "Download",
-      description: "Reiniciar em modo bootloader para gravar o firmware",
+      description: tr("Restart in bootloader mode to flash firmware"),
     },
-    "&sys_reset": { main: "Reset", icon: "RotateCcw", description: "Reiniciar o teclado" },
+    "&sys_reset": { main: "Reset", icon: "RotateCcw", description: tr("Restart the keyboard") },
     "&out OUT_USB": {
       main: "USB",
-      modifier: "Saída",
+      modifier: tr("Output"),
       icon: "Usb",
-      description: "Enviar digitação pela conexão USB",
+      description: tr("Send typing over USB"),
     },
     "&out OUT_BLE": {
       main: "BT",
-      modifier: "Saída",
+      modifier: tr("Output"),
       icon: "Bluetooth",
-      description: "Enviar digitação pela conexão Bluetooth",
+      description: tr("Send typing over Bluetooth"),
     },
   };
   if (systemActions[code]) return systemActions[code];
@@ -178,7 +185,7 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
         main: tapVisual.main,
         icon: tapVisual.icon,
         shift: tapVisual.shift,
-        description: `Segurar: ${holdPart}; tocar: ${tapVisual.main || tapPart}`,
+        description: tr("Hold: {0}; tap: {1}", holdPart, tapVisual.main || tapPart),
       };
     }
   }
@@ -206,92 +213,95 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
     return {
       main: visual?.main ?? key,
       modifier: "Sticky",
-      description: `Manter ${visual?.main ?? key} até a próxima tecla`,
+      description: tr("Hold {0} until the next key", visual?.main ?? key),
     };
   }
   const lighting = code.match(/^&(rgb_ug|bl|ext_power) (.+)$/);
   if (lighting) {
     const actions: Record<string, string> = {
-      RGB_TOG: "Alternar",
-      RGB_BRI: "Brilho +",
-      RGB_BRD: "Brilho −",
-      BL_TOG: "Alternar",
-      BL_INC: "Brilho +",
-      BL_DEC: "Brilho −",
-      EP_ON: "Ligar",
-      EP_OFF: "Desligar",
-      EP_TOG: "Alternar",
+      RGB_TOG: tr("Toggle"),
+      RGB_BRI: tr("Brightness +"),
+      RGB_BRD: tr("Brightness −"),
+      BL_TOG: tr("Toggle"),
+      BL_INC: tr("Brightness +"),
+      BL_DEC: tr("Brightness −"),
+      EP_ON: tr("On"),
+      EP_OFF: tr("Off"),
+      EP_TOG: tr("Toggle"),
     };
-    const group = lighting[1] === "rgb_ug" ? "RGB" : lighting[1] === "bl" ? "Luz" : "Energia";
+    const group =
+      lighting[1] === "rgb_ug" ? "RGB" : lighting[1] === "bl" ? tr("Light") : tr("Power");
     return {
-      main: lighting[2].startsWith("RGB_COLOR_HSB") ? "Cor" : (actions[lighting[2]] ?? lighting[2]),
+      main: lighting[2].startsWith("RGB_COLOR_HSB")
+        ? tr("Color")
+        : (actions[lighting[2]] ?? lighting[2]),
       modifier: group,
       description: `${group}: ${lighting[2]}`,
     };
   }
   if (code === "&soft_off")
     return {
-      main: "Desligar",
-      modifier: "Teclado",
-      description: "Desligar o teclado (requer suporte do hardware)",
+      main: tr("Off"),
+      modifier: tr("Keyboard"),
+      description: tr("Power off the keyboard (requires hardware support)"),
     };
   if (code === "&gresc")
     return {
       main: "Esc / `",
-      description: "Escape ou grave conforme os modificadores pressionados",
+      description: tr("Escape or grave depending on the pressed modifiers"),
     };
   if (code === "&studio_unlock")
     return {
-      main: "Liberar",
+      main: tr("Unlock"),
       modifier: "Studio",
-      description: "Desbloquear alterações pelo ZMK Studio",
+      description: tr("Unlock changes in ZMK Studio"),
     };
   if (code === "&out OUT_TOG")
     return {
       main: "USB / BT",
-      modifier: "Alternar",
-      description: "Alternar a saída USB / Bluetooth",
+      modifier: tr("Toggle"),
+      description: tr("Toggle USB / Bluetooth output"),
     };
   if (code.startsWith("&bt ")) {
     const btKey = code.replace("&bt ", "");
     if (btKey === "BT_CLR")
       return {
-        main: "Limpar",
+        main: tr("Clear"),
         modifier: "BT",
-        description: "Apagar o pareamento do perfil Bluetooth atual",
+        description: tr("Clear pairing for the current Bluetooth profile"),
       };
     if (btKey === "BT_CLR_ALL")
       return {
-        main: "Limpar",
-        modifier: "Todos BT",
+        main: tr("Clear"),
+        modifier: tr("All BT"),
         icon: "Bluetooth",
-        description: "Apagar os pareamentos de todos os perfis Bluetooth",
+        description: tr("Clear pairings for all Bluetooth profiles"),
       };
     if (btKey.startsWith("BT_DISC "))
       return {
         main: btKey.slice(8),
-        modifier: "Descon.",
+        modifier: tr("Disconnect"),
         icon: "Bluetooth",
-        description: `Desconectar o perfil Bluetooth ${btKey.slice(8)}`,
+        description: tr("Disconnect Bluetooth profile {0}", btKey.slice(8)),
       };
     if (btKey === "BT_NXT")
       return {
-        main: "Próx.",
+        main: tr("Next"),
         modifier: "BT",
-        description: "Selecionar o próximo perfil Bluetooth",
+        description: tr("Select the next Bluetooth profile"),
       };
     if (btKey === "BT_PRV")
       return {
-        main: "Ant.",
+        main: tr("Prev."),
         modifier: "BT",
-        description: "Selecionar o perfil Bluetooth anterior",
+        description: tr("Select the previous Bluetooth profile"),
       };
     if (btKey.startsWith("BT_SEL "))
       return {
         main: btKey.replace("BT_SEL ", ""),
         modifier: "BT",
         icon: "Bluetooth",
-        description: `Selecionar o perfil Bluetooth ${btKey.replace("BT_SEL ", "")}`,
+        description: tr("Select Bluetooth profile {0}", btKey.replace("BT_SEL ", "")),
       };
     return { main: btKey, icon: "Bluetooth" };
   }
@@ -356,19 +366,24 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
       RET: { main: "ENTER", icon: "CornerDownLeft" },
       BSPC: { main: "BKSP", icon: "Delete" },
       SPACE: { main: "SPACE" },
-      LSHFT: { main: "SHIFT", modifier: "L", icon: "ArrowBigUp", description: "Shift esquerdo" },
-      RSHFT: { main: "SHIFT", modifier: "R", icon: "ArrowBigUp", description: "Shift direito" },
-      LCTRL: { main: "CTRL", modifier: "L", description: "Control esquerdo" },
-      RCTRL: { main: "CTRL", modifier: "R", description: "Control direito" },
-      LALT: { main: "ALT", modifier: "L", icon: "Option", description: "Alt esquerdo" },
-      RALT: { main: "ALT", modifier: "R", icon: "Option", description: "Alt direito / AltGr" },
+      LSHFT: { main: "SHIFT", modifier: "L", icon: "ArrowBigUp", description: tr("Left Shift") },
+      RSHFT: { main: "SHIFT", modifier: "R", icon: "ArrowBigUp", description: tr("Right Shift") },
+      LCTRL: { main: "CTRL", modifier: "L", description: tr("Left Control") },
+      RCTRL: { main: "CTRL", modifier: "R", description: tr("Right Control") },
+      LALT: { main: "ALT", modifier: "L", icon: "Option", description: tr("Left Alt") },
+      RALT: { main: "ALT", modifier: "R", icon: "Option", description: tr("Right Alt / AltGr") },
       LGUI: {
         main: "GUI",
         modifier: "L",
         icon: "Command",
-        description: "Super / Command esquerdo",
+        description: tr("Left Super / Command"),
       },
-      RGUI: { main: "GUI", modifier: "R", icon: "Command", description: "Super / Command direito" },
+      RGUI: {
+        main: "GUI",
+        modifier: "R",
+        icon: "Command",
+        description: tr("Right Super / Command"),
+      },
       MINUS: { main: "-", shift: "_" },
       EQUAL: { main: "=", shift: "+" },
       SEMI: { main: ";", shift: ":" },
@@ -422,16 +437,16 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
   const layer = code.match(/^&(mo|sl|tog|to) (.+)$/);
   if (layer) {
     const names: Record<string, string> = {
-      mo: "Ativar enquanto segura",
-      sl: "Ativar para a próxima ação",
-      tog: "Alternar",
-      to: "Mudar para",
+      mo: tr("Activate while held"),
+      sl: tr("Activate for the next action"),
+      tog: tr("Toggle"),
+      to: tr("Switch to"),
     };
     return {
       main: layer[2],
       modifier: layer[1].toUpperCase(),
       icon: "Layers",
-      description: `${names[layer[1]]} a camada ${layer[2]}`,
+      description: tr("{0} layer {1}", names[layer[1]], layer[2]),
     };
   }
   if (code.startsWith("&kt ")) {
@@ -439,8 +454,8 @@ export function formatKeyVisuals(code: string): KeyVisuals | null {
     const visual = formatKeyVisuals(`&kp ${key}`);
     return {
       main: visual?.main || key,
-      modifier: "Alternar",
-      description: `Alternar pressionar e soltar ${visual?.main || key}`,
+      modifier: tr("Toggle"),
+      description: tr("Toggle pressing and releasing {0}", visual?.main || key),
     };
   }
 

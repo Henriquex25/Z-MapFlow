@@ -1,3 +1,4 @@
+import { tr } from "../i18n";
 import catalog from "../../../internal/zmkdata/catalog.json";
 import { behaviorAction, macroAction } from "./resourceActions";
 import type { Behavior, Plugin, Project } from "../types/keyboard";
@@ -38,21 +39,21 @@ const keyFunctions = new Set([
   "STRIP_MODS",
 ]);
 const labels: Record<string, string> = {
-  keycode: "Tecla / atalho",
-  layer: "Camada",
-  profile: "Perfil Bluetooth",
-  btCommand: "Ação Bluetooth",
-  rgbCommand: "Ação RGB",
-  output: "Conexão de saída",
-  mouseButton: "Botão do mouse",
-  move: "Movimento",
-  scroll: "Rolagem",
-  backlight: "Iluminação",
-  backlightCommand: "Ação da iluminação",
-  percent: "Brilho (%)",
-  power: "Alimentação",
-  integer: "Valor numérico",
-  scalar: "Parâmetro",
+  keycode: "Key / shortcut",
+  layer: "Layer",
+  profile: "Bluetooth profile",
+  btCommand: "Bluetooth action",
+  rgbCommand: "RGB action",
+  output: "Output connection",
+  mouseButton: "Mouse button",
+  move: "Movement",
+  scroll: "Scrolling",
+  backlight: "Lighting",
+  backlightCommand: "Lighting action",
+  percent: "Brightness (%)",
+  power: "Power",
+  integer: "Numeric value",
+  scalar: "Parameter",
 };
 const symbolCache = new WeakMap<
   Project,
@@ -83,7 +84,7 @@ export function validateExpression(
   p: Project,
   macro = false,
 ): string {
-  if (!source.trim()) return "Preencha este parâmetro.";
+  if (!source.trim()) return tr("Fill in this parameter.");
   const custom = userSymbols(p),
     functions = { ...baseFunctions, ...custom.functions };
   const tokens =
@@ -91,7 +92,7 @@ export function validateExpression(
       /0[xX][0-9a-fA-F]+[uUlL]*|\d+[uUlL]*|[A-Za-z_]\w*|<<|>>|<=|>=|==|!=|&&|\|\||[()+\-*/%~!^|&,<>]/g,
     ) ?? [];
   if (tokens.join("") !== source.replace(/\s/g, ""))
-    return "Expressão inválida: use um código ZMK ou uma expressão declarada.";
+    return tr("Invalid expression: use a ZMK code or a declared expression.");
   let i = 0;
   const fail = (message: string): never => {
     throw Error(message);
@@ -100,36 +101,37 @@ export function validateExpression(
     atom(type);
     while (i < tokens.length && ![",", ")"].includes(tokens[i])) {
       if (!/^(?:<<|>>|<=|>=|==|!=|&&|\|\||[+\-*/%&|^<>])$/.test(tokens[i++]))
-        fail("Separe expressões com um operador válido.");
+        fail(tr("Separate expressions with a valid operator."));
       atom(type);
     }
   };
   const atom = (type: string): void => {
     const token = tokens[i++];
-    if (!token) fail("Expressão incompleta.");
+    if (!token) fail(tr("Incomplete expression."));
     if (["+", "-", "~", "!"].includes(token)) {
       atom(type);
       return;
     }
     if (token === "(") {
       expression(type);
-      if (tokens[i++] !== ")") fail("Feche os parênteses.");
+      if (tokens[i++] !== ")") fail(tr("Close the parentheses."));
       return;
     }
     if (/^\d/.test(token)) {
-      if (BigInt(token.replace(/[uUlL]+$/, "")) > 0xffffffffn) fail("O valor excede 32 bits.");
+      if (BigInt(token.replace(/[uUlL]+$/, "")) > 0xffffffffn)
+        fail(tr("The value exceeds 32 bits."));
       if (type === "modifierMask" && BigInt(token.replace(/[uUlL]+$/, "")) > 255n)
-        fail("Use uma máscara de modificadores de 0 a 255.");
+        fail(tr("Use a modifier mask from 0 to 255."));
       return;
     }
-    if (!/^[A-Za-z_]\w*$/.test(token)) fail("Esperado um código ou valor numérico.");
+    if (!/^[A-Za-z_]\w*$/.test(token)) fail(tr("Expected a code or numeric value."));
     if (tokens[i] === "(") {
       const count = functions[token];
       if (
         count === undefined ||
         (type === "keycode" && !keyFunctions.has(token) && custom.functions[token] === undefined)
       )
-        fail(`Função não reconhecida: ${token}.`);
+        fail(tr("Unknown function: {0}.", token));
       i++;
       let actual = 0;
       if (tokens[i] !== ")") {
@@ -141,17 +143,18 @@ export function validateExpression(
           actual++;
         } while (tokens[i] === ",");
       }
-      if (tokens[i++] !== ")" || actual !== count) fail(`${token} exige ${count} argumentos.`);
+      if (tokens[i++] !== ")" || actual !== count)
+        fail(tr("{0} requires {1} arguments.", token, count));
       if (["RGB_COLOR_HSB", "RGB_COLOR_HSV", "RGB_COLOR_HSB_VAL"].includes(token)) {
         const m = source.match(/RGB_COLOR_HS[BV](?:_VAL)?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
         if (m && (Number(m[1]) > 360 || Number(m[2]) > 100 || Number(m[3]) > 100))
-          fail("HSB: matiz de 0 a 360; saturação e brilho de 0 a 100.");
+          fail(tr("HSB: hue from 0 to 360; saturation and brightness from 0 to 100."));
       }
       return;
     }
     if (token === "MACRO_PLACEHOLDER") {
       if (macro) return;
-      fail("MACRO_PLACEHOLDER só pode ser usado dentro de uma macro.");
+      fail(tr("MACRO_PLACEHOLDER can only be used inside a macro."));
     }
     if (
       !(
@@ -163,13 +166,11 @@ export function validateExpression(
       ).has(token) &&
       !custom.symbols.has(token)
     )
-      fail(
-        `Código não reconhecido: ${token}. Se for personalizado, declare-o em um header ou #define.`,
-      );
+      fail(tr("Unknown code: {0}. For a custom code, declare it in a header or #define.", token));
   };
   try {
     expression(kind);
-    if (i !== tokens.length) fail("Expressão incompleta.");
+    if (i !== tokens.length) fail(tr("Incomplete expression."));
     return "";
   } catch (e) {
     return e instanceof Error ? e.message : String(e);
@@ -266,7 +267,7 @@ export function bindingParameters(
   const f = bindingParts(code),
     name = f[0]?.slice(1) ?? "";
   if (name === "rgb_ug" && /^RGB_COLOR_HS[BV]\(/.test(f[1] ?? ""))
-    return [{ kind: "scalar", label: "Cor HSB" }];
+    return [{ kind: "scalar", label: tr("HSB color") }];
   const kinds = [...(parameterKinds(name, p, plugin) ?? [])];
   if (commands[name]) {
     const extra = commands[name][f[1]];
@@ -274,7 +275,7 @@ export function bindingParameters(
   }
   return kinds.map((kind, i) => ({
     kind,
-    label: labels[kind] ?? `Parâmetro ${i + 1}`,
+    label: tr(labels[kind] ?? tr("Parameter {0}", i + 1)),
     choices: kind.endsWith("Command")
       ? Object.keys(
           commands[name] ??
@@ -291,29 +292,30 @@ export function validateBinding(
   seen = new Set<string>(),
   checkResources = true,
 ): string {
-  if (code.length > 8192) return "Ação muito longa.";
+  if (code.length > 8192) return tr("Action is too long.");
   const f = bindingParts(code.trim()),
     name = f[0]?.slice(1) ?? "";
-  if (!/^&[A-Za-z_]\w*$/.test(f[0] ?? "")) return "Use uma ação ZMK, por exemplo &kp A.";
-  if (seen.has(name))
-    return "Um comportamento não pode executar a si mesmo, direta ou indiretamente.";
+  if (!/^&[A-Za-z_]\w*$/.test(f[0] ?? "")) return tr("Use a ZMK action, for example &kp A.");
+  if (seen.has(name)) return tr("A behavior cannot execute itself, directly or indirectly.");
   const kinds = parameterKinds(name, p, plugin);
   if (!kinds) return `Comportamento desconhecido: &${name}.`;
   if (context === "child" && (commands[name] || kinds.length > 1))
-    return "Esta ação base aceita somente comportamentos de zero ou um parâmetro. Use uma macro para ações compostas.";
+    return tr(
+      "This base action only accepts behaviors with zero or one parameter. Use a macro for compound actions.",
+    );
   const deferred = context === "child" && f.length === 1 && kinds.length === 1;
   if (["mkp", "mmv", "msc"].includes(name) && !p.options.pointing)
-    return "Ative as ações de mouse nas configurações.";
+    return tr("Enable mouse actions in Settings.");
   let specs = bindingParameters(code, p, plugin);
   if (context === "macro" && commands[name] && f[1] === "MACRO_PLACEHOLDER")
     specs = [
-      { kind: "scalar", label: "Comando" },
-      { kind: "scalar", label: "Parâmetro" },
+      { kind: "scalar", label: tr("Command") },
+      { kind: "scalar", label: tr("Parameter") },
     ];
   if (name === "rgb_ug" && /^RGB_COLOR_HS[BV]\(/.test(f[1] ?? ""))
-    specs = [{ kind: "scalar", label: "Cor HSB" }];
+    specs = [{ kind: "scalar", label: tr("HSB color") }];
   if (!deferred && f.length - 1 !== specs.length)
-    return `&${name} exige ${specs.length} parâmetro(s); recebido(s): ${f.length - 1}.`;
+    return tr("&{0} requires {1} parameter(s); received: {2}.", name, specs.length, f.length - 1);
   for (let i = 0; !deferred && i < specs.length; i++) {
     const value = f[i + 1],
       spec = specs[i];
@@ -322,22 +324,22 @@ export function validateBinding(
       const normalized = normalizeBinding(code, p),
         token = bindingParts(normalized)[i + 1];
       if (!p.layout.layers.some((l) => `@{${l.id}}` === token))
-        return "Escolha uma camada existente.";
+        return tr("Choose an existing layer.");
     } else if (spec.kind === "profile") {
       if (!/^\d+$/.test(value) || +value >= p.options.bluetoothProfiles)
-        return "Escolha um perfil Bluetooth configurado.";
+        return tr("Choose a configured Bluetooth profile.");
     } else if (spec.kind === "percent") {
-      if (!/^\d+$/.test(value) || +value > 100) return "O brilho deve estar entre 0 e 100%.";
+      if (!/^\d+$/.test(value) || +value > 100) return tr("Brightness must be between 0 and 100%.");
     } else if (spec.kind === "integer") {
       if (!/^\d+$/.test(value) || Number(value) > 0xffffffff)
-        return "Use um número inteiro entre 0 e 4294967295.";
+        return tr("Use an integer from 0 to 4294967295.");
     } else if (spec.choices) {
       if (!spec.choices.includes(value)) {
         // Direction/button bitfields are documented expressions, not free text.
         if (["move", "scroll", "mouseButton"].includes(spec.kind)) {
           const e = validateExpression(value, "scalar", p, context === "macro");
           if (e) return e;
-        } else return `Escolha uma opção válida para ${spec.label.toLowerCase()}.`;
+        } else return tr("Choose a valid option for {0}.", spec.label.toLowerCase());
       }
     } else {
       const e = validateExpression(value, spec.kind, p, context === "macro");
@@ -357,7 +359,7 @@ export function validateBinding(
       nativeArity(b.compatible ?? "") !== undefined &&
       b.parameterCount !== nativeArity(b.compatible ?? "")
     )
-      return "A quantidade de parâmetros deve corresponder ao tipo ZMK escolhido.";
+      return tr("The parameter count must match the selected ZMK type.");
     const counts: Record<string, [number, number]> = {
       "hold-tap": [2, 2],
       "sticky-key": [b.target ? 0 : 1, b.target ? 1 : 1],
@@ -366,14 +368,18 @@ export function validateBinding(
     };
     const range = counts[b.kind];
     if (range && (b.bindings.length < range[0] || b.bindings.length > range[1]))
-      return `${b.name}: configure ${range[0] === range[1] ? range[0] : `${range[0]} a ${range[1]}`} ação(ões).`;
+      return tr(
+        "{0}: configure {1} action(s).",
+        b.name,
+        range[0] === range[1] ? range[0] : `${range[0]} a ${range[1]}`,
+      );
     if (b.kind === "mod-morph" && !b.properties?.mods)
-      return "Escolha os modificadores do comportamento alternativo.";
+      return tr("Choose the modifiers for the alternate behavior.");
     if (
       ["hold-tap", "tap-dance"].includes(b.kind) &&
       (b.tappingTermMs < 1 || b.tappingTermMs > 5000)
     )
-      return "O tempo de decisão deve estar entre 1 e 5000 ms.";
+      return tr("The decision time must be between 1 and 5000 ms.");
     for (const child of b.bindings) {
       const e = validateBinding(
         child,
@@ -387,7 +393,7 @@ export function validateBinding(
   }
   const macro = p.layout.macros.find((m) => m.id === name);
   if (macro) {
-    if (!macro.steps.length) return "Adicione ações à macro antes de atribuí-la.";
+    if (!macro.steps.length) return tr("Add actions to the macro before assigning it.");
     for (const step of macro.steps)
       if (!["control", "wait"].includes(step.kind)) {
         const e = validateBinding(step.binding, p, plugin, "macro", seen);
@@ -425,7 +431,7 @@ export function projectBindingError(p: Project, plugin: Plugin | null) {
   for (const layer of p.layout.layers) {
     for (const key of layer.keys) {
       const error = validateBinding(key.code, p, plugin);
-      if (error) return `${layer.name}, tecla ${key.keymapIndex}: ${error}`;
+      if (error) return tr("{0}, key {1}: {2}", layer.name, key.keymapIndex, error);
     }
     for (const s of layer.sensors) {
       for (const code of [s.codeCW, s.codeCCW, s.codeClick]) {
@@ -438,15 +444,15 @@ export function projectBindingError(p: Project, plugin: Plugin | null) {
 }
 
 export function validateProperty(name: string, value: string, project: Project) {
-  if (!/^[a-zA-Z#][a-zA-Z0-9_#,-]*$/.test(name)) return "Nome de propriedade ZMK inválido.";
+  if (!/^[a-zA-Z#][a-zA-Z0-9_#,-]*$/.test(name)) return tr("Invalid ZMK property name.");
   if (["compatible", "bindings", "#binding-cells", "display-name"].includes(name))
-    return "Use o campo próprio desta propriedade.";
+    return tr("Use the dedicated field for this property.");
   if (value === "/delete-property/") return "";
   if (/[;{}\n\r#]/.test(value.replace(/@\{[^}]+\}/g, "0")))
-    return "Use apenas o valor da propriedade, sem ponto e vírgula ou subnós.";
+    return tr("Enter only the property value, without semicolons or child nodes.");
   const managed = ["mods", "keep-mods", "continue-list"].includes(name) || name.endsWith("-ms");
   if (managed && !/^<[\s\S]*>$/.test(value.trim()))
-    return "Use o formato Devicetree, por exemplo <200> ou <MOD_LSFT>.";
+    return tr("Use Devicetree format, for example <200> or <MOD_LSFT>.");
   if (value === "") return "";
   const body = value.trim().replace(/^</, "").replace(/>$/, "");
   if (["mods", "keep-mods"].includes(name))

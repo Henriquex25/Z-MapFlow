@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { useKeyboardStore } from "../store/useKeyboardStore";
@@ -24,6 +25,7 @@ function DraftField({
   placeholder?: string;
   "aria-label"?: string;
 }) {
+  useLocale();
   const [text, setText] = useState(value);
   useEffect(() => {
     setText((current) => (normalize(current) === value ? current : value));
@@ -46,6 +48,7 @@ const cmakeLines = (value: string) =>
     .filter(Boolean);
 
 function ConfigFlags({ source, onChange }: { source: string; onChange: (source: string) => void }) {
+  useLocale();
   const [name, setName] = useState("");
   const [value, setValue] = useState("y");
   const entries = [...new Map(configEntries(source).map((entry) => [entry.name, entry])).values()];
@@ -57,31 +60,31 @@ function ConfigFlags({ source, onChange }: { source: string; onChange: (source: 
           <DraftField
             normalize={(value) => value.trim()}
             className="field w-40"
-            aria-label={`Valor de ${entry.name}`}
+            aria-label={tr("Value of {0}", entry.name)}
             value={entry.value}
             onChange={(value) => onChange(setConfig(source, entry.name, value))}
           />
           <button
             className="btn"
-            aria-label={`Remover ${entry.name}`}
+            aria-label={tr("Remove {0}", entry.name)}
             onClick={() => onChange(setConfig(source, entry.name))}
           >
-            Remover
+            {tr("Remove")}{" "}
           </button>
         </div>
       ))}
       <div className="flex flex-wrap items-center gap-2 mt-3">
         <input
           className="field grow"
-          aria-label="Nova flag Kconfig"
+          aria-label={tr("New Kconfig flag")}
           placeholder="CONFIG_ZMK_STUDIO"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <input
           className="field w-32"
-          aria-label="Valor da nova flag"
-          placeholder="y, n, número ou texto entre aspas"
+          aria-label={tr("New flag value")}
+          placeholder={tr("y, n, number or quoted text")}
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
@@ -93,13 +96,14 @@ function ConfigFlags({ source, onChange }: { source: string; onChange: (source: 
             setName("");
           }}
         >
-          Adicionar flag
+          {tr("Add flag")}{" "}
         </button>
       </div>
     </>
   );
 }
 export function FirmwareSettings() {
+  useLocale();
   const { project: p, plugin, edit } = useKeyboardStore();
   const [headerName, setHeaderName] = useState("");
   if (!p || !plugin) return null;
@@ -125,7 +129,10 @@ export function FirmwareSettings() {
       );
       if (conflicts.length) {
         useKeyboardStore.setState({
-          error: `Headers já existentes com conteúdo diferente: ${conflicts.join(", ")}. Renomeie ou edite o header existente.`,
+          error: tr(
+            "Headers already exist with different contents: {0}. Rename or edit the existing header.",
+            conflicts.join(", "),
+          ),
         });
         return;
       }
@@ -142,11 +149,11 @@ export function FirmwareSettings() {
   return (
     <>
       <div className="resource-card">
-        <h3>Flags de firmware (.conf)</h3>
+        <h3>{tr("Firmware flags (.conf)")}</h3>
         <p className="hint">
-          Adicione flags do ZMK e de módulos. Use y/n, números ou textos entre aspas. As opções
-          visuais de OLED, mouse e repouso ficam nos controles acima; flags adicionais têm
-          precedência.
+          {tr(
+            "Add ZMK and module flags. Use y/n, numbers or quoted text. OLED, mouse and sleep options are in the controls above; additional flags take precedence.",
+          )}{" "}
         </p>
         <ConfigFlags
           source={p.extraConfig ?? ""}
@@ -159,21 +166,22 @@ export function FirmwareSettings() {
       </div>
       <div className="resource-card">
         <div className="section-toolbar">
-          <h3>Compilação e conexão USB</h3>
+          <h3>{tr("Build and USB connection")}</h3>
           {central && (
             <button className="btn" onClick={() => edit((p) => enableStudioUSB(p, central.id))}>
-              Habilitar Studio via USB — {central.name}
+              {tr("Enable Studio over USB —")} {tr(central.name)}
             </button>
           )}
         </div>
         <p className="hint">
-          USB para digitação usa CONFIG_ZMK_USB=y. Studio via USB também exige CONFIG_ZMK_STUDIO=y e
-          o snippet studio-rpc-usb-uart no alvo central. O preset mantém o bloqueio de segurança:
-          atribua &amp;studio_unlock a uma tecla na paleta Recursos.
+          {tr(
+            "USB typing uses CONFIG_ZMK_USB=y. Studio over USB also requires CONFIG_ZMK_STUDIO=y and the studio-rpc-usb-uart snippet on the central target. The preset keeps the security lock enabled: assign &studio_unlock to a key from the Resources palette.",
+          )}{" "}
         </p>
         <p className="hint">
-          Configurações gravadas pelo Studio prevalecem sobre o .keymap até usar “Restore Stock
-          Settings” no Studio.
+          {tr(
+            "Settings saved by Studio override the .keymap until you use “Restore Stock Settings” in Studio.",
+          )}{" "}
         </p>
         {variant.targets.map((target) => {
           const settings = p.buildTargets?.find((s) => s.targetId === target.id);
@@ -185,15 +193,15 @@ export function FirmwareSettings() {
           return (
             <div className="mt-4" key={target.id}>
               <h4>
-                {target.name}
+                {tr(target.name)}
                 {target.role === "central"
-                  ? " · Central"
+                  ? tr("· Central")
                   : target.role === "peripheral"
-                    ? " · Periférico"
+                    ? tr("· Peripheral")
                     : ""}
               </h4>
               <label className="form-label mt-2">
-                Snippets (separados por espaço)
+                {tr("Snippets (space-separated)")}{" "}
                 <DraftField
                   className="field"
                   value={(settings?.snippets ?? []).join(" ")}
@@ -214,7 +222,7 @@ export function FirmwareSettings() {
                 }
               />
               <label className="form-label mt-2">
-                Argumentos CMake (um por linha)
+                {tr("CMake arguments (one per line)")}{" "}
                 <DraftField
                   multiline
                   className="field source-editor"
@@ -228,26 +236,27 @@ export function FirmwareSettings() {
           );
         })}
         <p className="hint mt-3">
-          Estas opções são aplicadas no build local e no build.yaml exportado. Coloque o build.yaml
-          na raiz do repositório zmk-config; o .keymap, .conf e headers vão em config/.
+          {tr(
+            "These options apply to local builds and the exported build.yaml. Put build.yaml at the root of the zmk-config repository; put the .keymap, .conf and headers in config/.",
+          )}{" "}
         </p>
       </div>
       <div className="resource-card">
         <div className="section-toolbar">
-          <h3>Headers e idiomas</h3>
+          <h3>{tr("Headers and languages")}</h3>
           <button className="btn" onClick={importHeaders}>
-            Importar header .h
+            {tr("Import .h header")}{" "}
           </button>
         </div>
         <p className="hint">
-          Adicione headers ZMK para outros idiomas. Seus aliases aparecem na aba Idiomas da paleta e
-          os arquivos acompanham o projeto e a exportação. Configure o mesmo idioma no sistema
-          operacional.
+          {tr(
+            "Add ZMK headers for other languages. Their aliases appear in the Languages palette tab, and the files are included in the project and exports. Configure the same layout in your operating system.",
+          )}{" "}
         </p>
         <div className="flex gap-2 mt-3">
           <input
             className="field grow"
-            aria-label="Nome do novo header"
+            aria-label={tr("New header name")}
             placeholder="keys_es.h"
             value={headerName}
             onChange={(e) => setHeaderName(e.target.value)}
@@ -268,7 +277,7 @@ export function FirmwareSettings() {
               setHeaderName("");
             }}
           >
-            Criar header
+            {tr("Create header")}{" "}
           </button>
         </div>
         {Object.entries(p.headers ?? {}).map(([name, content]) => (
@@ -278,7 +287,7 @@ export function FirmwareSettings() {
             </summary>
             <textarea
               className="field source-editor mt-2"
-              aria-label={`Conteúdo de ${name}`}
+              aria-label={tr("Contents of {0}", name)}
               rows={8}
               value={content}
               onChange={(e) =>

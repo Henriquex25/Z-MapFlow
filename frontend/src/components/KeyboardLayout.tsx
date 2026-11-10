@@ -1,3 +1,4 @@
+import { useLocale } from "../i18n";
 import { useEffect, useRef, useState } from "react";
 import type { Plugin, ILayer } from "../types/keyboard";
 import { DroppableKey } from "./DroppableKey";
@@ -21,6 +22,7 @@ export function KeyboardLayout({
   zoom?: number;
   onEdit?: (index: number) => void;
 }) {
+  useLocale();
   const unit = 62;
   const viewport = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);

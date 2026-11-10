@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { NumberField } from "./NumberField";
 import { ValidatedProperty } from "./ValidatedProperty";
 import { FirmwareSettings } from "./FirmwareSettings";
@@ -10,19 +11,19 @@ import { behaviorAction, macroAction } from "../utils/resourceActions";
 import { uid, type Behavior, type Macro } from "../types/keyboard";
 
 export const behaviorKinds: Record<string, string> = {
-  "hold-tap": "Toque ou segurar (hold-tap)",
-  "tap-dance": "Sequência de toques (tap-dance)",
-  "mod-morph": "Ação por modificador",
-  "sticky-key": "Modificador temporário",
-  "caps-word": "Palavra em maiúsculas",
-  "key-repeat": "Repetir tecla",
-  "key-toggle": "Alternar tecla",
-  "toggle-layer": "Alternar camada",
-  "momentary-layer": "Camada enquanto segura",
-  "to-layer": "Mudar camada",
-  "mouse-move": "Mover ponteiro",
-  "mouse-scroll": "Rolar",
-  native: "Comportamento de módulo ZMK",
+  "hold-tap": "Tap or hold (hold-tap)",
+  "tap-dance": "Tap sequence (tap-dance)",
+  "mod-morph": "Modifier-based action",
+  "sticky-key": "Sticky modifier",
+  "caps-word": "Caps Word",
+  "key-repeat": "Repeat key",
+  "key-toggle": "Toggle key",
+  "toggle-layer": "Toggle layer",
+  "momentary-layer": "Momentary layer",
+  "to-layer": "Switch layer",
+  "mouse-move": "Move pointer",
+  "mouse-scroll": "Scroll",
+  native: "ZMK module behavior",
 };
 export function newBehavior(kind: string): Behavior {
   const bindings =
@@ -37,10 +38,10 @@ export function newBehavior(kind: string): Behavior {
     id: uid(),
     name:
       kind === "hold-tap"
-        ? "Novo toque/segurar"
+        ? tr("New tap/hold")
         : kind === "tap-dance"
-          ? "Nova sequência de toques"
-          : `Novo ${behaviorKinds[kind]}`,
+          ? tr("New tap sequence")
+          : tr("New {0}", tr(behaviorKinds[kind] ?? kind)),
     kind,
     bindings,
     tappingTermMs: 200,
@@ -74,16 +75,16 @@ export function newBehavior(kind: string): Behavior {
 }
 
 const controls: Record<string, string> = {
-  "&macro_tap": "Modo: tocar",
-  "&macro_press": "Modo: pressionar",
-  "&macro_release": "Modo: soltar",
-  "&macro_pause_for_release": "Continuar quando soltar a macro",
-  "&macro_wait_time": "Alterar intervalo entre ações",
-  "&macro_tap_time": "Alterar duração do toque",
-  "&macro_param_1to1": "Parâmetro 1 → argumento 1",
-  "&macro_param_1to2": "Parâmetro 1 → argumento 2",
-  "&macro_param_2to1": "Parâmetro 2 → argumento 1",
-  "&macro_param_2to2": "Parâmetro 2 → argumento 2",
+  "&macro_tap": "Mode: tap",
+  "&macro_press": "Mode: press",
+  "&macro_release": "Mode: release",
+  "&macro_pause_for_release": "Continue when the macro is released",
+  "&macro_wait_time": "Change interval between actions",
+  "&macro_tap_time": "Change tap duration",
+  "&macro_param_1to1": "Parameter 1 → argument 1",
+  "&macro_param_1to2": "Parameter 1 → argument 2",
+  "&macro_param_2to1": "Parameter 2 → argument 1",
+  "&macro_param_2to2": "Parameter 2 → argument 2",
 };
 export function MacroControl({
   value,
@@ -92,25 +93,26 @@ export function MacroControl({
   value: string;
   onChange: (v: string) => void;
 }) {
+  useLocale();
   const [name, amount] = value.split(/\s+/);
   const timed = name === "&macro_tap_time" || name === "&macro_wait_time";
   return (
     <div className="flex flex-col gap-2">
       <select
         className="field"
-        aria-label="Controle da macro"
+        aria-label={tr("Macro control")}
         value={name in controls ? name : "&macro_pause_for_release"}
         onChange={(e) => onChange(e.target.value + (e.target.value.endsWith("_time") ? " 20" : ""))}
       >
         {Object.entries(controls).map(([v, label]) => (
           <option key={v} value={v}>
-            {label}
+            {tr(label)}
           </option>
         ))}
       </select>
       {timed && (
         <NumberField
-          label="Tempo do controle (ms)"
+          label={tr("Control duration (ms)")}
           value={Number(amount || 0)}
           onChange={(ms) => onChange(`${name} ${ms}`)}
         />
@@ -126,6 +128,7 @@ export function AssignmentParameters({
   resource: Macro | Behavior;
   onChange: (count: number, values: string[]) => void;
 }) {
+  useLocale();
   const project = useKeyboardStore((s) => s.project);
   const isBehavior = "kind" in resource;
   const knownCount =
@@ -150,18 +153,19 @@ export function AssignmentParameters({
   const editable = !isBehavior || (resource.kind === "native" && knownCount === undefined);
   return (
     <details className="mt-3">
-      <summary>Parâmetros para novas atribuições</summary>
+      <summary>{tr("Parameters for new assignments")}</summary>
       <p className="hint">
-        Cada tecla mantém seus próprios argumentos. Clique na tecla do layout para editar os valores
-        já atribuídos.
+        {tr(
+          "Each key keeps its own arguments. Click a key in the layout to edit values already assigned to it.",
+        )}{" "}
       </p>
       <div className="flex flex-wrap gap-3 mt-2">
         {editable && (
           <label>
-            Quantidade de parâmetros
+            {tr("Parameter count")}{" "}
             <select
               className="field"
-              aria-label="Quantidade de parâmetros"
+              aria-label={tr("Parameter count")}
               value={count}
               onChange={(e) => onChange(Number(e.target.value), resource.parameters ?? [])}
             >
@@ -177,7 +181,7 @@ export function AssignmentParameters({
           <BindingArguments
             code={isBehavior ? behaviorAction(resource).code : macroAction(resource).code}
             project={project}
-            label="Parâmetros para novas atribuições"
+            label={tr("Parameters for new assignments")}
             onChange={(code) => onChange(count, bindingParts(code).slice(1))}
           />
         )}
@@ -197,19 +201,19 @@ const fields: Record<string, PropertyField[]> = {
   "mod-morph": [
     {
       name: "mods",
-      label: "Modificadores que ativam a ação alternativa",
+      label: "Modifiers that activate the alternate action",
       kind: "text",
       fallback: "<(MOD_LSFT|MOD_RSFT)>",
     },
-    { name: "keep-mods", label: "Modificadores mantidos", kind: "text", fallback: "<0>" },
+    { name: "keep-mods", label: "Retained modifiers", kind: "text", fallback: "<0>" },
   ],
   "sticky-key": [
-    { name: "release-after-ms", label: "Liberar após (ms)", kind: "number", fallback: 1000 },
-    { name: "quick-release", label: "Liberar ao pressionar a próxima tecla", kind: "boolean" },
-    { name: "lazy", label: "Ativar junto à próxima tecla", kind: "boolean" },
+    { name: "release-after-ms", label: "Release after (ms)", kind: "number", fallback: 1000 },
+    { name: "quick-release", label: "Release when the next key is pressed", kind: "boolean" },
+    { name: "lazy", label: "Activate with the next key", kind: "boolean" },
     {
       name: "ignore-modifiers",
-      label: "Combinar modificadores sticky",
+      label: "Combine sticky modifiers",
       kind: "boolean",
       fallback: true,
     },
@@ -217,16 +221,16 @@ const fields: Record<string, PropertyField[]> = {
   "caps-word": [
     {
       name: "continue-list",
-      label: "Teclas que mantêm Caps Word ativo",
+      label: "Keys that keep Caps Word active",
       kind: "text",
       fallback: "<UNDERSCORE BACKSPACE DELETE>",
     },
-    { name: "mods", label: "Modificadores aplicados", kind: "text", fallback: "<MOD_LSFT>" },
+    { name: "mods", label: "Applied modifiers", kind: "text", fallback: "<MOD_LSFT>" },
   ],
   "key-repeat": [
     {
       name: "usage-pages",
-      label: "Páginas HID repetidas",
+      label: "Repeated HID usage pages",
       kind: "text",
       fallback: "<HID_USAGE_KEY>",
     },
@@ -234,7 +238,7 @@ const fields: Record<string, PropertyField[]> = {
   "key-toggle": [
     {
       name: "toggle-mode",
-      label: "Modo",
+      label: "Mode",
       kind: "select",
       fallback: "flip",
       choices: ["flip", "on", "off"],
@@ -243,30 +247,28 @@ const fields: Record<string, PropertyField[]> = {
   "toggle-layer": [
     {
       name: "toggle-mode",
-      label: "Modo",
+      label: "Mode",
       kind: "select",
       fallback: "flip",
       choices: ["flip", "on", "off"],
     },
-    { name: "locking", label: "Manter camada bloqueada", kind: "boolean" },
+    { name: "locking", label: "Keep layer locked", kind: "boolean" },
   ],
 };
 const mouseFields: PropertyField[] = [
-  { name: "delay-ms", label: "Atraso inicial (ms)", kind: "number", fallback: 0 },
+  { name: "delay-ms", label: "Initial delay (ms)", kind: "number", fallback: 0 },
   {
     name: "time-to-max-speed-ms",
-    label: "Tempo até velocidade máxima (ms)",
+    label: "Time to maximum speed (ms)",
     kind: "number",
     fallback: 0,
   },
-  { name: "acceleration-exponent", label: "Expoente de aceleração", kind: "number", fallback: 1 },
-  { name: "trigger-period-ms", label: "Intervalo de movimento (ms)", kind: "number", fallback: 16 },
+  { name: "acceleration-exponent", label: "Acceleration exponent", kind: "number", fallback: 1 },
+  { name: "trigger-period-ms", label: "Movement interval (ms)", kind: "number", fallback: 16 },
 ];
 fields["mouse-move"] = mouseFields;
 fields["mouse-scroll"] = mouseFields;
-fields["momentary-layer"] = [
-  { name: "locking", label: "Manter camada bloqueada", kind: "boolean" },
-];
+fields["momentary-layer"] = [{ name: "locking", label: "Keep layer locked", kind: "boolean" }];
 fields["to-layer"] = fields["momentary-layer"];
 
 export function NativeProperties({
@@ -276,6 +278,7 @@ export function NativeProperties({
   behavior: Behavior;
   onChange: (properties: Record<string, string>) => void;
 }) {
+  useLocale();
   const [extraName, setExtraName] = useState("");
   const supportsLocking =
     useKeyboardStore((s) =>
@@ -305,11 +308,11 @@ export function NativeProperties({
                     }
                     onChange={(e) => set(f.name, e.target.checked ? "" : "/delete-property/")}
                   />{" "}
-                  {f.label}
+                  {tr(f.label)}
                 </>
               ) : (
                 <>
-                  {f.label}
+                  {tr(f.label)}
                   {f.kind === "select" ? (
                     <select
                       className="field"
@@ -338,17 +341,18 @@ export function NativeProperties({
           ))}
       </div>
       <details className="mt-3">
-        <summary>Propriedades ZMK adicionais</summary>
+        <summary>{tr("Additional ZMK properties")}</summary>
         <p className="hint">
-          Use valores Devicetree, como &lt;200&gt;, &lt;MOD_LSFT&gt; ou "on". Uma propriedade sem
-          valor é booleana.
+          {tr(
+            'Use Devicetree values such as <200>, <MOD_LSFT> or "on". A property without a value is boolean.',
+          )}{" "}
         </p>
         {Object.entries(props).map(([name, value]) => (
           <div className="flex gap-2 mt-2 items-center" key={name}>
             <code>{name}</code>
             <ValidatedProperty
               name={name}
-              ariaLabel={`Propriedade ${name}`}
+              ariaLabel={tr("Property {0}", name)}
               value={value}
               onChange={(value) => set(name, value)}
             />
@@ -360,14 +364,14 @@ export function NativeProperties({
                 onChange(next);
               }}
             >
-              Remover propriedade
+              {tr("Remove property")}{" "}
             </button>
           </div>
         ))}
         <div className="flex gap-2 mt-2">
           <input
             className="field"
-            aria-label="Nome da propriedade ZMK"
+            aria-label={tr("ZMK property name")}
             value={extraName}
             onChange={(e) => setExtraName(e.target.value)}
             placeholder="release-after-ms"
@@ -380,7 +384,7 @@ export function NativeProperties({
               setExtraName("");
             }}
           >
-            Adicionar propriedade
+            {tr("Add property")}{" "}
           </button>
         </div>
       </details>
@@ -389,16 +393,18 @@ export function NativeProperties({
 }
 
 export function ConditionalLayersEditor() {
+  useLocale();
   const { project: p, edit } = useKeyboardStore();
   if (!p) return null;
   return (
     <div className="resource-editor">
       <div className="section-toolbar">
         <div>
-          <h2>Camadas condicionais</h2>
+          <h2>{tr("Conditional layers")}</h2>
           <p className="hint">
-            Ative uma camada quando todas as condições estiverem ativas. Coloque o destino depois
-            das camadas de condição.
+            {tr(
+              "Activate a layer when all conditions are active. Place the target after the condition layers.",
+            )}{" "}
           </p>
         </div>
         <button
@@ -415,18 +421,18 @@ export function ConditionalLayersEditor() {
             })
           }
         >
-          + Nova regra
+          {tr("+ New rule")}{" "}
         </button>
       </div>
       {p.layout.layers.length < 3 && (
-        <p className="hint">Adicione ao menos três camadas para criar uma regra.</p>
+        <p className="hint">{tr("Add at least three layers to create a rule.")}</p>
       )}
       {p.layout.conditionalLayers?.map((c) => (
         <article className="resource-card" key={c.id}>
           <div className="section-toolbar">
             <input
               className="field"
-              aria-label="Nome da regra condicional"
+              aria-label={tr("Conditional rule name")}
               value={c.name}
               onChange={(e) =>
                 edit((p) => {
@@ -444,10 +450,10 @@ export function ConditionalLayersEditor() {
                 })
               }
             >
-              Excluir regra
+              {tr("Delete rule")}{" "}
             </button>
           </div>
-          <p>Quando todas estas camadas estiverem ativas:</p>
+          <p>{tr("When all these layers are active:")}</p>
           <div className="flex flex-wrap gap-3">
             {p.layout.layers
               .filter((l) => l.id !== c.thenLayerId)
@@ -470,10 +476,10 @@ export function ConditionalLayersEditor() {
               ))}
           </div>
           <label className="form-label mt-3">
-            Ativar camada
+            {tr("Activate layer")}{" "}
             <select
               className="field"
-              aria-label="Camada de destino condicional"
+              aria-label={tr("Conditional target layer")}
               value={c.thenLayerId}
               onChange={(e) =>
                 edit((p) => {
@@ -496,6 +502,7 @@ export function ConditionalLayersEditor() {
 }
 
 export function NativeSettings() {
+  useLocale();
   const { project: p, edit, activeLayerId } = useKeyboardStore();
   if (!p) return null;
   const layer = p.layout.layers.find((l) => l.id === activeLayerId) ?? p.layout.layers[0];
@@ -504,16 +511,18 @@ export function NativeSettings() {
       <FirmwareSettings />
       <InputProcessorsEditor />
       <div className="resource-card">
-        <h3>Iluminação e desligamento</h3>
+        <h3>{tr("Lighting and power off")}</h3>
         <p className="hint">
-          Ative recursos presentes no seu hardware antes de atribuir suas ações na paleta Recursos.
+          {tr(
+            "Enable features supported by your hardware before assigning their actions from the Resources palette.",
+          )}{" "}
         </p>
         <div className="flex flex-wrap gap-4">
           {(
             [
               ["rgbUnderglow", "RGB underglow"],
               ["backlight", "Backlight"],
-              ["softOff", "Desligamento por tecla (soft off)"],
+              ["softOff", tr("Power off key (soft off)")],
             ] as const
           ).map(([key, label]) => (
             <label key={key}>
@@ -526,17 +535,19 @@ export function NativeSettings() {
                   })
                 }
               />{" "}
-              {label}
+              {tr(label)}
             </label>
           ))}
         </div>
       </div>
       <div className="resource-card">
-        <h3>Encoders — {layer.name}</h3>
+        <h3>
+          {tr("Encoders —")} {layer.name}
+        </h3>
         <div className="flex flex-wrap gap-5">
           {layer.sensors.map((s) => (
             <div key={s.id}>
-              <p>{s.label}</p>
+              <p>{tr(s.label)}</p>
               <label>
                 <input
                   type="checkbox"
@@ -549,10 +560,10 @@ export function NativeSettings() {
                     })
                   }
                 />{" "}
-                Herdar rotações das camadas inferiores
+                {tr("Inherit rotation actions from lower layers")}{" "}
               </label>
               <label className="form-label">
-                Tempo do toque (ms)
+                {tr("Tap duration (ms)")}{" "}
                 <input
                   className="field"
                   type="number"
@@ -568,12 +579,12 @@ export function NativeSettings() {
                 />
               </label>
               <label className="form-label">
-                Acionamentos por rotação
+                {tr("Triggers per rotation")}{" "}
                 <input
                   className="field"
                   type="number"
                   min={1}
-                  placeholder="Padrão do hardware"
+                  placeholder={tr("Hardware default")}
                   value={s.triggersPerRotation || ""}
                   onChange={(e) =>
                     edit((p) => {
@@ -590,24 +601,26 @@ export function NativeSettings() {
         </div>
       </div>
       <div className="resource-card">
-        <h3>Configuração ZMK avançada</h3>
+        <h3>{tr("Advanced ZMK configuration")}</h3>
         <p className="hint">
-          Preserve configurações de módulos, input processors e hardware. Use @{"{id_da_camada}"}{" "}
-          para referências de camada em trechos adicionais. Os campos abaixo integram o projeto
-          salvo e os arquivos gerados.
+          {tr("Preserve module, input processor and hardware settings. Use @")}
+          {tr("{layer_id}")}{" "}
+          {tr(
+            "for layer references in additional sections. The fields below are included in the saved project and generated files.",
+          )}{" "}
         </p>
         {(
           [
-            ["preamble", "Defines antes dos headers"],
-            ["extraDts", "Devicetree adicional"],
-            ["extraConfig", "Kconfig adicional (.conf)"],
+            ["preamble", tr("Defines before headers")],
+            ["extraDts", tr("Additional Devicetree")],
+            ["extraConfig", tr("Additional Kconfig (.conf)")],
           ] as const
         ).map(([key, label]) => (
           <label className="form-label mt-3" key={key}>
-            {label}
+            {tr(label)}
             <textarea
               className="field source-editor"
-              aria-label={label}
+              aria-label={tr(label)}
               rows={5}
               value={p[key] ?? ""}
               onChange={(e) =>
@@ -624,12 +637,13 @@ export function NativeSettings() {
 }
 
 export function InputProcessorsEditor() {
+  useLocale();
   const { project: p, edit } = useKeyboardStore();
   if (!p) return null;
   return (
     <div className="resource-card">
       <div className="section-toolbar">
-        <h3>Input processors</h3>
+        <h3>{tr("Input processors")}</h3>
         <button
           className="btn"
           onClick={() =>
@@ -644,20 +658,21 @@ export function InputProcessorsEditor() {
             })
           }
         >
-          + Cadeia de apontamento
+          {tr("+ Input processing chain")}{" "}
         </button>
       </div>
       <p className="hint">
-        Ajuste movimento, rolagem e transformações por dispositivo. Informe o listener definido pelo
-        hardware e mantenha a ordem de processamento desejada.
+        {tr(
+          "Configure movement, scrolling and transformations per device. Enter the listener defined by your hardware and keep the desired processing order.",
+        )}{" "}
       </p>
       {p.layout.inputProcessors?.map((c) => (
         <article className="resource-card mt-3" key={c.id}>
           <label className="form-label">
-            Listener do dispositivo
+            {tr("Device listener")}{" "}
             <input
               className="field"
-              aria-label="Listener do dispositivo"
+              aria-label={tr("Device listener")}
               value={c.listener}
               onChange={(e) =>
                 edit((p) => {
@@ -668,10 +683,10 @@ export function InputProcessorsEditor() {
             />
           </label>
           <label className="form-label mt-2">
-            Processadores (um binding por linha)
+            {tr("Processors (one binding per line)")}{" "}
             <textarea
               className="field source-editor"
-              aria-label="Bindings dos input processors"
+              aria-label={tr("Input processor bindings")}
               value={c.bindings.join("\n")}
               onChange={(e) =>
                 edit((p) => {
@@ -694,7 +709,7 @@ export function InputProcessorsEditor() {
                 })
               }
             >
-              + Converter em rolagem
+              {tr("+ Convert to scrolling")}{" "}
             </button>
             <button
               className="btn"
@@ -706,7 +721,7 @@ export function InputProcessorsEditor() {
                 })
               }
             >
-              Mover para cima
+              {tr("Move up")}{" "}
             </button>
             <button
               className="btn danger"
@@ -716,10 +731,10 @@ export function InputProcessorsEditor() {
                 })
               }
             >
-              Excluir cadeia
+              {tr("Delete chain")}{" "}
             </button>
           </div>
-          <p className="hint mt-3">Camadas ativas (nenhuma = padrão do dispositivo)</p>
+          <p className="hint mt-3">{tr("Active layers (none = device default)")}</p>
           <div className="flex flex-wrap gap-3">
             {p.layout.layers.map((l) => (
               <label key={l.id}>
@@ -750,7 +765,7 @@ export function InputProcessorsEditor() {
                 })
               }
             />{" "}
-            Continuar nas próximas cadeias desta camada
+            {tr("Continue through the next chains in this layer")}{" "}
           </label>
         </article>
       ))}

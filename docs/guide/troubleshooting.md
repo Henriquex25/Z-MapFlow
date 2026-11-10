@@ -1,27 +1,31 @@
-# Problemas frequentes
+# Troubleshooting
 
-## O aplicativo não abre
+## The app does not open
 
-Confira a arquitetura e as bibliotecas GTK/WebKit indicadas na [instalação](./install). Execute o binário no terminal para obter a mensagem do sistema. Pacotes oficiais Linux usam WebKitGTK 4.1.
+Check the architecture and GTK/WebKit libraries in the [installation guide](./install). Run the executable from a terminal to inspect the system error. Official Linux packages use WebKitGTK 4.1.
 
-## Docker não é encontrado
+## Docker is not available
 
-Inicie Docker Desktop ou o serviço Docker e confira `docker info` e `docker context show` no terminal. O aplicativo precisa usar o mesmo contexto e ter acesso ao socket. Não execute o aplicativo inteiro como root.
+Start Docker Desktop or the Docker service. Check `docker info` and `docker context show` in your terminal. The app needs access to the same context and socket. Do not run the entire app as root.
 
-## Um binding fica vermelho
+## A binding is highlighted in red
 
-Confira os parâmetros e o código informado. Cada ação aceita uma quantidade e tipos específicos: um código de tecla não é um texto arbitrário. Aliases personalizados devem existir em um header ou define do projeto. Corrija o rascunho ou descarte-o.
+Check its parameters and code. Each action accepts specific counts and types; a keycode field is not arbitrary text. Custom aliases must be declared in a project header or define. Correct or discard the draft.
 
-## A importação falha
+## Import fails
 
-Confira teclado/variante e o número de teclas. Inclua headers locais ao lado do keymap. Includes `.dtsi`, condicionais e macros de pré-processador com parâmetros no próprio keymap não são expandidos pelo importador. Uma falha mantém a edição anterior.
+Check the selected keyboard/variant and key count. Keep local headers beside your keymap. Unsupported local `.dtsi` includes, conditionals and function-like keymap defines require expansion first. A failed import preserves your existing editor state.
 
-## A atualização não aparece ou falha
+## My keyboard is not listed
 
-A consulta usa releases públicas estáveis e precisa de internet. Pré-releases são ignoradas. Um repositório privado, limite da API, ausência de pacote para sua arquitetura ou instalação sem permissão de escrita pode impedir a atualização. Use o pacote oficial instalado na pasta do usuário e tente novamente pelo cabeçalho.
+ZMK firmware support alone does not provide the app with geometry, binding order or controller metadata. A Z-MapFlow plugin supplies that information. Read the [plugin guide](../plugins) or open a keyboard support issue with public hardware/ZMK references.
 
-Se a nova versão iniciar e apresentar um problema, feche o app e restaure `z-mapflow.previous` na pasta de instalação ou reinstale uma release anterior. Preserve uma exportação do seu projeto antes de voltar a uma versão com esquema de dados diferente.
+## Updates are unavailable or fail
 
-## Reportar um problema
+Updates require public stable releases and internet access. Prereleases are ignored. API limits, a missing asset for your architecture or a non-writable installation may prevent an update. Retry from the header and use the official per-user installation.
 
-Abra uma [issue](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose) com versão, sistema, teclado/variante, passos e logs. Remova informações pessoais antes de anexar sua configuração. Veja [como contribuir](../community/contributing).
+If a new release opens but behaves incorrectly, close the app and restore `z-mapflow.previous` in its installation directory, or reinstall an earlier release. Export your project before downgrading across data schema versions.
+
+## Report a problem
+
+Open an [issue](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose) with the version shown in the header, OS, keyboard/variant, reproduction steps and relevant logs. Review configuration files before attaching them so you do not publish personal data. See [contributing](../community/contributing).

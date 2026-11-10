@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { headerSymbols } from "../utils/firmwareSettings";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -175,42 +176,43 @@ const basicKeysQuickList = [
 
 const modifiers = ["LCTRL", "LSHFT", "LALT", "LGUI", "RCTRL", "RSHFT", "RALT", "RGUI"];
 const modifierNames: Record<string, string> = {
-  LCTRL: "Ctrl esquerdo",
-  LSHFT: "Shift esquerdo",
-  LALT: "Alt esquerdo",
-  LGUI: "Super esquerdo",
-  RCTRL: "Ctrl direito",
-  RSHFT: "Shift direito",
-  RALT: "Alt direito",
-  RGUI: "Super direito",
+  LCTRL: "Left Ctrl",
+  LSHFT: "Left Shift",
+  LALT: "Left Alt",
+  LGUI: "Left Super",
+  RCTRL: "Right Ctrl",
+  RSHFT: "Right Shift",
+  RALT: "Right Alt",
+  RGUI: "Right Super",
 };
 const mouseGroups = [
-  { name: "Botões", codes: ["&mkp LCLK", "&mkp RCLK", "&mkp MCLK"] },
+  { name: "Buttons", codes: ["&mkp LCLK", "&mkp RCLK", "&mkp MCLK"] },
   {
-    name: "Movimento",
+    name: "Movement",
     codes: ["&mmv MOVE_UP", "&mmv MOVE_DOWN", "&mmv MOVE_LEFT", "&mmv MOVE_RIGHT"],
   },
   {
-    name: "Rolagem",
+    name: "Scrolling",
     codes: ["&msc SCRL_UP", "&msc SCRL_DOWN", "&msc SCRL_LEFT", "&msc SCRL_RIGHT"],
   },
 ];
 const tabs = [
-  "Teclas",
-  "Modificadores",
+  "Keys",
+  "Modifiers",
   "Tap/hold",
-  "Camadas",
+  "Layers",
   "Bluetooth",
   "Mouse",
-  "Recursos",
-  "Idiomas",
+  "Resources",
+  "Languages",
 ] as const;
 export function ActionTray() {
+  useLocale();
   const p = useKeyboardStore((s) => s.project)!;
   const plugin = useKeyboardStore((s) => s.plugin);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Teclas");
+  const [tab, setTab] = useState<(typeof tabs)[number]>("Keys");
   const [search, setSearch] = useState("");
   useEffect(() => {
     if (bodyRef.current) {
@@ -278,17 +280,17 @@ export function ActionTray() {
     ...p.layout.behaviors.map(behaviorAction),
   ];
   return (
-    <section aria-label="Paleta de ações" className="palette" data-collapsed={collapsed}>
+    <section aria-label={tr("Action palette")} className="palette" data-collapsed={collapsed}>
       <div className="palette-toolbar">
         {tabs.map((t) => (
           <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t}
+            {tr(t)}
           </button>
         ))}
         <input
           className="field ml-auto max-w-48"
-          aria-label="Buscar ações"
-          placeholder="Buscar ação…"
+          aria-label={tr("Search actions")}
+          placeholder={tr("Search actions…")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -297,8 +299,8 @@ export function ActionTray() {
         />
         <button
           className="btn icon-btn palette-collapse"
-          aria-label={collapsed ? "Expandir paleta" : "Recolher paleta"}
-          title={collapsed ? "Expandir paleta" : "Recolher paleta"}
+          aria-label={collapsed ? tr("Expand palette") : tr("Collapse palette")}
+          title={collapsed ? tr("Expand palette") : tr("Collapse palette")}
           onClick={() => setCollapsed((v) => !v)}
         >
           {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -340,7 +342,7 @@ export function ActionTray() {
               ].filter((c) => c !== "&blank"),
             ).concat(custom, languages),
           )
-        ) : tab === "Teclas" ? (
+        ) : tab === "Keys" ? (
           <div className="palette-keyboard">
             {[mainCluster, navCluster, numpadCluster].map((cluster, i) => (
               <div key={i} className="palette-keyboard-cluster">
@@ -368,20 +370,21 @@ export function ActionTray() {
               </div>
             ))}
           </div>
-        ) : tab === "Idiomas" ? (
+        ) : tab === "Languages" ? (
           <div>
             {languages.length ? (
               list(languages)
             ) : (
               <p className="hint">
-                Adicione um header em Configurações → Headers e idiomas. Português ABNT2 também está
-                disponível no seletor de layout do sistema.
+                {tr(
+                  "Add a header in Settings → Headers and languages. Portuguese ABNT2 is also available in the system layout selector.",
+                )}{" "}
               </p>
             )}
           </div>
-        ) : tab === "Modificadores" ? (
+        ) : tab === "Modifiers" ? (
           list(generateKeys(modifiers.map((m) => `&kp ${m}`)))
-        ) : tab === "Camadas" ? (
+        ) : tab === "Layers" ? (
           <div className="space-y-3">
             {p.layout.layers.map((l, i) => (
               <div key={l.id} className="flex gap-3 items-center">
@@ -401,7 +404,7 @@ export function ActionTray() {
               </div>
             ))}
             <p className="hint">
-              MO: enquanto segura · SL: próxima ação · TOG: alternar · TO: ativar
+              {tr("MO: while held · SL: next action · TOG: toggle · TO: activate")}{" "}
             </p>
           </div>
         ) : tab === "Bluetooth" ? (
@@ -422,19 +425,19 @@ export function ActionTray() {
             {p.options.pointing ? (
               <div className="palette-mouse-groups">
                 {mouseGroups.map((group) => (
-                  <div className="palette-mouse-group" key={group.name}>
-                    <h3>{group.name}</h3>
+                  <div className="palette-mouse-group" key={tr(group.name)}>
+                    <h3>{tr(group.name)}</h3>
                     {list(generateKeys(group.codes))}
                   </div>
                 ))}
               </div>
             ) : (
               <p className="hint">
-                Ative ações de mouse em Configurações para usar estes bindings.
+                {tr("Enable mouse actions in Settings to use these bindings.")}{" "}
               </p>
             )}
           </div>
-        ) : tab === "Recursos" ? (
+        ) : tab === "Resources" ? (
           <div className="space-y-3">
             {list([
               ...custom,
@@ -465,36 +468,37 @@ export function ActionTray() {
               ]),
             ])}
             <p className="hint">
-              Macros e comportamentos criados nas abas acima aparecem aqui para arrastar até o
-              teclado.
+              {tr(
+                "Macros and behaviors created in the tabs above appear here. Drag them onto your keyboard.",
+              )}{" "}
             </p>
           </div>
         ) : (
           <div className="tap-hold-builder">
             <div className="tap-hold-controls">
-              <span className="text-sm">Ao segurar</span>
+              <span className="text-sm">{tr("On hold")}</span>
               <select
                 className="field"
-                aria-label="Tipo da ação ao segurar"
+                aria-label={tr("Hold action type")}
                 value={holdType}
                 onChange={(e) => {
                   setHoldType(e.target.value);
                   setHold(e.target.value === "mod" ? "LCTRL" : layerHold);
                 }}
               >
-                <option value="mod">Modificador</option>
-                <option value="layer">Camada</option>
+                <option value="mod">{tr("Modifier")}</option>
+                <option value="layer">{tr("Layer")}</option>
               </select>
               <select
                 className="field"
-                aria-label="Ação ao segurar"
+                aria-label={tr("Hold action")}
                 value={holdType === "mod" ? hold : layerHold}
                 onChange={(e) => setHold(e.target.value)}
               >
                 {holdType === "mod"
                   ? modifiers.map((m) => (
                       <option key={m} value={m}>
-                        {modifierNames[m]}
+                        {tr(modifierNames[m])}
                       </option>
                     ))
                   : p.layout.layers.map((l, i) => (
@@ -504,14 +508,14 @@ export function ActionTray() {
                     ))}
               </select>
               <BindingDrop
-                label="Ao tocar"
+                label={tr("On tap")}
                 compact
                 code={tap}
                 onChange={(c) => {
                   if (/^&kp [A-Z0-9_]+$/.test(c)) setTap(c);
                   else
                     useKeyboardStore.setState({
-                      error: "O tap do hold-tap deve ser uma tecla simples.",
+                      error: tr("A hold-tap’s tap action must be a single key."),
                     });
                 }}
               />

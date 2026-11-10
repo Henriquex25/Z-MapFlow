@@ -1,21 +1,23 @@
-# Configuração ZMK e idiomas
+# ZMK configuration and languages
 
-## Importar uma configuração
+## Import a configuration
 
-Selecione o teclado/variante e abra seu `.keymap`. O aplicativo procura também o `.conf` de mesmo nome, headers `.h` locais e o `build.yaml` próximo. A geometria e ordem física das teclas vêm do plugin.
+Select the correct keyboard/variant, then open its `.keymap`. The app also looks for the matching `.conf`, local `.h` headers and a nearby `build.yaml`. Geometry and physical binding order come from the selected plugin. Import does not modify your original repository.
 
-Camadas, encoders, macros e comportamentos são carregados. Ausência de configurações de encoder em uma camada preserva a herança. O importador não muda seu repositório original.
+Layers, macros, behaviors, combos and encoders are loaded. Omitted encoder rotations preserve inheritance. Import does not automatically add support for an unknown keyboard: see [keyboard plugins](../plugins).
 
-Includes locais `.dtsi`, condicionais e defines com parâmetros no próprio keymap exigem expansão prévia. Não há importação integral de qualquer repositório ZMK. A edição avançada preserva propriedades e subnós que não possuem formulário dedicado, sujeitos à validação do compilador.
+Local `.dtsi` includes, conditionals and function-like defines in the keymap require prior expansion. Import is not a general-purpose preprocessor for every ZMK repository. Advanced properties and child nodes without dedicated controls are preserved and remain subject to compiler validation.
 
-## Flags e transportes
+## Flags and transports
 
-Na aba **Configurações**, ajuste as opções disponíveis e as flags Kconfig adicionais, por exemplo `CONFIG_ZMK_STUDIO=y`. O preset Studio USB configura o alvo central e o snippet necessário; revise a compatibilidade da sua controladora.
+In **Settings**, configure available options and additional Kconfig flags such as `CONFIG_ZMK_STUDIO=y`. The Studio USB preset applies the required flags and snippet to the central target. Confirm controller compatibility.
 
-Snippets e argumentos CMake pertencem a cada alvo da matriz de compilação. O USB para digitação e o transporte USB do Studio são recursos distintos; use as opções apropriadas à revisão ZMK e ao hardware. Consulte a [documentação oficial ZMK](https://zmk.dev/docs) para dependências específicas.
+Snippets and CMake arguments belong to individual build targets. USB typing and Studio’s USB transport are separate features; select the options supported by your revision and hardware. See the [official ZMK documentation](https://zmk.dev/docs) for their dependencies.
 
-## Outros idiomas
+## Keyboard language headers
 
-Importe ou crie headers locais, por exemplo `keys_pt_abnt2.h`, e adicione o include correspondente quando necessário. Os aliases definidos entram na aba **Idiomas** da paleta. Os arquivos acompanham a exportação e a geração do firmware.
+Import or create a local header such as `keys_pt_abnt2.h` and use its corresponding include when needed. Defined aliases appear in the **Languages** palette and accompany the project, export and firmware build.
 
-O layout do sistema operacional também precisa corresponder aos códigos enviados pelo teclado. Alterar o idioma da paleta não converte bindings já atribuídos.
+The operating system keyboard layout must match the codes the keyboard sends. Changing the palette’s system layout does not rewrite existing bindings.
+
+**Interface language is separate:** English or Brazilian Portuguese under **Settings → Application** changes app controls only. It does not enable ABNT2, change your firmware or translate user-created layer/macro names.

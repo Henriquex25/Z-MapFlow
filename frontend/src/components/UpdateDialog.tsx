@@ -1,3 +1,4 @@
+import { localizeMessage, tr, useLocale } from "../i18n";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../services/api";
 import { isDirty, useKeyboardStore } from "../store/useKeyboardStore";
@@ -5,13 +6,14 @@ import { projectBindingError } from "../utils/bindingValidation";
 import type { updates } from "../../wailsjs/go/models";
 
 const stages: Record<string, string> = {
-  checking: "Conferindo a versão…",
-  downloading: "Baixando atualização…",
-  verifying: "Conferindo a integridade…",
-  installing: "Instalando atualização…",
-  restarting: "Reiniciando o Z-MapFlow…",
+  checking: "Checking the version…",
+  downloading: "Downloading update…",
+  verifying: "Verifying integrity…",
+  installing: "Installing update…",
+  restarting: "Restarting Z-MapFlow…",
 };
 export function UpdateDialog() {
+  useLocale();
   const [update, setUpdate] = useState<updates.Info | null>(null);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
@@ -32,12 +34,12 @@ export function UpdateDialog() {
       const info = await api.checkUpdates();
       setStatus(
         info.available
-          ? `Atualização v${info.latestVersion} disponível`
-          : info.message || `Versão ${info.currentVersion}`,
+          ? tr("Update v{0} available", info.latestVersion)
+          : info.message || tr("Version {0}", info.currentVersion),
       );
       if (info.available) setUpdate(info);
     } catch (e) {
-      setStatus("Não foi possível verificar atualizações. Tente novamente.");
+      setStatus(tr("Could not check for updates. Try again."));
     } finally {
       setChecking(false);
     }
@@ -74,7 +76,7 @@ export function UpdateDialog() {
     try {
       const build = await api.status();
       if (build?.status === "running")
-        throw new Error("Aguarde ou cancele a compilação antes de atualizar.");
+        throw new Error(tr("Wait for the firmware build to finish or cancel it before updating."));
       if (store.project && needsSave) {
         const saved = await api.save(store.project);
         store.markSaved(saved);
@@ -92,10 +94,10 @@ export function UpdateDialog() {
         className="update-status"
         disabled={checking || busy}
         onClick={check}
-        title={status}
-        aria-label="Verificar atualizações"
+        title={localizeMessage(status)}
+        aria-label={tr("Check for updates")}
       >
-        {checking ? "Verificando atualizações…" : status || "Atualizações"}
+        {checking ? tr("Checking for updates…") : localizeMessage(status || tr("Updates"))}
       </button>
       {update && (
         <div className="modal-backdrop update-backdrop">
@@ -106,43 +108,47 @@ export function UpdateDialog() {
             aria-labelledby="update-title"
           >
             <div className="section-toolbar">
-              <h2 id="update-title">Nova versão disponível</h2>
+              <h2 id="update-title">{tr("New version available")}</h2>
               <span className="badge">v{update.latestVersion}</span>
             </div>
             <p className="hint">
-              Sua versão: {update.currentVersion}. Atualize para receber as novidades e correções.
+              {tr("Your version:")} {update.currentVersion}
+              {tr(". Update to get the latest features and fixes.")}{" "}
             </p>
             {update.notes && (
               <details className="update-notes">
-                <summary>Novidades desta versão</summary>
+                <summary>{tr("What’s new in this release")}</summary>
                 <pre>{update.notes}</pre>
               </details>
             )}
             {!update.supported && (
               <p className="notice">
-                {update.message ||
-                  "A atualização automática ainda não está disponível neste sistema."}{" "}
+                {localizeMessage(
+                  update.message || tr("Automatic updates are not available on this system yet."),
+                )}{" "}
                 <a href={update.releaseUrl} target="_blank" rel="noreferrer">
-                  Abrir releases
+                  {tr("Open releases")}{" "}
                 </a>
               </p>
             )}
             {needsSave && (
-              <p className="hint">Sua configuração será salva antes de instalar e reiniciar.</p>
+              <p className="hint">
+                {tr("Your configuration will be saved before installing and restarting.")}
+              </p>
             )}
             {invalid && (
               <p className="binding-error" role="alert">
-                Corrija os campos inválidos antes de atualizar: {invalid}
+                {tr("Fix invalid fields before updating:")} {localizeMessage(invalid)}
               </p>
             )}
             {error && (
               <p className="notice error" role="alert">
-                {error}
+                {localizeMessage(error)}
               </p>
             )}
             {busy && (
               <div role="status" className="update-progress">
-                <p>{stages[progress?.stage ?? ""] || "Preparando atualização…"}</p>
+                <p>{stages[progress?.stage ?? ""] || tr("Preparing update…")}</p>
                 <progress
                   max={progress?.total || undefined}
                   value={progress?.total ? progress.downloaded : undefined}
@@ -151,11 +157,11 @@ export function UpdateDialog() {
             )}
             <div className="flex justify-end gap-3 mt-5">
               <button className="btn" disabled={busy} autoFocus onClick={() => setUpdate(null)}>
-                Agora não
+                {tr("Not now")}{" "}
               </button>
               {update.supported && (
                 <button className="btn primary" disabled={busy || !!invalid} onClick={install}>
-                  {busy ? "Atualizando…" : needsSave ? "Salvar e atualizar" : "Atualizar"}
+                  {busy ? tr("Updating…") : needsSave ? tr("Save and update") : tr("Update")}
                 </button>
               )}
             </div>

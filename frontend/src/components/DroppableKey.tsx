@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useDraggable, useDroppable, useDndContext } from "@dnd-kit/core";
 import { validateBinding } from "../utils/bindingValidation";
 import { IKeyAction } from "../types/keyboard";
@@ -16,6 +17,7 @@ export function DroppableKey({
   onClick?: () => void;
   onEdit?: () => void;
 }) {
+  useLocale();
   const { project, plugin } = useKeyboardStore();
   const { active } = useDndContext();
   const currentError = project ? validateBinding(action.code, project, plugin) : "";
@@ -55,7 +57,7 @@ export function DroppableKey({
           activate();
         } else drag.listeners?.onKeyDown?.(e);
       }}
-      aria-label={`Posição ${action.keymapIndex}: ${action.code}`}
+      aria-label={tr("Position {0}: {1}", action.keymapIndex, action.code)}
       aria-pressed={onClick ? selected : undefined}
       className={`layout-key touch-none ${error ? "invalid-action" : ""} ${className} ${drag.isDragging ? "opacity-30" : ""} ${drop.isOver || selected ? "ring-2 ring-sky-400 rounded-md" : ""}`}
     >

@@ -39,10 +39,10 @@ jobs:
         run: go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)
       - name: Check generated API bindings
         run: |
-          wails generate module -tags webkit2_41
+          python3 scripts/wails.py generate module -tags webkit2_41
           git diff --ignore-space-at-eol --exit-code -- frontend/wailsjs/go
       - name: Build desktop
-        run: wails build -tags webkit2_41 -skipbindings -m -nosyncgomod
+        run: python3 scripts/wails.py build -tags webkit2_41 -skipbindings -m -nosyncgomod
       - name: Installer and release contract
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
   docs:

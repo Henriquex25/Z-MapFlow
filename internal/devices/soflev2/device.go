@@ -22,13 +22,13 @@ func (d *Device) Descriptor() models.Plugin {
 		Overlay:      "&left_encoder { status = \"okay\"; };\n&right_encoder { status = \"okay\"; };\n",
 		Capabilities: []string{"layers", "macros", "combos", "hold-tap", "tap-dance", "encoders", "bluetooth", "display", "pointing"},
 		Sensors: []models.SensorAction{
-			{ID: "encoder_left", Label: "Encoder esquerdo", CodeCW: "&kp C_VOL_UP", CodeCCW: "&kp C_VOL_DN", CodeClick: "&kp C_MUTE", ClickKeymapIndex: 42},
-			{ID: "encoder_right", Label: "Encoder direito", CodeCW: "&kp PG_UP", CodeCCW: "&kp PG_DN", CodeClick: "&kp C_PP", ClickKeymapIndex: 43},
+			{ID: "encoder_left", Label: "Left encoder", CodeCW: "&kp C_VOL_UP", CodeCCW: "&kp C_VOL_DN", CodeClick: "&kp C_MUTE", ClickKeymapIndex: 42},
+			{ID: "encoder_right", Label: "Right encoder", CodeCW: "&kp PG_UP", CodeCCW: "&kp PG_DN", CodeClick: "&kp C_PP", ClickKeymapIndex: 43},
 		},
-		Variants: []models.Variant{{ID: "nice_nano_v2", Name: "nice!nano v2 / SuperMini compatível", UF2Family: 0xADA52840,
+		Variants: []models.Variant{{ID: "nice_nano_v2", Name: "nice!nano v2 / compatible SuperMini", UF2Family: 0xADA52840,
 			BootloaderBoards: []string{"nRF52840", "nrf52840", "Nice!Nano", "nice_nano"},
-			Instructions:     "Conecte uma metade por USB e pressione RESET duas vezes rapidamente. Aguarde aparecer o volume UF2 e informe qual metade foi conectada. A compatibilidade da SuperMini depende do bootloader e da pinagem usados na montagem.",
-			Targets:          []models.Target{{ID: "left", Role: "central", Name: "Esquerda", Board: "nice_nano_v2", Shield: "sofle_left", Artifact: "sofle-left.uf2"}, {ID: "right", Role: "peripheral", Name: "Direita", Board: "nice_nano_v2", Shield: "sofle_right", Artifact: "sofle-right.uf2"}},
+			Instructions:     "Connect one half by USB and press RESET twice quickly. Wait for the UF2 volume and select the connected half. SuperMini compatibility depends on the bootloader and wiring used in your build.",
+			Targets:          []models.Target{{ID: "left", Role: "central", Name: "Left", Board: "nice_nano_v2", Shield: "sofle_left", Artifact: "sofle-left.uf2"}, {ID: "right", Role: "peripheral", Name: "Right", Board: "nice_nano_v2", Shield: "sofle_right", Artifact: "sofle-right.uf2"}},
 		}},
 	}
 	offsets := []float64{0.5, 0.5, 0.25, 0, 0.25, 0.5}
@@ -62,7 +62,7 @@ func (d *Device) Descriptor() models.Plugin {
 	legacy.ZMKRevision = p.ZMKRevision
 	legacy.BuildImage = p.BuildImage
 	modern := p.Variants[0]
-	modern.Name = "nice!nano v2 / SuperMini — ZMK atual"
+	modern.Name = "nice!nano v2 / SuperMini — current ZMK"
 	modern.Features = []string{"layer-locking"}
 	modern.ZMKRevision = "4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85"
 	modern.BuildImage = "zmkfirmware/zmk-build-arm:4.1"

@@ -1,3 +1,4 @@
+import { localizeMessage, tr, useLocale } from "../i18n";
 import { useEffect, useState } from "react";
 import { useDraftError } from "../utils/useDraftError";
 export function NumberField({
@@ -13,6 +14,7 @@ export function NumberField({
   min?: number;
   max?: number;
 }) {
+  useLocale();
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
   const number = Number(draft);
@@ -22,12 +24,12 @@ export function NumberField({
     !Number.isInteger(number) ||
     number < min ||
     number > max
-      ? `Use um inteiro entre ${min} e ${max}.`
+      ? tr("Use an integer between {0} and {1}.", min, max)
       : "";
   useDraftError(error);
   return (
     <label className="form-label">
-      {label}
+      {tr(label)}
       <input
         className={`field w-28 ${error ? "invalid-field" : ""}`}
         type="number"
@@ -43,7 +45,7 @@ export function NumberField({
       />
       {error && (
         <span className="binding-error" role="alert">
-          {error}
+          {localizeMessage(error)}
         </span>
       )}
     </label>

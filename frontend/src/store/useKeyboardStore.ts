@@ -1,3 +1,4 @@
+import { tr } from "../i18n";
 import { create } from "zustand";
 import type { Project, Plugin, Session, ILayer, IKeyAction } from "../types/keyboard";
 import { uid } from "../types/keyboard";
@@ -8,7 +9,7 @@ const clone = <T>(v: T): T => structuredClone(v);
 const canonical = (source: Project): Project => {
   const p = clone(source);
   if (!p.layout || !Array.isArray(p.layout.layers) || p.layout.layers.length === 0) {
-    throw new Error("O projeto importado não contém camadas válidas.");
+    throw new Error(tr("The imported project does not contain valid layers."));
   }
   if (p.schemaVersion === 1) {
     p.schemaVersion = 2;
@@ -268,7 +269,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
     s.edit((p) => {
       const l = clone(p.layout.layers[0]);
       l.id = id;
-      l.name = `Camada ${p.layout.layers.length}`;
+      l.name = tr("Layer {0}", p.layout.layers.length);
       l.keys.forEach((k) => (k.code = "&trans"));
       l.sensors.forEach((s) => {
         s.codeCW = "&trans";
@@ -296,7 +297,10 @@ export const useKeyboardStore = create<State>((set, get) => ({
       other.layout.inputProcessors?.some((c) => c.layerIds.includes(layer.id))
     ) {
       set({
-        error: `A camada “${layer.name}” é usada por outras ações ou combos. Remova essas referências antes de excluí-la.`,
+        error: tr(
+          "Layer “{0}” is used by other actions or combos. Remove those references before deleting it.",
+          layer.name,
+        ),
       });
       return;
     }
@@ -353,7 +357,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
       codes(p).some((c) => new RegExp(`&${id}(?=$|[^a-zA-Z0-9_])`).test(c))
     ) {
       set({
-        error: "Este recurso está em uso. Remova as ações que o referenciam antes de excluí-lo.",
+        error: tr("This resource is in use. Remove actions that reference it before deleting it."),
       });
       return;
     }

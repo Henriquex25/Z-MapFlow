@@ -1,3 +1,5 @@
+import { localizeMessage } from "../i18n";
+import { tr } from "../i18n";
 import { Component, type ReactNode } from "react";
 import { api } from "../services/api";
 import { useKeyboardStore } from "../store/useKeyboardStore";
@@ -15,10 +17,10 @@ export class EditorBoundary extends Component<
     if (!this.state.error) return this.props.children;
     return (
       <main className="loading-screen" role="alert">
-        <h1>Não foi possível exibir o editor</h1>
-        <p>Você pode exportar a edição atual antes de reabrir a configuração salva.</p>
-        <pre className="source-code">{this.state.error.message}</pre>
-        {this.state.exportError && <p>{this.state.exportError}</p>}
+        <h1>{tr("Could not display the editor")}</h1>
+        <p>{tr("You can export your current changes before reopening the saved configuration.")}</p>
+        <pre className="source-code">{localizeMessage(this.state.error.message)}</pre>
+        {this.state.exportError && <p>{localizeMessage(this.state.exportError)}</p>}
         <div className="flex gap-3">
           <button
             className="btn"
@@ -32,13 +34,13 @@ export class EditorBoundary extends Component<
               }
             }}
           >
-            Exportar edição atual (JSON)
+            {tr("Export current changes (JSON)")}{" "}
           </button>
           <button
             className="btn primary"
             onClick={() => this.setState({ error: null, exportError: "" })}
           >
-            Reabrir editor
+            {tr("Reopen editor")}{" "}
           </button>
         </div>
       </main>

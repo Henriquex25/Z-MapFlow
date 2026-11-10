@@ -28,7 +28,8 @@ cat > "$user_data_dir/applications/z-mapflow.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=Z-MapFlow
-Comment=Editor visual e compilador de teclados ZMK
+Comment=Visual ZMK keyboard editor and firmware builder
+Comment[pt_BR]=Editor visual e compilador de teclados ZMK
 Exec="$install_dir/z-mapflow"
 Icon=$install_dir/appicon.png
 Terminal=false
@@ -38,7 +39,7 @@ DESKTOP
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database "$user_data_dir/applications" >/dev/null 2>&1 || true
 fi
-printf 'Z-MapFlow instalado. Abra pelo menu de aplicativos.\n'
+printf 'Z-MapFlow installed. Open it from your application menu.\n'
 if [ "${1:-}" != --no-launch ]; then
   "$install_dir/z-mapflow" >/dev/null 2>&1 &
 fi

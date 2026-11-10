@@ -26,8 +26,8 @@ it("requires the correct count and kind for reusable hold-taps", () => {
 });
 it("rejects two-parameter children and recursive composition", () => {
   const { project: p, plugin } = fixture();
-  expect(validateBinding("&mt LCTRL A", p, plugin, "child")).toContain("zero ou um");
+  expect(validateBinding("&mt LCTRL A", p, plugin, "child")).toContain("zero or one");
   expect(validateBinding("&kp", p, plugin, "child")).toBe("");
   p.layout.behaviors = [{ ...newBehavior("tap-dance"), id: "zm_dance", bindings: ["&zm_dance"] }];
-  expect(validateBinding("&zm_dance", p, plugin)).toContain("si mesmo");
+  expect(validateBinding("&zm_dance", p, plugin)).toContain("itself");
 });

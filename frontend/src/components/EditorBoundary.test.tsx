@@ -15,10 +15,10 @@ it("shows recovery actions instead of an empty window after a rendering error", 
         <Editor />
       </EditorBoundary>,
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível exibir o editor");
-    expect(screen.getByRole("button", { name: "Exportar edição atual (JSON)" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not display the editor");
+    expect(screen.getByRole("button", { name: "Export current changes (JSON)" })).toBeVisible();
     fail = false;
-    fireEvent.click(screen.getByRole("button", { name: "Reabrir editor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reopen editor" }));
     expect(screen.getByText("Editor recuperado")).toBeVisible();
   } finally {
     log.mockRestore();

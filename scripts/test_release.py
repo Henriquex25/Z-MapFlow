@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import unittest
 from package_release import package
+from project_version import current_version
 
 
 class ReleaseTest(unittest.TestCase):
@@ -14,16 +15,17 @@ class ReleaseTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="z-mapflow-release-test-") as tmp:
             root = Path(tmp)
             binary = root / "binary"
-            binary.write_text('#!/bin/sh\nprintf "0.1.0\\n"\n')
+            version = current_version()
+            binary.write_text(f'#!/bin/sh\nprintf "{version}\\n"\n')
             binary.chmod(0o755)
             output = root / "dist"
-            package("0.1.0", binary, output)
+            package(version, binary, output)
             for line in (output / "checksums.txt").read_text().splitlines():
                 digest, filename = line.split()
                 self.assertEqual(digest, hashlib.sha256((output / filename).read_bytes()).hexdigest())
-            with tarfile.open(output / "z-mapflow_0.1.0_linux_amd64.tar.gz") as tar:
+            with tarfile.open(output / f"z-mapflow_{version}_linux_amd64.tar.gz") as tar:
                 tar.extractall(root / "extracted", filter="data")
-            folder = root / "extracted/z-mapflow-0.1.0"
+            folder = root / f"extracted/z-mapflow-{version}"
             env = dict(os.environ, HOME=str(root / "home"), XDG_DATA_HOME=str(root / "data with spaces"))
             result = subprocess.run([str(folder / "install.sh"), "--no-launch"], env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -43,9 +45,45 @@ class ReleaseTest(unittest.TestCase):
             binary = Path(tmp) / "binary"
             binary.write_text('#!/bin/sh\necho dev\n')
             binary.chmod(0o755)
-            for version in ["0.1.0", "0.1.0-beta.1", "v0.1.0", "01.2.3"]:
+            for version in [current_version(), "0.1.0-beta.1", "v0.1.0", "01.2.3", "999.0.0"]:
                 with self.subTest(version=version), self.assertRaises(ValueError):
                     package(version, binary, Path(tmp) / "out")
+
+class WailsVersionTest(unittest.TestCase):
+    def test_native_metadata_uses_central_version_and_restores_after_failure(self):
+        from unittest.mock import patch
+        import json
+        import wails
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = root / "wails.json"
+            original = '{"name":"test","info":{"productName":"Test"}}\n'
+            config.write_text(original)
+            def build(args, cwd):
+                self.assertEqual(json.loads(config.read_text())["info"]["productVersion"], current_version())
+                return 17
+            with patch.object(wails, "ROOT", root), patch.object(wails.subprocess, "call", side_effect=build):
+                self.assertEqual(wails.run(["build"]), 17)
+            self.assertEqual(config.read_text(), original)
+
+    def test_native_metadata_preserves_concurrent_configuration_edits(self):
+        from unittest.mock import patch
+        import json
+        import wails
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = root / "wails.json"
+            config.write_text('{"name":"test","info":{}}')
+            def build(args, cwd):
+                data = json.loads(config.read_text())
+                data["name"] = "user edit"
+                config.write_text(json.dumps(data))
+                return 0
+            with patch.object(wails, "ROOT", root), patch.object(wails.subprocess, "call", side_effect=build):
+                wails.run(["build"])
+            data = json.loads(config.read_text())
+            self.assertEqual(data["name"], "user edit")
+            self.assertNotIn("productVersion", data["info"])
 
 
 if __name__ == "__main__":

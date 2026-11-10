@@ -17,6 +17,7 @@ import (
 	"z-mapflow/internal/devices/soflev2"
 	"z-mapflow/internal/firmware"
 	"z-mapflow/internal/flash"
+	"z-mapflow/internal/i18n"
 	"z-mapflow/internal/keymap"
 	"z-mapflow/internal/models"
 	"z-mapflow/internal/project"
@@ -36,6 +37,7 @@ type App struct {
 	updater      *updates.Manager
 	updating     atomic.Bool
 	restartReady atomic.Bool
+	uiLocale     atomic.Value
 }
 
 func NewApp() *App { return &App{} }
@@ -159,7 +161,7 @@ func (a *App) ImportProject(pluginID, variantID string) (models.Session, error) 
 	if err := a.ready(); err != nil {
 		return models.Session{}, err
 	}
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Importar projeto ou keymap", Filters: []runtime.FileFilter{{DisplayName: "Projetos e keymaps", Pattern: "*.json;*.keymap"}, {DisplayName: "Projeto Z-MapFlow", Pattern: "*.json"}, {DisplayName: "Keymap ZMK", Pattern: "*.keymap"}}})
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: a.tr("Import project or keymap"), Filters: []runtime.FileFilter{{DisplayName: a.tr("Projects and keymaps"), Pattern: "*.json;*.keymap"}, {DisplayName: a.tr("Z-MapFlow project"), Pattern: "*.json"}, {DisplayName: a.tr("Keymap ZMK"), Pattern: "*.keymap"}}})
 	if err != nil || path == "" {
 		return models.Session{}, err
 	}
@@ -216,7 +218,7 @@ func (a *App) ExportProject(p models.Project) (string, error) {
 	if err := project.Validate(p, a.registry); err != nil {
 		return "", err
 	}
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Exportar projeto", DefaultFilename: "z-mapflow.json", Filters: []runtime.FileFilter{{DisplayName: "Projeto Z-MapFlow", Pattern: "*.json"}}})
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: a.tr("Export project"), DefaultFilename: "z-mapflow.json", Filters: []runtime.FileFilter{{DisplayName: a.tr("Z-MapFlow project"), Pattern: "*.json"}}})
 	if err != nil || path == "" {
 		return "", err
 	}
@@ -231,7 +233,7 @@ func (a *App) ExportKeymap(p models.Project) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Exportar keymap ZMK", DefaultFilename: files[0].Name, Filters: []runtime.FileFilter{{DisplayName: "Keymap ZMK", Pattern: "*.keymap"}}})
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: a.tr("Export ZMK keymap"), DefaultFilename: files[0].Name, Filters: []runtime.FileFilter{{DisplayName: a.tr("Keymap ZMK"), Pattern: "*.keymap"}}})
 	if err != nil || path == "" {
 		return "", err
 	}
@@ -244,11 +246,11 @@ func (a *App) ExportKeymap(p models.Project) (string, error) {
 		return "", err
 	}
 	if len(conflicts) > 0 {
-		answer, e := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{Type: runtime.QuestionDialog, Title: "Substituir arquivos da exportação?", Message: "O keymap inclui .conf, build.yaml e headers necessários. Estes arquivos já existem com conteúdo diferente:\n" + strings.Join(conflicts, "\n"), Buttons: []string{"Substituir arquivos", "Cancelar"}, DefaultButton: "Cancelar", CancelButton: "Cancelar"})
+		answer, e := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{Type: runtime.QuestionDialog, Title: a.tr("Replace export files?"), Message: a.tr("The keymap includes .conf, build.yaml and required headers. These files already exist with different contents:\n") + strings.Join(conflicts, "\n"), Buttons: []string{a.tr("Replace files"), a.tr("Cancel")}, DefaultButton: a.tr("Cancel"), CancelButton: a.tr("Cancel")})
 		if e != nil {
 			return "", e
 		}
-		if answer != "Substituir arquivos" {
+		if answer != a.tr("Replace files") {
 			return "", nil
 		}
 	}
@@ -262,7 +264,7 @@ func (a *App) ExportFirmware(buildID string) (string, error) {
 	if resultErr != nil || b.Status != "success" {
 		return "", fmt.Errorf("nenhum firmware disponível")
 	}
-	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: "Exportar firmware — selecione uma pasta"})
+	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: a.tr("Export firmware — select a folder")})
 	if err != nil || dir == "" {
 		return "", err
 	}
@@ -323,7 +325,7 @@ func (a *App) SelectBootloader(buildID string) (flash.Volume, error) {
 	if err != nil {
 		return flash.Volume{}, err
 	}
-	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: "Selecione o volume de bootloader UF2"})
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: a.tr("Select the UF2 bootloader volume")})
 	if err != nil || path == "" {
 		return flash.Volume{}, err
 	}
@@ -371,7 +373,7 @@ func (a *App) ImportHeaders() (models.HeaderBundle, error) {
 	if err := a.ready(); err != nil {
 		return models.HeaderBundle{}, err
 	}
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: "Adicionar header de idioma", Filters: []runtime.FileFilter{{DisplayName: "Headers ZMK", Pattern: "*.h"}}})
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Title: a.tr("Add language header"), Filters: []runtime.FileFilter{{DisplayName: a.tr("ZMK headers"), Pattern: "*.h"}}})
 	if err != nil || path == "" {
 		return models.HeaderBundle{}, err
 	}
@@ -424,3 +426,18 @@ func (a *App) InstallUpdate(expectedVersion string) error {
 }
 
 func (a *App) beforeClose(context.Context) bool { return a.updating.Load() && !a.restartReady.Load() }
+
+// GetAppInfo is available even when project loading or the network fails.
+func (a *App) GetAppInfo() version.Info { return version.Current() }
+
+func (a *App) SetAppLanguage(locale string) error {
+	if locale != "en" && locale != "pt-BR" {
+		return fmt.Errorf("unsupported application language")
+	}
+	a.uiLocale.Store(locale)
+	return nil
+}
+func (a *App) tr(message string) string {
+	locale, _ := a.uiLocale.Load().(string)
+	return i18n.Message(locale, message)
+}

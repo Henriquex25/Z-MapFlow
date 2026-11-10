@@ -13,8 +13,7 @@
   "info": {
     "companyName": "Henrique Miranda",
     "productName": "Z-MapFlow",
-    "productVersion": "0.1.0",
     "copyright": "Copyright © 2026 Henrique Miranda and contributors",
-    "comments": "Editor visual de teclados ZMK"
+    "comments": "Visual ZMK keyboard editor"
   }
 }

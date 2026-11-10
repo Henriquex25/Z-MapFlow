@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"z-mapflow/internal/desktopassets"
 	"z-mapflow/internal/updates"
 	"z-mapflow/internal/version"
 
@@ -27,6 +28,9 @@ func main() {
 	if err := updates.WaitForParent(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
+	}
+	if err := desktopassets.RefreshIcon(appIcon); err != nil {
+		fmt.Fprintln(os.Stderr, "Could not refresh the application icon:", err)
 	}
 	// Create an instance of the app structure
 	app := NewApp()

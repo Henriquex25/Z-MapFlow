@@ -45,7 +45,7 @@ export function fixture(): Session {
         targets: [
           {
             id: "left",
-            name: "Esquerda",
+            name: "Left",
             board: "test",
             shield: "test_left",
             artifact: "left.uf2",

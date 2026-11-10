@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+from project_version import current_version
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,6 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def package(version: str, binary: Path, output: Path):
     if not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
         raise ValueError("Use a stable SemVer version without the v prefix")
+    if version != current_version():
+        raise ValueError("Release version must match internal/version/VERSION")
     binary = binary.resolve()
     actual = subprocess.check_output([str(binary), "--version"], text=True).strip()
     if actual != version:
@@ -46,7 +49,7 @@ def package(version: str, binary: Path, output: Path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("version")
+    parser.add_argument("version", nargs="?", default=current_version())
     parser.add_argument("--binary", type=Path, default=ROOT / "build/bin/z-mapflow")
     parser.add_argument("--output", type=Path, default=ROOT / "dist")
     args = parser.parse_args()

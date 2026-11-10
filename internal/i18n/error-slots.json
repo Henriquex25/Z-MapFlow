@@ -1,0 +1,59 @@
+{
+  "{0}; restore the executable from {1}: {2}": [
+    2
+  ],
+  "Docker is unavailable. Start Docker and check your user\u2019s access: {0} ({1})": [
+    1
+  ],
+  "Invalid project file: {0}": [
+    0
+  ],
+  "Invalid build.yaml: {0}": [
+    0
+  ],
+  "Incompatible configuration: {0}": [
+    0
+  ],
+  "Could not send the configuration to the container: {0} ({1})": [
+    1
+  ],
+  "Could not open the configuration: {0}": [
+    0
+  ],
+  "Could not wait for the previous process: {0}": [
+    0
+  ],
+  "Could not check the new executable: {0}": [
+    0
+  ],
+  "Could not confirm writing to the volume; check that the keyboard restarted: {0}": [
+    0
+  ],
+  "Could not check for updates: {0}": [
+    0
+  ],
+  "Could not create the container: {0}": [
+    0
+  ],
+  "Could not import the .keymap: {0}": [
+    0
+  ],
+  "Could not restart: {0}": [
+    0
+  ],
+  "Could not replace the saved file: {0}": [
+    0
+  ],
+  "The download is not a valid Linux executable: {0}": [
+    0
+  ],
+  "Invalid update response: {0}": [
+    0
+  ],
+  "No permission to update; reinstall in your user folder: {0}": [
+    0
+  ],
+  "{0}, key {1}: {2}": [
+    2
+  ]
+}

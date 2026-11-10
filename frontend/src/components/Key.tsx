@@ -1,3 +1,4 @@
+import { useLocale } from "../i18n";
 import { IKeyAction } from "../types/keyboard";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import { type KeyVisuals } from "../utils/keyFormatter";
@@ -11,6 +12,7 @@ interface KeyProps {
 }
 
 export function Key({ action, className = "", compact = false }: KeyProps) {
+  useLocale();
   const project = useKeyboardStore((s) => s.project);
   const presentation = presentKey(action.code, project);
   const custom = presentation.name;

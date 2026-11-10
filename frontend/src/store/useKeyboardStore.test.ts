@@ -122,7 +122,7 @@ describe("stable references", () => {
     );
     state().removeLayer(0);
     expect(state().project!.layout.layers).toHaveLength(2);
-    expect(state().error).toContain("é usada");
+    expect(state().error).toContain("is used");
   });
   it("blocks deleting referenced resources and allows deleting unused ones", () => {
     state().edit((p) => {
@@ -195,7 +195,7 @@ it("normalizes numeric layer arguments routed through macros and blocks deletion
     "&zm_param_layer 0",
   );
   state().removeLayer(0);
-  expect(state().error).toContain("é usada");
+  expect(state().error).toContain("is used");
   expect(state().project!.layout.layers).toHaveLength(2);
 });
 
@@ -255,8 +255,8 @@ it("rejects invalid assignment before touching the current or saved layout", () 
   const before = structuredClone(state().project);
   state().updateKeyCode(0, "fdsfsd");
   expect(state().project).toEqual(before);
-  expect(state().error).toContain("ação ZMK");
+  expect(state().error).toContain("ZMK action");
   state().updateKeyCode(0, "&kp UNKNOWN_KEY");
   expect(state().project).toEqual(before);
-  expect(state().error).toContain("Código não reconhecido");
+  expect(state().error).toContain("Unknown code");
 });

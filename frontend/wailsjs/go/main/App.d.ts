@@ -3,6 +3,7 @@
 import {updates} from '../models';
 import {models} from '../models';
 import {flash} from '../models';
+import {version} from '../models';
 import {firmware} from '../models';
 
 export function CancelBuild():Promise<void>;
@@ -18,6 +19,8 @@ export function ExportProject(arg1:models.Project):Promise<string>;
 export function FindBootloaders(arg1:string):Promise<Array<flash.Volume>>;
 
 export function FlashFirmware(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function GetAppInfo():Promise<version.Info>;
 
 export function GetBuild(arg1:string):Promise<firmware.Build>;
 
@@ -46,5 +49,7 @@ export function SaveAndBuild(arg1:models.Project):Promise<models.Project>;
 export function SaveProject(arg1:models.Project):Promise<models.Project>;
 
 export function SelectBootloader(arg1:string):Promise<flash.Volume>;
+
+export function SetAppLanguage(arg1:string):Promise<void>;
 
 export function StartBuild():Promise<firmware.Build>;

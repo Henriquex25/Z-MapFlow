@@ -1,3 +1,4 @@
+import { tr } from "../i18n";
 import {
   action,
   type Behavior,
@@ -14,8 +15,8 @@ export function actionName(selected: IKeyAction, project: Project | null) {
     project?.layout.behaviors.find((b) => b.id === id);
   if (custom) return custom.name;
   if (selected.label && !selected.label.startsWith("&")) return selected.label;
-  if (selected.code === "&none") return "Sem ação";
-  if (selected.code === "&trans") return "Transparente";
+  if (selected.code === "&none") return tr("No action");
+  if (selected.code === "&trans") return tr("Transparent");
   const visual = formatKeyVisuals(selected.code);
   return [visual?.modifier, visual?.main].filter(Boolean).join(" · ") || selected.code;
 }

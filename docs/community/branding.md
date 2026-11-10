@@ -1,11 +1,11 @@
-# Logo e ícones
+# Logo and icons
 
-Coloque a logo principal em **`build/appicon.png`**, substituindo a imagem padrão. Use PNG quadrado, preferencialmente **1024 × 1024 pixels**, com margem interna e transparência quando apropriado.
+Replace **`build/appicon.png`** with the main app logo. Use a square PNG, preferably **1024×1024**, with internal padding and transparency where appropriate.
 
-Esse arquivo é incorporado ao ícone da janela Linux e acompanha o instalador. O Wails também o usa como fonte para os ícones de outras plataformas quando os derivados não existem. Um build novo incorpora a imagem nova.
+Linux embeds this file as the window icon and includes it in the installer for the application menu. Rebuild to incorporate a new image. The source file is preserved by builds.
 
-O repositório contém um `build/windows/icon.ico` padrão. Ao preparar um build Windows com outra logo, remova/regere esse derivado para impedir o uso do ícone antigo. Esse cuidado também vale para derivados `.icns` existentes no bundle macOS.
+For future Windows packaging, regenerate `build/windows/icon.ico` whenever the source PNG changes so Wails does not reuse an outdated derivative. Apply the same care to an existing macOS `.icns` derivative.
 
-Se possuir um SVG original, preserve uma cópia em `assets/branding/logo.svg`; exporte a versão PNG para `build/appicon.png`. Não é necessário converter a logo com ferramentas de IA. A documentação pode reutilizar o SVG quando ele estiver disponível.
+If you have a vector original, keep it under `assets/branding/logo.svg` and export the PNG to `build/appicon.png`. Only contribute artwork you have permission to distribute, preserving relevant third-party notices.
 
-Só contribua com imagens que possam ser distribuídas junto ao projeto e registre os direitos de terceiros quando existirem.
+The in-app header and browser favicon import `build/appicon.png` directly. Linux embeds the same source as the window icon; the installer copies it for the application launcher. An installed Linux app refreshes that launcher image from its embedded icon on startup after a binary update. The Windows `build/windows/icon.ico` derivative has also been regenerated from this logo.

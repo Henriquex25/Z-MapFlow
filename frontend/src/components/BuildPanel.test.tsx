@@ -23,7 +23,7 @@ it("requires the connected half, allows retry, and selects the corresponding art
   const s = fixture();
   s.plugin.variants[0].targets.push({
     id: "right",
-    name: "Direita",
+    name: "Right",
     board: "test",
     shield: "test_right",
     artifact: "right.uf2",
@@ -47,24 +47,24 @@ it("requires the connected half, allows retry, and selects the corresponding art
   render(
     <BuildPanel build={build} plugins={[s.plugin]} currentRevision="saved1" onError={vi.fn()} />,
   );
-  fireEvent.click(screen.getByRole("button", { name: "Fazer flash" }));
-  const send = await screen.findByRole("button", { name: "Enviar firmware" });
+  fireEvent.click(screen.getByRole("button", { name: "Flash firmware" }));
+  const send = await screen.findByRole("button", { name: "Send firmware" });
   expect(send).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Esquerda" }));
+  fireEvent.click(screen.getByRole("button", { name: "Left" }));
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Enviar firmware — Esquerda" })).toBeEnabled(),
+    expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeEnabled(),
   );
   vi.mocked(api.flash).mockRejectedValueOnce(new Error("Reconecte o volume"));
-  fireEvent.click(screen.getByRole("button", { name: "Enviar firmware — Esquerda" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — Left" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Reconecte o volume");
-  fireEvent.click(screen.getByRole("button", { name: "Enviar firmware — Esquerda" }));
-  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Arquivo enviado"));
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — Left" }));
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("File sent"));
   expect(api.flash).toHaveBeenLastCalledWith("123", "left", "/test/UF2");
-  fireEvent.click(screen.getByRole("button", { name: "Direita" }));
+  fireEvent.click(screen.getByRole("button", { name: "Right" }));
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Enviar firmware — Direita" })).toBeEnabled(),
+    expect(screen.getByRole("button", { name: "Send firmware — Right" })).toBeEnabled(),
   );
-  fireEvent.click(screen.getByRole("button", { name: "Enviar firmware — Direita" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — Right" }));
   await waitFor(() => expect(api.flash).toHaveBeenLastCalledWith("123", "right", "/test/UF2"));
 });
 
@@ -93,16 +93,16 @@ it.each(["/tmp/firmwares", ""])(
         onError={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Exportar firmware" }));
+    fireEvent.click(screen.getByRole("button", { name: "Export firmware" }));
     await waitFor(() => expect(api.exportFirmware).toHaveBeenCalledWith("export-test"));
     if (destination) {
       expect(await screen.findByRole("status")).toHaveTextContent(
-        "Firmware exportado com sucesso para /tmp/firmwares",
+        "Firmware successfully exported to /tmp/firmwares",
       );
-      fireEvent.click(screen.getByRole("button", { name: "Fechar notificação" }));
-      expect(screen.queryByText(/Firmware exportado com sucesso/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Dismiss notification" }));
+      expect(screen.queryByText(/Firmware successfully exported/)).not.toBeInTheDocument();
     } else {
-      expect(screen.queryByText(/Firmware exportado com sucesso/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Firmware successfully exported/)).not.toBeInTheDocument();
     }
   },
 );

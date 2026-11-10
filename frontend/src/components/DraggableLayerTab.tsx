@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ILayer } from "../types/keyboard";
@@ -24,6 +25,7 @@ export function DraggableLayerTab({
   onRemove,
   onContextMenu,
 }: DraggableLayerTabProps) {
+  useLocale();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
@@ -40,7 +42,7 @@ export function DraggableLayerTab({
       style={style}
       {...attributes}
       {...listeners}
-      aria-label={`Reordenar camada ${layer.name}`}
+      aria-label={tr("Reorder layer {0}", layer.name)}
       onContextMenu={onContextMenu}
       className={`layer-tab ${isDragging ? "is-dragging" : ""} ${isActive ? "is-active" : ""}`}
     >
@@ -67,7 +69,7 @@ export function DraggableLayerTab({
             onRemove();
           }}
           className="layer-tab-remove"
-          title="Remover Camada"
+          title={tr("Remove layer")}
         >
           <X size={16} />
         </button>

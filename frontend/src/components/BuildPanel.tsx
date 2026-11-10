@@ -1,22 +1,23 @@
+import { localizeMessage, tr, useLocale } from "../i18n";
 import { Toast } from "./Toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Build, Plugin, Volume } from "../types/keyboard";
 import { api } from "../services/api";
 
 const statusLabels: Record<string, string> = {
-  running: "Compilando",
-  success: "Firmware pronto",
-  failed: "Falha na compilação",
-  cancelled: "Compilação cancelada",
+  running: "Building",
+  success: "Firmware ready",
+  failed: "Build failed",
+  cancelled: "Build cancelled",
 };
 const stageLabels: Record<string, string> = {
-  preparing: "Preparando ambiente Docker",
-  cache: "Aguardando acesso ao cache de compilação",
-  dependencies: "Preparando dependências ZMK (primeiro build pode demorar)",
-  left: "Compilando metade esquerda",
-  right: "Compilando metade direita",
-  finished: "Concluído",
-  interrupted: "Interrompido",
+  preparing: "Preparing Docker environment",
+  cache: "Waiting for access to the build cache",
+  dependencies: "Preparing ZMK dependencies (the first build may take a while)",
+  left: "Building left half",
+  right: "Building right half",
+  finished: "Completed",
+  interrupted: "Interrupted",
 };
 export function BuildPanel({
   build,
@@ -33,6 +34,7 @@ export function BuildPanel({
   notice?: string;
   onDismissNotice?: () => void;
 }) {
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
   const [flash, setFlash] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -62,7 +64,7 @@ export function BuildPanel({
       const dir = await api.exportFirmware(shown.id);
       if (dir) {
         setExported(dir);
-        setToast(`Firmware exportado com sucesso para ${dir}`);
+        setToast(tr("Firmware successfully exported to {0}", dir));
       }
     } catch (e) {
       onError(e);
@@ -77,47 +79,51 @@ export function BuildPanel({
         <span className={`status-dot ${shown?.status || "idle"}`} />
         {(shown || !notice) && (
           <strong className="text-sm">
-            {shown ? statusLabels[shown.status] : "Pronto para configurar"}
+            {shown ? tr(statusLabels[shown.status] ?? shown.status) : tr("Ready to configure")}
           </strong>
         )}
         {notice && (
           <div className="build-notice" role="status">
-            <span title={notice}>{notice}</span>
-            <button aria-label="Fechar mensagem" onClick={onDismissNotice}>
+            <span title={localizeMessage(notice)}>{localizeMessage(notice)}</span>
+            <button aria-label={tr("Dismiss message")} onClick={onDismissNotice}>
               ×
             </button>
           </div>
         )}
         {shown && (
           <>
-            <span className="hint">{stageLabels[shown.stage] || shown.stage}</span>
-            <span className="badge">Revisão {shown.revision.slice(0, 8)}</span>
+            <span className="hint">{tr(stageLabels[shown.stage] || shown.stage)}</span>
+            <span className="badge">
+              {tr("Revision")} {shown.revision.slice(0, 8)}
+            </span>
             {shown.revision !== currentRevision && (
-              <span className="hint text-amber-300!">Firmware de outra revisão salva</span>
+              <span className="hint text-amber-300!">
+                {tr("Firmware from a different saved revision")}
+              </span>
             )}
           </>
         )}
         <div className="ml-auto flex gap-2">
           {shown?.status === "running" && (
             <button className="btn" onClick={() => api.cancelBuild().catch(onError)}>
-              Cancelar
+              {tr("Cancel")}{" "}
             </button>
           )}
           {shown && (
             <button className="btn" onClick={() => setExpanded((v) => !v)}>
-              {expanded ? "Ocultar logs" : "Ver logs"}
+              {expanded ? tr("Hide logs") : tr("View logs")}
             </button>
           )}
           <button className="btn" onClick={() => setShowHistory((v) => !v)}>
-            Histórico
+            {tr("History")}{" "}
           </button>
           {shown?.status === "success" && (
             <>
               <button className="btn" disabled={exporting} onClick={exportFiles}>
-                {exporting ? "Exportando…" : "Exportar firmware"}
+                {exporting ? tr("Exporting…") : tr("Export firmware")}
               </button>
               <button className="btn primary" onClick={() => setFlash(true)}>
-                Fazer flash
+                {tr("Flash firmware")}{" "}
               </button>
             </>
           )}
@@ -125,14 +131,18 @@ export function BuildPanel({
       </div>
       {shown?.error && (
         <p className="text-sm text-rose-300 mt-2" role="alert">
-          {shown.error}
+          {localizeMessage(shown.error)}
         </p>
       )}
-      {exported && <p className="hint mt-2">Firmware exportado para {exported}</p>}
+      {exported && (
+        <p className="hint mt-2">
+          {tr("Firmware exported to")} {exported}
+        </p>
+      )}
       {showHistory && (
         <div className="flex flex-wrap gap-2 mt-3">
           <button className={`btn ${!selected ? "primary" : ""}`} onClick={() => setSelected(null)}>
-            Atual
+            {tr("Current")}{" "}
           </button>
           {history.map((b) => (
             <button
@@ -140,16 +150,17 @@ export function BuildPanel({
               className={`btn ${selected?.id === b.id ? "primary" : ""}`}
               onClick={() => api.getBuild(b.id).then(setSelected).catch(onError)}
             >
-              {new Date(b.startedAt).toLocaleString("pt-BR")} · {statusLabels[b.status]} ·{" "}
-              {b.revision.slice(0, 8)}
+              {new Date(b.startedAt).toLocaleString(locale)} ·{" "}
+              {tr(statusLabels[b.status] ?? b.status)} · {b.revision.slice(0, 8)}
             </button>
           ))}
-          {!history.length && <span className="hint">Nenhuma compilação anterior.</span>}
+          {!history.length && <span className="hint">{tr("No previous builds.")}</span>}
         </div>
       )}
       {expanded && shown && (
-        <pre ref={logRef} className="build-logs" aria-label="Logs da compilação">
-          {shown.logs?.join("\n") || "Aguardando saída do compilador…"}
+        <pre ref={logRef} className="build-logs" aria-label={tr("Build logs")}>
+          {shown.logs?.map((line) => localizeMessage(line)).join("\n") ||
+            tr("Waiting for compiler output…")}
         </pre>
       )}
       {flash && shown && plugin && (
@@ -167,6 +178,7 @@ function FlashModal({
   plugin: Plugin;
   onClose: () => void;
 }) {
+  useLocale();
   const variant = plugin.variants.find((v) => v.id === build.variantId)!;
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [volume, setVolume] = useState("");
@@ -232,7 +244,9 @@ function FlashModal({
       setTarget("");
       setVolume("");
       setMessage(
-        "Arquivo enviado. Aguarde a reinicialização do teclado. Para continuar, conecte a outra metade em bootloader.",
+        tr(
+          "File sent. Wait for the keyboard to restart. To continue, connect the other half in bootloader mode.",
+        ),
       );
     } catch (e) {
       setError(String(e));
@@ -244,16 +258,16 @@ function FlashModal({
     <div className="modal-backdrop">
       <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="flash-title">
         <div className="section-toolbar">
-          <h2 id="flash-title">Gravar firmware no teclado</h2>
+          <h2 id="flash-title">{tr("Flash firmware to keyboard")}</h2>
           <button className="btn" disabled={busy} onClick={onClose} autoFocus>
-            Fechar
+            {tr("Close")}{" "}
           </button>
         </div>
-        <p className="text-sm text-slate-300 leading-relaxed">{variant.instructions}</p>
+        <p className="text-sm text-slate-300 leading-relaxed">{tr(variant.instructions)}</p>
         <ol className="my-5 text-sm space-y-2">
-          <li>1. Conecte uma metade por USB e ative o bootloader.</li>
-          <li>2. Informe qual metade foi conectada.</li>
-          <li>3. Confira o volume e envie o firmware.</li>
+          <li>{tr("1. Connect one half by USB and enter bootloader mode.")}</li>
+          <li>{tr("2. Select the half you connected.")}</li>
+          <li>{tr("3. Check the volume and send the firmware.")}</li>
         </ol>
         <div className="flex gap-3 mb-4">
           {variant.targets
@@ -266,12 +280,12 @@ function FlashModal({
                 onClick={() => setTarget(t.id)}
               >
                 {sent.includes(t.id) ? "✓ " : ""}
-                {t.name}
+                {tr(t.name)}
               </button>
             ))}
         </div>
         <label className="form-label">
-          Volume do bootloader
+          {tr("Bootloader volume")}{" "}
           <select
             className="field w-full"
             disabled={busy}
@@ -279,31 +293,35 @@ function FlashModal({
             onChange={(e) => setVolume(e.target.value)}
           >
             <option value="">
-              {volumes.length ? "Selecione o volume" : "Aguardando teclado em bootloader…"}
+              {volumes.length
+                ? tr("Select a volume")
+                : tr("Waiting for a keyboard in bootloader mode…")}
             </option>
             {volumes.map((v) => (
               <option key={v.path} value={v.path}>
-                {v.name} — {v.path} — {v.board}
+                {tr(v.name)} — {v.path} — {v.board}
               </option>
             ))}
           </select>
         </label>
         <button className="btn mt-3" disabled={busy} onClick={manual}>
-          Selecionar volume manualmente
+          {tr("Select volume manually")}{" "}
         </button>
         {error && (
           <p className="notice error mt-4" role="alert">
-            {error}
+            {localizeMessage(error)}
           </p>
         )}
         {message && (
           <p className="notice mt-4" role="status">
-            {message}
+            {localizeMessage(message)}
           </p>
         )}
         <p className="hint mt-4">
-          Revisão {build.revision.slice(0, 8)}. O aplicativo envia o arquivo correspondente à metade
-          escolhida. A confirmação de funcionamento ocorre no próprio teclado.
+          {tr("Revision")} {build.revision.slice(0, 8)}
+          {tr(
+            ". The app sends the file for the selected half. Verify that the firmware works on your keyboard.",
+          )}{" "}
         </p>
         <button
           className="btn primary w-full mt-5"
@@ -311,8 +329,13 @@ function FlashModal({
           onClick={send}
         >
           {busy
-            ? "Enviando firmware…"
-            : `Enviar firmware${target ? ` — ${variant.targets.find((t) => t.id === target)?.name}` : ""}`}
+            ? tr("Sending firmware…")
+            : tr(
+                "Send firmware{0}",
+                target
+                  ? ` — ${tr(variant.targets.find((t) => t.id === target)?.name ?? target)}`
+                  : "",
+              )}
         </button>
       </section>
     </div>

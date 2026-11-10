@@ -1,22 +1,22 @@
-name: Sugerir uma melhoria
-description: Proponha uma mudança na experiência ou nos recursos.
-title: "[Melhoria]: "
+name: Suggest an improvement
+description: Propose a feature or usability improvement.
+title: "[Feature]: "
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Qual problema você quer resolver?
+      label: What problem do you want to solve?
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
-      label: Comportamento desejado
-      description: Exemplos concretos e alternativas ajudam a avaliar a ideia.
+      label: Desired behavior
+      description: Concrete examples and alternatives help evaluate the idea.
     validations:
       required: true
   - type: textarea
     id: references
     attributes:
-      label: Referências
-      description: Links da documentação oficial ZMK ou exemplos, quando aplicável.
+      label: References
+      description: Include official ZMK documentation or examples where relevant.

@@ -31,6 +31,7 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", os.environ["RELEASE_TAG"]), "Use vMAJOR.MINOR.PATCH"'
+          test "$RELEASE_TAG" = "v$(python3 scripts/project_version.py)" || { echo "Tag must match internal/version/VERSION"; exit 1; }
       - run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
       - run: go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)
       - name: Build versioned desktop
@@ -38,9 +39,8 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
-          release_version="${RELEASE_TAG#v}"
-          wails build -tags webkit2_41 -skipbindings -m -nosyncgomod -ldflags "-X z-mapflow/internal/version.Version=$release_version -X z-mapflow/internal/version.Commit=$RELEASE_COMMIT"
-          python3 scripts/package_release.py "$release_version"
+          python3 scripts/wails.py build -tags webkit2_41 -skipbindings -m -nosyncgomod -ldflags "-X z-mapflow/internal/version.Commit=$RELEASE_COMMIT"
+          python3 scripts/package_release.py
           cd dist && sha256sum -c checksums.txt
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

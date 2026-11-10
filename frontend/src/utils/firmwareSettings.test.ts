@@ -6,14 +6,14 @@ it("moves imported Studio enablement to the central target and preserves unrelat
   const p = fixture().project;
   p.extraConfig = "# Personal settings\nCONFIG_ZMK_STUDIO=y\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y";
   p.buildTargets = [
-    { targetId: "central", snippets: ["usb-logging"], cmakeArgs: ["-DCONFIG_TEST=42"] },
+    { targetId: "middle", snippets: ["usb-logging"], cmakeArgs: ["-DCONFIG_TEST=42"] },
   ];
-  enableStudioUSB(p, "central");
-  enableStudioUSB(p, "central");
+  enableStudioUSB(p, "middle");
+  enableStudioUSB(p, "middle");
   expect(p.extraConfig).toBe("# Personal settings\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y");
   expect(p.buildTargets).toEqual([
     {
-      targetId: "central",
+      targetId: "middle",
       snippets: ["usb-logging", "studio-rpc-usb-uart"],
       cmakeArgs: ["-DCONFIG_TEST=42", "-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"],
     },

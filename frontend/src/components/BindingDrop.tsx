@@ -1,3 +1,4 @@
+import { localizeMessage, tr, useLocale } from "../i18n";
 import { BindingArguments } from "./BindingArguments";
 import { useId, useState, useEffect } from "react";
 import { useDroppable, useDndContext } from "@dnd-kit/core";
@@ -11,7 +12,7 @@ import { useDraftError } from "../utils/useDraftError";
 export function BindingDrop({
   code,
   onChange,
-  label = "Solte uma ação aqui",
+  label = tr("Drop an action here"),
   compact = false,
   context = "binding",
   owner,
@@ -23,6 +24,7 @@ export function BindingDrop({
   context?: BindingContext;
   owner?: string;
 }) {
+  useLocale();
   const id = useId(),
     [raw, setRaw] = useState(code),
     { active } = useDndContext();
@@ -56,25 +58,25 @@ export function BindingDrop({
     <div
       ref={setNodeRef}
       role="group"
-      aria-label={label}
+      aria-label={tr(label)}
       className={`binding-drop ${compact ? "is-compact" : ""} ${isOver ? (candidateError ? "is-invalid" : "is-over") : ""} ${error ? "is-invalid" : ""}`}
     >
       <button
         type="button"
         className="binding-select"
         disabled={!selectedAction || !!candidateError}
-        aria-label={`Atribuir ação a ${label}`}
+        aria-label={tr("Assign action to {0}", label)}
         title={candidateError || undefined}
         onClick={() => {
           if (selectedAction) assign(selectedAction.code);
         }}
       >
-        <span className="text-xs text-slate-300">{label}</span>
+        <span className="text-xs text-slate-300">{tr(label)}</span>
         {!compact && (
           <span className="hint">
             {selectedAction
-              ? `Usar ${actionName(selectedAction, p)}`
-              : "Escolha uma ação na paleta ou arraste para cá"}
+              ? tr("Use {0}", actionName(selectedAction, p))
+              : tr("Choose an action from the palette or drag it here")}
           </span>
         )}
       </button>
@@ -89,17 +91,17 @@ export function BindingDrop({
         <BindingArguments
           code={code}
           project={p}
-          label={label}
+          label={tr(label)}
           context={context}
           onChange={assign}
         />
       )}
       <details className="binding-raw">
-        <summary>Código ZMK avançado</summary>
+        <summary>{tr("Advanced ZMK code")}</summary>
         <textarea
           className={`field ${error ? "invalid-field" : ""}`}
           rows={2}
-          aria-label={`Binding ZMK: ${label}`}
+          aria-label={tr("ZMK binding: {0}", label)}
           aria-invalid={!!error}
           value={raw}
           placeholder="&kp LC(A)"
@@ -114,16 +116,16 @@ export function BindingDrop({
         />
         {error && (
           <p className="binding-error" role="alert">
-            {error}
+            {localizeMessage(error)}
           </p>
         )}
         <button className="btn" disabled={!!error || raw === code} onClick={commitRaw}>
-          Aplicar código
+          {tr("Apply code")}{" "}
         </button>
       </details>
       {(isOver || !!selectedAction) && candidateError && (
         <p className="binding-error" role="alert">
-          {candidateError}
+          {localizeMessage(candidateError)}
         </p>
       )}
     </div>

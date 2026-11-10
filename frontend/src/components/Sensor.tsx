@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { validateBinding } from "../utils/bindingValidation";
 import { ISensorAction } from "../types/keyboard";
@@ -15,6 +16,7 @@ interface DropZoneProps {
 }
 
 function SensorDropZone({ id, sensorId, direction, code, label }: DropZoneProps) {
+  useLocale();
   const { isOver, setNodeRef } = useDroppable({
     id: id,
     data: {
@@ -69,9 +71,10 @@ interface SensorProps {
 }
 
 export function Sensor({ sensor }: SensorProps) {
+  useLocale();
   return (
     <div className="encoder">
-      <span className="encoder-label">{sensor.label}</span>
+      <span className="encoder-label">{tr(sensor.label)}</span>
       <div className="encoder-controls">
         <SensorDropZone
           id={`${sensor.id}-ccw`}

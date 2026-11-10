@@ -5,7 +5,7 @@ import { WorkspaceSplit } from "./WorkspaceSplit";
 it("adjusts the keyboard/palette division with the keyboard and resets it", () => {
   const { container } = render(
     <WorkspaceSplit palette={<div className="palette">Paleta</div>}>
-      <main>Teclado</main>
+      <main>Keyboard</main>
     </WorkspaceSplit>,
   );
   const workspace = container.querySelector(".workspace-content") as HTMLElement;
@@ -13,7 +13,7 @@ it("adjusts the keyboard/palette division with the keyboard and resets it", () =
   const palette = container.querySelector(".palette")!;
   vi.spyOn(palette, "getBoundingClientRect").mockReturnValue({ height: 260 } as DOMRect);
   const separator = screen.getByRole("separator", {
-    name: "Ajustar espaço entre teclado e paleta",
+    name: "Adjust keyboard and palette space",
   });
   fireEvent.keyDown(separator, { key: "ArrowUp" });
   expect(workspace.style.getPropertyValue("--palette-height")).toBe("284px");

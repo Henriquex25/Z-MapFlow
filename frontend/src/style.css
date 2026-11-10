@@ -150,14 +150,11 @@ h3 {
   font-weight: 600;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
-  border: 1px solid #aa98ff38;
-  background: linear-gradient(145deg, #aa98ff25, #aa98ff09);
-  color: var(--accent);
-  border-radius: 8px;
+  object-fit: contain;
 }
 .keyboard-select {
   appearance: auto;
@@ -1415,4 +1412,16 @@ h3 {
 .update-progress progress {
   width: 100%;
   accent-color: #8b5cf6;
+}
+
+.app-version {
+  font-size: 10px;
+  font-weight: 400;
+  color: #9298aa;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.app-preferences a {
+  color: #a899ff;
+  font-size: 12px;
 }

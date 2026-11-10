@@ -1,3 +1,6 @@
+import appIcon from "../../build/appicon.png";
+import { AppVersion } from "./components/AppVersion";
+import { localizeMessage, tr, useLocale } from "./i18n";
 import { useCallback, useEffect, useState } from "react";
 import {
   DndContext,
@@ -48,24 +51,18 @@ import {
   ComboEditor,
   SettingsEditor,
 } from "./components/ResourceEditor";
-const tabs = [
-  "Layout",
-  "Macros",
-  "Combos",
-  "Comportamentos",
-  "Camadas condicionais",
-  "Configurações",
-] as const;
+const tabs = ["Layout", "Macros", "Combos", "Behaviors", "Conditional layers", "Settings"] as const;
 const tabIcons = {
   Layout: Keyboard,
   Macros: ListOrdered,
   Combos: Combine,
-  Comportamentos: Zap,
-  "Camadas condicionais": Layers,
-  Configurações: Settings,
+  Behaviors: Zap,
+  "Conditional layers": Layers,
+  Settings: Settings,
 };
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export default function App() {
+  useLocale();
   const store = useKeyboardStore();
   const { project, savedProject, initialProject, plugin, activeLayerId } = store;
   const [keyboardZoom, setKeyboardZoom] = useState(1);
@@ -170,8 +167,8 @@ export default function App() {
       store.markSaved(saved);
       setNotice(
         compile
-          ? "Configuração salva. Compilação iniciada em segundo plano."
-          : "Configuração salva neste computador.",
+          ? tr("Configuration saved. Firmware build started in the background.")
+          : tr("Configuration saved on this computer."),
       );
       if (compile) setBuild(await api.status());
     } catch (e) {
@@ -205,7 +202,7 @@ export default function App() {
       setBuild(await api.build());
       if (dirty)
         setNotice(
-          "Compilando a última configuração salva. Suas alterações atuais continuam no editor.",
+          tr("Building the last saved configuration. Your current changes remain in the editor."),
         );
     } catch (e) {
       report(e);
@@ -221,7 +218,7 @@ export default function App() {
       if (s.plugin?.id) {
         await initialize(s);
         setTab("Layout");
-        setNotice("Projeto importado. Salve para mantê-lo neste computador.");
+        setNotice(tr("Project imported. Save it to keep it on this computer."));
       }
     } catch (e) {
       report(e);
@@ -285,20 +282,21 @@ export default function App() {
     return (
       <div className="loading-screen">
         <Keyboard size={40} className="text-sky-400" />
-        <p>Carregando seu teclado…</p>
+        <p>{tr("Loading your keyboard…")}</p>
       </div>
     );
   if (!project || !plugin)
     return (
       <div className="loading-screen">
         <h1>Z-MapFlow</h1>
-        <p role="alert">{error || "Não foi possível carregar o projeto."}</p>
+        <AppVersion />
+        <p role="alert">{localizeMessage(error || tr("Could not load the project."))}</p>
         <div className="flex gap-3">
           <button className="btn primary" onClick={load}>
-            Tentar novamente
+            {tr("Try again")}{" "}
           </button>
           <button className="btn" onClick={importProject}>
-            Importar projeto
+            {tr("Import project")}{" "}
           </button>
           {plugins[0] && (
             <button
@@ -312,12 +310,12 @@ export default function App() {
                 }
               }}
             >
-              Abrir template
+              {tr("Open template")}{" "}
             </button>
           )}
         </div>
         <p className="hint">
-          O arquivo salvo permanece preservado até você salvar uma nova configuração.
+          {tr("Your saved file is preserved until you save a new configuration.")}{" "}
         </p>
       </div>
     );
@@ -328,14 +326,13 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-brand">
-          <div className="brand-mark">
-            <Keyboard size={18} />
-          </div>
+          <img className="brand-mark" src={appIcon} alt="" aria-hidden="true" />
           <h1>Z-MapFlow</h1>
+          <AppVersion />
           <div className="project-identity">
             <select
               className="keyboard-select"
-              aria-label="Plugin do teclado"
+              aria-label={tr("Keyboard plugin")}
               disabled={busy}
               value={plugin.id}
               onChange={(e) => {
@@ -352,16 +349,16 @@ export default function App() {
               ))}
             </select>
             <span className={`save-state ${dirty || !savedProject ? "unsaved" : ""}`}>
-              {dirty ? "Alterações não salvas" : savedProject ? "Salvo" : "Ainda não salvo"}
+              {dirty ? tr("Unsaved changes") : savedProject ? tr("Saved") : tr("Not saved yet")}
             </span>
           </div>
         </div>
       </header>
       {(error || store.error) && (
         <div className="notice error" role="alert">
-          <span>{error || store.error}</span>
+          <span>{localizeMessage(error || store.error)}</span>
           <button
-            aria-label="Fechar erro"
+            aria-label={tr("Dismiss error")}
             onClick={() => {
               setError("");
               store.dismissError();
@@ -377,17 +374,17 @@ export default function App() {
           <span>
             <strong>{actionName(store.selectedAction, project)}</strong>
             {tab === "Layout"
-              ? ` — clique nas teclas da camada “${layer.name}” para atribuir.`
-              : " — clique no campo de ação que deseja preencher."}
+              ? tr("— click keys in the “{0}” layer to assign it.", layer.name)
+              : tr("— click the action field you want to fill.")}
           </span>
           <div className="flex gap-3 items-center">
             {tab !== "Layout" && (
               <button className="btn" onClick={() => setTab("Layout")}>
-                Ir para o layout
+                {tr("Go to layout")}{" "}
               </button>
             )}
             <button className="btn" onClick={() => store.selectAction(null)}>
-              Cancelar seleção
+              {tr("Cancel selection")}{" "}
             </button>
           </div>
         </div>
@@ -402,13 +399,13 @@ export default function App() {
         onDragCancel={() => setDrag(null)}
       >
         <div className="workspace-frame">
-          <nav className="workspace-tabs" aria-label="Recursos do projeto">
+          <nav className="workspace-tabs" aria-label={tr("Project resources")}>
             {tabs
               .filter(
                 (t) =>
                   t === "Layout" ||
-                  t === "Configurações" ||
-                  (t === "Camadas condicionais" &&
+                  t === "Settings" ||
+                  (t === "Conditional layers" &&
                     (plugin.capabilities.includes("layers") || project.layout.layers.length > 1)) ||
                   plugin.capabilities.includes(
                     t === "Macros" ? "macros" : t === "Combos" ? "combos" : "hold-tap",
@@ -425,14 +422,14 @@ export default function App() {
                 return (
                   <button
                     className={`workspace-tab ${tab === t ? "active" : ""}`}
-                    aria-label={t}
-                    title={t}
+                    aria-label={tr(t)}
+                    title={tr(t)}
                     aria-current={tab === t ? "page" : undefined}
                     key={t}
                     onClick={() => setTab(t)}
                   >
                     <Icon size={19} aria-hidden="true" />
-                    <span className="workspace-tab-label">{t}</span>
+                    <span className="workspace-tab-label">{tr(t)}</span>
                     {count > 0 && (
                       <span className="workspace-tab-count" aria-hidden="true">
                         {count}
@@ -463,8 +460,8 @@ export default function App() {
                       <div className="layer-toolbar">
                         <input
                           className="field layer-name"
-                          title="Renomear camada ativa"
-                          aria-label="Nome da camada"
+                          title={tr("Rename active layer")}
+                          aria-label={tr("Layer name")}
                           value={layer.name}
                           onChange={(e) =>
                             store.edit((p) => {
@@ -472,10 +469,14 @@ export default function App() {
                             })
                           }
                         />
-                        <div className="keyboard-zoom" role="group" aria-label="Zoom do teclado">
+                        <div
+                          className="keyboard-zoom"
+                          role="group"
+                          aria-label={tr("Keyboard zoom")}
+                        >
                           <button
                             className="btn icon-btn"
-                            aria-label="Diminuir teclado"
+                            aria-label={tr("Zoom out")}
                             disabled={keyboardZoom <= 0.8}
                             onClick={() =>
                               setKeyboardZoom((z) => Math.max(0.8, Math.round((z - 0.1) * 10) / 10))
@@ -483,12 +484,12 @@ export default function App() {
                           >
                             <Minus size={14} />
                           </button>
-                          <output aria-label="Escala do teclado">
+                          <output aria-label={tr("Keyboard scale")}>
                             {Math.round(keyboardZoom * 100)}%
                           </output>
                           <button
                             className="btn icon-btn"
-                            aria-label="Aumentar teclado"
+                            aria-label={tr("Zoom in")}
                             disabled={keyboardZoom >= 1.6}
                             onClick={() =>
                               setKeyboardZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))
@@ -498,16 +499,16 @@ export default function App() {
                           </button>
                           <button
                             className="btn zoom-fit"
-                            aria-label="Ajustar teclado ao espaço disponível"
+                            aria-label={tr("Fit keyboard to available space")}
                             onClick={() => setKeyboardZoom(1)}
                           >
-                            Ajustar
+                            {tr("Fit")}{" "}
                           </button>
                         </div>
                       </div>
                       <div
                         className="keyboard-workspace"
-                        title="Clique ou arraste para atribuir · Arraste entre teclas para trocar"
+                        title={tr("Click or drag to assign · Drag between keys to swap")}
                       >
                         <KeyboardLayout
                           plugin={plugin}
@@ -524,20 +525,20 @@ export default function App() {
                 <MacroEditor onAssign={assignResource} />
               ) : tab === "Combos" ? (
                 <ComboEditor />
-              ) : tab === "Comportamentos" ? (
+              ) : tab === "Behaviors" ? (
                 <BehaviorEditor onAssign={assignResource} />
-              ) : tab === "Camadas condicionais" ? (
+              ) : tab === "Conditional layers" ? (
                 <ConditionalLayersEditor />
               ) : (
                 <SettingsEditor />
               )}
             </main>
           </WorkspaceSplit>
-          <aside className="action-sidebar" aria-label="Ações do projeto">
+          <aside className="action-sidebar" aria-label={tr("Project actions")}>
             <button
               className="btn icon-btn"
-              title="Importar projeto JSON ou keymap ZMK (.keymap)"
-              aria-label="Importar projeto"
+              title={tr("Import a JSON project or ZMK keymap (.keymap)")}
+              aria-label={tr("Import project")}
               disabled={busy}
               onClick={() => replace(importProject)}
             >
@@ -545,13 +546,13 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              title="Exportar projeto JSON"
-              aria-label="Exportar projeto"
+              title={tr("Export JSON project")}
+              aria-label={tr("Export project")}
               onClick={() =>
                 api
                   .exportProject(project)
                   .then((path) => {
-                    if (path) setNotice(`Projeto exportado para ${path}`);
+                    if (path) setNotice(tr("Project exported to {0}", path));
                   })
                   .catch(report)
               }
@@ -560,13 +561,13 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              title="Exportar keymap ZMK (.keymap)"
-              aria-label="Exportar keymap"
+              title={tr("Export ZMK keymap (.keymap)")}
+              aria-label={tr("Export keymap")}
               onClick={() =>
                 api
                   .exportKeymap(project)
                   .then((path) => {
-                    if (path) setNotice(`Keymap exportado para ${path}`);
+                    if (path) setNotice(tr("Keymap exported to {0}", path));
                   })
                   .catch(report)
               }
@@ -575,8 +576,8 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              aria-label="Descartar"
-              title="Descartar alterações"
+              aria-label={tr("Discard")}
+              title={tr("Discard changes")}
               disabled={!dirty || busy}
               onClick={() => replace(store.undoChanges)}
             >
@@ -584,8 +585,8 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              aria-label="Salvar"
-              title={pendingErrors[0] || projectError || "Salvar (Ctrl+S)"}
+              aria-label={tr("Save")}
+              title={pendingErrors[0] || projectError || tr("Save (Ctrl+S)")}
               disabled={busy || cannotSave}
               onClick={() => save()}
             >
@@ -593,8 +594,8 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              aria-label="Compilar"
-              title="Compilar a última configuração salva"
+              aria-label={tr("Build")}
+              title={tr("Build the last saved configuration")}
               disabled={busy || running || !savedProject || cannotSave}
               onClick={startBuild}
             >
@@ -602,9 +603,11 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn primary"
-              aria-label="Salvar e compilar"
+              aria-label={tr("Save and build")}
               title={
-                pendingErrors[0] || projectError || "Salvar edição atual e compilar (Ctrl+Shift+S)"
+                pendingErrors[0] ||
+                projectError ||
+                tr("Save current changes and build (Ctrl+Shift+S)")
               }
               disabled={busy || running || cannotSave}
               onClick={() => save(true)}
@@ -613,8 +616,8 @@ export default function App() {
             </button>
             <button
               className="btn icon-btn"
-              aria-label="Ver configuração ZMK"
-              title="Ver configuração ZMK"
+              aria-label={tr("View ZMK configuration")}
+              title={tr("View ZMK configuration")}
               onClick={() => api.preview(project).then(setSources).catch(report)}
             >
               <Code size={15} />
@@ -630,7 +633,7 @@ export default function App() {
         plugins={plugins}
         currentRevision={savedProject?.revision || ""}
         onError={report}
-        notice={notice}
+        notice={localizeMessage(notice)}
         onDismissNotice={() => setNotice("")}
       />
       {context && (
@@ -648,16 +651,16 @@ export default function App() {
             className="modal-card wide"
             role="dialog"
             aria-modal="true"
-            aria-label="Configuração ZMK gerada"
+            aria-label={tr("Generated ZMK configuration")}
           >
             <div className="section-toolbar">
-              <h2>Configuração ZMK gerada</h2>
+              <h2>{tr("Generated ZMK configuration")}</h2>
               <button className="btn" autoFocus onClick={() => setSources(null)}>
-                Fechar
+                {tr("Close")}{" "}
               </button>
             </div>
             <p className="hint mb-4">
-              Prévia da configuração atual. O botão Compilar utiliza a última revisão salva.
+              {tr("Preview of the current configuration. Build uses the last saved revision.")}{" "}
             </p>
             {sources.map((f) => (
               <details key={f.name} open>
@@ -674,31 +677,32 @@ export default function App() {
             className="modal-card binding-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Editar binding da tecla"
+            aria-label={tr("Edit key binding")}
           >
             <div className="section-toolbar">
               <h2>
-                Tecla {editingKey} — {layer.name}
+                {tr("Key")} {editingKey} — {layer.name}
               </h2>
               <button
                 className="btn"
                 disabled={pendingErrors.length > 0}
                 onClick={() => setEditingKey(null)}
               >
-                Concluir
+                {tr("Done")}{" "}
               </button>
             </div>
             <p className="hint">
-              Ajuste a ação e os parâmetros desta tecla. Cada uso de uma macro ou comportamento pode
-              ter argumentos diferentes.
+              {tr(
+                "Adjust this key’s action and parameters. Each use of a macro or behavior can have different arguments.",
+              )}{" "}
             </p>
             {pendingErrors.length > 0 && (
               <button className="btn binding-cancel" onClick={() => setEditingKey(null)}>
-                Descartar rascunho
+                {tr("Discard draft")}{" "}
               </button>
             )}
             <BindingDrop
-              label="Ação da tecla"
+              label={tr("Key action")}
               code={layer.keys.find((k) => k.keymapIndex === editingKey)?.code ?? "&none"}
               onChange={(code) => store.updateKeyCode(editingKey, code)}
             />
@@ -713,13 +717,15 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="discard-title"
           >
-            <h2 id="discard-title">Descartar alterações não salvas?</h2>
+            <h2 id="discard-title">{tr("Discard unsaved changes?")}</h2>
             <p className="hint my-4">
-              As alterações atuais serão substituídas. Exporte ou salve o projeto para preservá-las.
+              {tr(
+                "Your current changes will be replaced. Export or save the project to keep them.",
+              )}{" "}
             </p>
             <div className="flex justify-end gap-3">
               <button className="btn" autoFocus onClick={() => setConfirm(null)}>
-                Continuar editando
+                {tr("Keep editing")}{" "}
               </button>
               <button
                 className="btn danger"
@@ -729,7 +735,7 @@ export default function App() {
                   fn();
                 }}
               >
-                Descartar e continuar
+                {tr("Discard and continue")}{" "}
               </button>
             </div>
           </section>

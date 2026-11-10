@@ -1,15 +1,16 @@
-## Problema e comportamento resultante
+## Problem and resulting behavior
 
-Explique o problema concreto e o que o usuário passa a conseguir fazer. Relacione a issue, se houver.
+Describe the concrete problem and what the user can do after this change. Link the related issue, if any.
 
-## Validação
+## Validation
 
-Descreva os testes/comandos executados e o resultado. Inclua capturas para alterações visuais e diferencie build, envio e teste físico do firmware.
+List relevant commands/tests and results. Include screenshots for visual changes. Distinguish firmware compilation, transfer and physical hardware validation.
 
-## Conferência
+## Review checklist
 
-- [ ] A documentação afetada foi atualizada.
-- [ ] As verificações pertinentes passam.
-- [ ] Não foram incluídas credenciais nem configurações pessoais.
-- [ ] Migrações e compatibilidade foram consideradas, quando aplicável.
-- [ ] A ponte Wails foi regenerada, se os modelos/API mudaram.
+- [ ] Affected documentation and translations are updated.
+- [ ] Relevant checks pass.
+- [ ] No credentials or personal configurations are included.
+- [ ] Saved project compatibility and migrations were considered where applicable.
+- [ ] Wails bindings were regenerated if Go models/API methods changed.
+- [ ] An app version change, if needed, edits only `internal/version/VERSION`.

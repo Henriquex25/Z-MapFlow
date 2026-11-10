@@ -1,8 +1,14 @@
+import { useAppPreferences } from "../i18n/preferences";
 import * as go from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
 import type { Project, Build, Session, Plugin } from "../types/keyboard";
 const model = (p: Project) => models.Project.createFrom(p);
+async function native<T>(run: () => Promise<T>): Promise<T> {
+  await go.SetAppLanguage(useAppPreferences.getState().locale);
+  return run();
+}
 export const api = {
+  appInfo: go.GetAppInfo,
   checkUpdates: go.CheckForUpdates,
   updateProgress: go.GetUpdateProgress,
   installUpdate: go.InstallUpdate,
@@ -18,12 +24,12 @@ export const api = {
   getBuild: (id: string): Promise<Build> => go.GetBuild(id),
   preview: (p: Project) => go.PreviewSources(model(p)),
   importProject: (pluginId = "", variantId = ""): Promise<Session> =>
-    go.ImportProject(pluginId, variantId),
-  importHeaders: go.ImportHeaders,
-  exportProject: (p: Project) => go.ExportProject(model(p)),
-  exportKeymap: (p: Project) => go.ExportKeymap(model(p)),
-  exportFirmware: go.ExportFirmware,
+    native(() => go.ImportProject(pluginId, variantId)),
+  importHeaders: () => native(() => go.ImportHeaders()),
+  exportProject: (p: Project) => native(() => go.ExportProject(model(p))),
+  exportKeymap: (p: Project) => native(() => go.ExportKeymap(model(p))),
+  exportFirmware: (id: string) => native(() => go.ExportFirmware(id)),
   volumes: go.FindBootloaders,
-  selectVolume: go.SelectBootloader,
+  selectVolume: (id: string) => native(() => go.SelectBootloader(id)),
   flash: go.FlashFirmware,
 };

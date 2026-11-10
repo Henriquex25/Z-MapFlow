@@ -1,7 +1,7 @@
-# Segurança
+# Security
 
-Não publique detalhes de vulnerabilidades exploráveis em issues abertas. Use **Security → Report a vulnerability** no GitHub quando o mantenedor tiver habilitado relatos privados. Se o recurso não estiver disponível, contate o mantenedor pelo endereço público do perfil GitHub, sem incluir provas de exploração em uma issue pública.
+Do not publish details of exploitable vulnerabilities in public issues. Use **Security → Report a vulnerability** on GitHub when private vulnerability reporting is enabled. If it is unavailable, contact the maintainer through the public contact details on their GitHub profile without posting an exploit in a public issue.
 
-Inclua versão, sistema, passos, impacto e uma reprodução mínima sem dados pessoais. Não há SLA de resposta neste projeto comunitário.
+Include the app version, OS, reproduction steps, impact and a minimal example without personal information. This community project does not provide a response SLA.
 
-Correções são distribuídas na versão estável mais recente. O aplicativo consulta releases públicas estáveis, verifica SHA-256 e faz substituição local do executável. Não há atualização privilegiada ou token embutido. Contas com permissão de publicar releases controlam o código distribuído; proteja essas contas e não reutilize tags publicadas.
+Security fixes target the latest stable version. The updater checks public stable releases, verifies SHA-256, preserves a previous executable and performs local replacement. It does not embed a token or perform privileged updates. Release publishing accounts control distributed code; protect those accounts and never reuse published tags.

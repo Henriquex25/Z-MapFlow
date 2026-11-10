@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useEffect, useRef } from "react";
 
 interface LayerContextMenuProps {
@@ -9,6 +10,7 @@ interface LayerContextMenuProps {
 }
 
 export function LayerContextMenu({ x, y, onClose, onReset, onClear }: LayerContextMenuProps) {
+  useLocale();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function LayerContextMenu({ x, y, onClose, onReset, onClear }: LayerConte
         }}
         className="context-menu-item"
       >
-        Restaurar padrão
+        {tr("Restore defaults")}{" "}
       </button>
       <button
         className="context-menu-item"
@@ -39,7 +41,7 @@ export function LayerContextMenu({ x, y, onClose, onReset, onClear }: LayerConte
           onClose();
         }}
       >
-        Limpar bindings
+        {tr("Clear bindings")}{" "}
       </button>
     </div>
   );

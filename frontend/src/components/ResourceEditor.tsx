@@ -1,3 +1,5 @@
+import { AppSettings } from "./AppSettings";
+import { tr, useLocale } from "../i18n";
 import { useState } from "react";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import { action, uid, type IKeyAction } from "../types/keyboard";
@@ -18,6 +20,7 @@ import { KeyboardLayout } from "./KeyboardLayout";
 
 type AssignProps = { onAssign: (action: IKeyAction) => void };
 export function MacroEditor({ onAssign }: AssignProps) {
+  useLocale();
   const { project: p, edit, removeResource } = useKeyboardStore();
   if (!p) return null;
   return (
@@ -26,8 +29,9 @@ export function MacroEditor({ onAssign }: AssignProps) {
         <div>
           <h2>Macros</h2>
           <p className="hint">
-            Selecione ou arraste ações da paleta para montar a sequência. Depois use “Atribuir ao
-            teclado”.
+            {tr(
+              "Select or drag actions from the palette to build a sequence. Then choose “Assign to keyboard”.",
+            )}{" "}
           </p>
         </div>
         <button
@@ -36,7 +40,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
             edit((p) =>
               p.layout.macros.push({
                 id: uid(),
-                name: "Nova macro",
+                name: tr("New macro"),
                 tapMs: 20,
                 waitMs: 20,
                 steps: [{ kind: "tap", binding: "&kp A", durationMs: 0 }],
@@ -44,17 +48,17 @@ export function MacroEditor({ onAssign }: AssignProps) {
             )
           }
         >
-          + Nova macro
+          {tr("+ New macro")}{" "}
         </button>
       </div>
       {p.layout.macros.length === 0 && (
-        <p className="empty">Crie uma macro para automatizar uma sequência de teclas.</p>
+        <p className="empty">{tr("Create a macro to automate a key sequence.")}</p>
       )}
       {p.layout.macros.map((m) => (
         <article className="resource-card" key={m.id}>
           <div className="section-toolbar">
             <input
-              aria-label="Nome da macro"
+              aria-label={tr("Macro name")}
               className="field font-semibold"
               value={m.name}
               onChange={(e) =>
@@ -68,13 +72,13 @@ export function MacroEditor({ onAssign }: AssignProps) {
               <button
                 className="btn primary"
                 disabled={m.steps.length === 0}
-                aria-label={`Atribuir ${m.name} ao teclado`}
+                aria-label={tr("Assign {0} to keyboard", m.name)}
                 onClick={() => onAssign(macroAction(m))}
               >
-                Atribuir ao teclado
+                {tr("Assign to keyboard")}{" "}
               </button>
               <button className="btn danger" onClick={() => removeResource("macros", m.id)}>
-                Excluir
+                {tr("Delete")}{" "}
               </button>
             </div>
           </div>
@@ -90,7 +94,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
           />
           <div className="flex flex-wrap gap-4 mb-4">
             <NumberField
-              label="Duração do toque (ms)"
+              label={tr("Tap time (ms)")}
               value={m.tapMs}
               max={5000}
               onChange={(n) =>
@@ -100,7 +104,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
               }
             />
             <NumberField
-              label="Intervalo entre ações (ms)"
+              label={tr("Wait time between actions (ms)")}
               value={m.waitMs}
               max={5000}
               onChange={(n) =>
@@ -116,7 +120,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                 <div className="flex gap-2 items-center">
                   <span className="hint">{i + 1}</span>
                   <select
-                    aria-label={`Tipo do passo ${i + 1}`}
+                    aria-label={tr("Step {0} type", i + 1)}
                     className="field"
                     value={step.kind}
                     onChange={(e) =>
@@ -130,12 +134,12 @@ export function MacroEditor({ onAssign }: AssignProps) {
                     }
                   >
                     {[
-                      ["tap", "Tocar"],
-                      ["press", "Pressionar"],
-                      ["release", "Soltar"],
-                      ["wait", "Esperar"],
-                      ["binding", "Ação no modo atual"],
-                      ["control", "Controle ZMK"],
+                      ["tap", tr("Tap")],
+                      ["press", tr("Press")],
+                      ["release", tr("Release")],
+                      ["wait", tr("Wait")],
+                      ["binding", tr("Action in current mode")],
+                      ["control", tr("ZMK control")],
                     ].map(([v, l]) => (
                       <option key={v} value={v}>
                         {l}
@@ -161,7 +165,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                   />
                 ) : step.kind === "wait" ? (
                   <NumberField
-                    label="Espera (ms)"
+                    label={tr("Wait (ms)")}
                     value={step.durationMs}
                     onChange={(n) =>
                       edit((p) => {
@@ -173,7 +177,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                   <BindingDrop
                     context="macro"
                     owner={m.id}
-                    label={`Ação do passo ${i + 1}`}
+                    label={tr("Step {0} action", i + 1)}
                     code={step.binding}
                     onChange={(code) =>
                       edit((p) => {
@@ -186,7 +190,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                   <button
                     className="btn"
                     disabled={i === 0}
-                    aria-label="Mover passo para trás"
+                    aria-label={tr("Move step backward")}
                     onClick={() =>
                       edit((p) => {
                         const steps = p.layout.macros.find((x) => x.id === m.id)!.steps;
@@ -204,7 +208,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                       })
                     }
                   >
-                    Remover
+                    {tr("Remove")}{" "}
                   </button>
                 </div>
               </div>
@@ -213,7 +217,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
               code=""
               context="macro"
               owner={m.id}
-              label="Adicionar passo"
+              label={tr("Add step")}
               onChange={(code) =>
                 edit((p) => {
                   p.layout.macros
@@ -236,7 +240,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
                 })
               }
             >
-              + Espera
+              {tr("+ Wait")}{" "}
             </button>
           </div>
         </article>
@@ -245,6 +249,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
   );
 }
 export function BehaviorEditor({ onAssign }: AssignProps) {
+  useLocale();
   const { project: p, plugin, activeLayerId, edit, removeResource } = useKeyboardStore();
   const [triggerEditor, setTriggerEditor] = useState("");
   if (!p || !plugin) return null;
@@ -253,32 +258,32 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
     <div className="resource-editor">
       <div className="section-toolbar">
         <div>
-          <h2>Comportamentos</h2>
+          <h2>{tr("Behaviors")}</h2>
           <p className="hint">
-            Configure ações de toque/pressão ou sequências por número de toques.
+            {tr("Configure tap/hold actions or sequences based on tap count.")}{" "}
           </p>
         </div>
         <div className="flex gap-2">
           <button className="btn primary" onClick={() => add("hold-tap")}>
-            + Toque / segurar
+            {tr("+ Tap / hold")}{" "}
           </button>
           <button className="btn primary" onClick={() => add("tap-dance")}>
-            + Sequência de toques
+            {tr("+ Tap sequence")}{" "}
           </button>
           <select
             className="field"
-            aria-label="Adicionar tipo de comportamento"
+            aria-label={tr("Add behavior type")}
             value=""
             onChange={(e) => {
               if (e.target.value) add(e.target.value);
             }}
           >
-            <option value="">+ Outros comportamentos</option>
+            <option value="">{tr("+ Other behaviors")}</option>
             {Object.entries(behaviorKinds)
               .filter(([kind]) => kind !== "hold-tap" && kind !== "tap-dance")
               .map(([kind, label]) => (
                 <option key={kind} value={kind}>
-                  {label}
+                  {tr(label)}
                 </option>
               ))}
           </select>
@@ -286,8 +291,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
       </div>
       {!p.layout.behaviors.length && (
         <p className="empty">
-          Os presets de tap/hold continuam disponíveis na paleta. Crie aqui comportamentos
-          personalizados.
+          {tr("Tap/hold presets are available in the palette. Create custom behaviors here.")}{" "}
         </p>
       )}
       {p.layout.behaviors.map((b) => (
@@ -295,7 +299,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           <div className="behavior-toolbar">
             <div className="behavior-identity">
               <input
-                aria-label="Nome do comportamento"
+                aria-label={tr("Behavior name")}
                 className="field font-semibold"
                 value={b.name}
                 onChange={(e) =>
@@ -304,7 +308,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                   })
                 }
               />
-              <span className="badge">{behaviorKinds[b.kind] ?? b.kind}</span>
+              <span className="badge">{tr(behaviorKinds[b.kind] ?? b.kind)}</span>
               {[
                 "sticky-key",
                 "caps-word",
@@ -318,7 +322,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
               ].includes(b.kind) && (
                 <select
                   className="field"
-                  aria-label="Comportamento base"
+                  aria-label={tr("Base behavior")}
                   value={b.target ?? ""}
                   onChange={(e) =>
                     edit((p) => {
@@ -329,7 +333,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                     })
                   }
                 >
-                  <option value="">Nova definição</option>
+                  <option value="">{tr("New definition")}</option>
                   {(
                     {
                       "sticky-key": ["sk", "sl"],
@@ -344,7 +348,8 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                     } as Record<string, string[]>
                   )[b.kind]?.map((v) => (
                     <option value={v} key={v}>
-                      Personalizar &amp;{v}
+                      {tr("Customize &")}
+                      {v}
                     </option>
                   ))}
                 </select>
@@ -357,26 +362,28 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                 disabled={!!validateBinding(behaviorAction(b).code, p, plugin)}
                 title={
                   validateBinding(behaviorAction(b).code, p, plugin) ||
-                  "Escolha posições do layout para receber este comportamento"
+                  tr("Choose layout positions to assign this behavior")
                 }
-                aria-label={`Atribuir ${b.name} ao teclado`}
+                aria-label={tr("Assign {0} to keyboard", b.name)}
                 onClick={() => onAssign(behaviorAction(b))}
               >
-                Atribuir ao teclado
+                {tr("Assign to keyboard")}{" "}
               </button>
               <button className="btn danger" onClick={() => removeResource("behaviors", b.id)}>
-                Excluir
+                {tr("Delete")}{" "}
               </button>
             </div>
           </div>
           <p className="hint behavior-help">
             {b.kind === "hold-tap"
-              ? "Defina uma ação ao segurar e outra ao tocar. Cada tecla pode usar parâmetros diferentes."
+              ? tr("Define a hold action and a tap action. Each key can use different parameters.")
               : b.kind === "tap-dance"
-                ? "A primeira ação executa com um toque; a segunda com dois toques, e assim por diante."
+                ? tr("The first action runs on one tap, the second on two taps, and so on.")
                 : b.kind === "mod-morph"
-                  ? "Defina a ação normal e a alternativa acionada junto aos modificadores escolhidos."
-                  : "Configure este comportamento e atribua-o a uma ou mais teclas."}
+                  ? tr(
+                      "Define the normal action and the alternate action triggered by the selected modifiers.",
+                    )
+                  : tr("Configure this behavior and assign it to one or more keys.")}
           </p>
           <AssignmentParameters
             resource={b}
@@ -390,10 +397,10 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           />
           {b.kind === "native" && (
             <label className="form-label mt-3">
-              Compatible ZMK
+              {tr("ZMK compatible")}{" "}
               <input
                 className="field"
-                aria-label="Compatible ZMK"
+                aria-label={tr("ZMK compatible")}
                 value={b.compatible ?? ""}
                 onChange={(e) =>
                   edit((p) => {
@@ -409,7 +416,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           {(b.kind === "hold-tap" || b.kind === "tap-dance") && (
             <div className="flex gap-4 flex-wrap">
               <NumberField
-                label="Tempo de toque (ms)"
+                label={tr("Tapping term (ms)")}
                 min={1}
                 max={5000}
                 value={b.tappingTermMs}
@@ -433,7 +440,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                     }
                   />
                   <label className="form-label">
-                    Resolução
+                    {tr("Resolution")}{" "}
                     <select
                       className="field"
                       value={b.flavor}
@@ -464,15 +471,15 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                   label={
                     b.kind === "hold-tap"
                       ? i === 0
-                        ? "Ação ao segurar (padrão para atribuição)"
-                        : "Ação ao tocar (padrão para atribuição)"
+                        ? tr("Hold action (default for new assignments)")
+                        : tr("Tap action (default for new assignments)")
                       : b.kind === "mod-morph"
                         ? i === 0
-                          ? "Ação normal"
-                          : "Ação com modificador"
+                          ? tr("Normal action")
+                          : tr("Modified action")
                         : b.kind === "tap-dance"
-                          ? `${i + 1} toque(s)`
-                          : "Ação base"
+                          ? tr("{0} tap(s)", i + 1)
+                          : tr("Base action")
                   }
                   owner={b.target || b.id}
                   context={["hold-tap", "sticky-key"].includes(b.kind) ? "child" : "binding"}
@@ -493,7 +500,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                       })
                     }
                   >
-                    Remover
+                    {tr("Remove")}{" "}
                   </button>
                 )}
               </div>
@@ -501,7 +508,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
             {b.kind === "tap-dance" && b.bindings.length < 256 && (
               <BindingDrop
                 owner={b.target || b.id}
-                label={b.kind === "tap-dance" ? "Adicionar toque" : "Adicionar ação"}
+                label={b.kind === "tap-dance" ? tr("Add tap") : tr("Add action")}
                 code=""
                 onChange={(code) =>
                   edit((p) => {
@@ -513,10 +520,10 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           </div>
           {b.kind === "native" && (
             <label className="form-label mt-3">
-              Subnós Devicetree
+              {tr("Devicetree child nodes")}{" "}
               <textarea
                 className="field source-editor"
-                aria-label="Subnós Devicetree"
+                aria-label={tr("Devicetree child nodes")}
                 rows={3}
                 value={b.children ?? ""}
                 onChange={(e) =>
@@ -540,8 +547,8 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
               {(
                 [
                   ["retroTap", "Retro-tap"],
-                  ["holdWhileUndecided", "Ativar hold enquanto decide"],
-                  ["holdWhileUndecidedLinger", "Manter hold até terminar o tap"],
+                  ["holdWhileUndecided", tr("Activate hold while undecided")],
+                  ["holdWhileUndecidedLinger", tr("Keep hold until tap completes")],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key}>
@@ -554,7 +561,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                       })
                     }
                   />{" "}
-                  {label}
+                  {tr(label)}
                 </label>
               ))}
             </div>
@@ -563,7 +570,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
             <div className="mt-4 space-y-3">
               <div className="flex gap-4 items-center flex-wrap">
                 <NumberField
-                  label="Inatividade anterior (ms)"
+                  label={tr("Prior idle time (ms)")}
                   min={-1}
                   max={5000}
                   value={b.requirePriorIdleMs}
@@ -584,20 +591,22 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
                       })
                     }
                   />{" "}
-                  Decidir hold-trigger ao soltar
+                  {tr("Resolve hold-trigger on release")}{" "}
                 </label>
                 <button
                   className="btn"
                   onClick={() => setTriggerEditor((v) => (v === b.id ? "" : b.id))}
                 >
-                  Teclas que ativam hold ({b.holdTriggerPositions.length})
+                  {tr("Hold-trigger keys (")}
+                  {b.holdTriggerPositions.length})
                 </button>
               </div>
               {triggerEditor === b.id && (
                 <>
                   <p className="hint">
-                    Selecione as posições que resolvem o hold. Nenhuma selecionada desativa a
-                    restrição por posição.
+                    {tr(
+                      "Select positions that resolve the hold. Select none to disable position restrictions.",
+                    )}{" "}
                   </p>
                   <KeyboardLayout
                     plugin={plugin}
@@ -620,8 +629,9 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           )}
           {b.kind === "hold-tap" && (
             <p className="hint mt-3">
-              As ações definem os parâmetros ao arrastar. Para alterar os parâmetros de uma tecla já
-              mapeada, atribua o comportamento novamente.
+              {tr(
+                "Actions provide parameters when dragged. To change parameters on an existing key, assign the behavior again.",
+              )}{" "}
             </p>
           )}
         </article>
@@ -630,6 +640,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
   );
 }
 export function ComboEditor() {
+  useLocale();
   const {
     project: p,
     plugin,
@@ -647,7 +658,9 @@ export function ComboEditor() {
         <div>
           <h2>Combos</h2>
           <p className="hint">
-            Selecione duas ou mais teclas no desenho e atribua a ação do combo usando a paleta.
+            {tr(
+              "Select two or more keys in the layout and assign the combo action using the palette.",
+            )}{" "}
           </p>
         </div>
         <button
@@ -657,7 +670,7 @@ export function ComboEditor() {
             edit((p) =>
               p.layout.combos.push({
                 id,
-                name: "Novo combo",
+                name: tr("New combo"),
                 positions: [],
                 binding: "&kp ESC",
                 layerIds: [],
@@ -668,11 +681,11 @@ export function ComboEditor() {
             setSelected(id);
           }}
         >
-          + Novo combo
+          {tr("+ New combo")}{" "}
         </button>
       </div>
       {!combo ? (
-        <p className="empty">Combine duas ou mais teclas para executar uma ação.</p>
+        <p className="empty">{tr("Combine two or more keys to perform an action.")}</p>
       ) : (
         <>
           <div className="flex gap-3 mb-4 flex-wrap">
@@ -689,7 +702,7 @@ export function ComboEditor() {
           <article className="resource-card">
             <div className="section-toolbar">
               <input
-                aria-label="Nome do combo"
+                aria-label={tr("Combo name")}
                 className="field"
                 value={combo.name}
                 onChange={(e) =>
@@ -699,7 +712,7 @@ export function ComboEditor() {
                 }
               />
               <NumberField
-                label="Inatividade anterior do combo (ms)"
+                label={tr("Combo prior idle time (ms)")}
                 min={-1}
                 value={combo.requirePriorIdleMs ?? -1}
                 onChange={(n) =>
@@ -709,7 +722,7 @@ export function ComboEditor() {
                 }
               />
               <NumberField
-                label="Janela de ativação (ms)"
+                label={tr("Activation window (ms)")}
                 min={1}
                 max={5000}
                 value={combo.timeoutMs}
@@ -720,7 +733,7 @@ export function ComboEditor() {
                 }
               />
               <BindingDrop
-                label="Ação do combo"
+                label={tr("Combo action")}
                 code={combo.binding}
                 onChange={(code) =>
                   edit((p) => {
@@ -729,11 +742,11 @@ export function ComboEditor() {
                 }
               />
               <button className="btn danger" onClick={() => removeResource("combos", combo.id)}>
-                Excluir
+                {tr("Delete")}{" "}
               </button>
             </div>
             <label className="form-label mb-4">
-              Visualizar camada
+              {tr("Preview layer")}{" "}
               <select
                 className="field w-fit"
                 value={activeLayerId}
@@ -760,11 +773,13 @@ export function ComboEditor() {
               }
             />
             <div className="flex flex-wrap gap-4 items-center">
-              <span className="hint">{combo.positions.length} teclas selecionadas</span>
+              <span className="hint">
+                {combo.positions.length} {tr("keys selected")}
+              </span>
               <span className="hint">
                 {combo.positions.length < 2
-                  ? "Selecione pelo menos duas teclas para ativar o combo."
-                  : "As teclas selecionadas ativam a ação do combo."}
+                  ? tr("Select at least two keys to trigger the combo.")
+                  : tr("The selected keys trigger the combo action.")}
               </span>
               <label>
                 <input
@@ -777,11 +792,11 @@ export function ComboEditor() {
                     })
                   }
                 />{" "}
-                Soltar após todas as teclas
+                {tr("Release after all keys")}{" "}
               </label>
             </div>
             <div className="flex flex-wrap gap-3 mt-4">
-              <span className="hint">Camadas (nenhuma marcada = todas):</span>
+              <span className="hint">{tr("Layers (none selected = all):")}</span>
               {p.layout.layers.map((l) => (
                 <label key={l.id}>
                   <input
@@ -807,16 +822,18 @@ export function ComboEditor() {
   );
 }
 export function SettingsEditor() {
+  useLocale();
   const { project: p, plugin, edit } = useKeyboardStore();
   if (!p || !plugin) return null;
   const variant = plugin.variants.find((v) => v.id === p.variantId)!;
   return (
     <div className="resource-editor">
-      <h2>Configurações</h2>
+      <h2>{tr("Settings")}</h2>
+      <AppSettings />
       <div className="resource-card">
-        <h3>Teclado e firmware</h3>
+        <h3>{tr("Keyboard and firmware")}</h3>
         <label className="form-label mt-3">
-          Variante de hardware
+          {tr("Hardware variant")}{" "}
           <select
             className="field"
             value={p.variantId}
@@ -828,25 +845,25 @@ export function SettingsEditor() {
           >
             {plugin.variants.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.name}
+                {tr(v.name)}
               </option>
             ))}
           </select>
         </label>
         <p className="hint mt-3">
-          {variant.targets.map((t) => `${t.name}: ${t.board} / ${t.shield}`).join(" · ")}
+          {variant.targets.map((t) => `${tr(t.name)}: ${t.board} / ${t.shield}`).join(" · ")}
         </p>
         <p className="hint">
           ZMK {(variant.zmkRevision || plugin.zmkRevision).slice(0, 12)} · {plugin.keyCount}{" "}
-          posições, incluindo cliques dos encoders
+          {tr("positions, including encoder clicks")}{" "}
         </p>
-        <p className="hint mt-2">{variant.instructions}</p>
+        <p className="hint mt-2">{tr(variant.instructions)}</p>
       </div>
       <div className="resource-card">
-        <h3>Layout do sistema e recursos</h3>
+        <h3>{tr("System layout and features")}</h3>
         <div className="flex flex-wrap items-center gap-5 mt-3">
           <label className="form-label">
-            Layout do sistema operacional
+            {tr("Operating system layout")}{" "}
             <select
               className="field"
               value={p.options.locale}
@@ -857,7 +874,7 @@ export function SettingsEditor() {
               }
             >
               <option value="us">US / ANSI</option>
-              <option value="pt-br">Português (Brasil) — ABNT2</option>
+              <option value="pt-br">{tr("Portuguese (Brazil) — ABNT2")}</option>
               {Object.keys(p.headers ?? {})
                 .filter((name) => name !== "keys_pt_abnt2.h")
                 .map((name) => (
@@ -878,7 +895,7 @@ export function SettingsEditor() {
                   })
                 }
               />{" "}
-              OLED com status
+              {tr("OLED status display")}{" "}
             </label>
           )}
           {plugin.capabilities.includes("pointing") && (
@@ -892,13 +909,14 @@ export function SettingsEditor() {
                   })
                 }
               />{" "}
-              Ações de mouse e rolagem
+              {tr("Mouse and scrolling actions")}{" "}
             </label>
           )}
         </div>
         <p className="hint mt-3">
-          O layout selecionado define os símbolos oferecidos pela paleta. Configure o mesmo layout
-          no sistema operacional.
+          {tr(
+            "The selected layout controls the symbols offered in the palette. Configure the same layout in your operating system.",
+          )}{" "}
         </p>
       </div>
       {(
@@ -910,10 +928,10 @@ export function SettingsEditor() {
         const settings = p.options[key] ?? { tappingTermMs: 200, quickTapMs: -1, flavor };
         return (
           <div className="resource-card" key={key}>
-            <h3>{label}</h3>
+            <h3>{tr(label)}</h3>
             <div className="flex flex-wrap gap-4 mt-3">
               <NumberField
-                label={`Tempo de toque — ${label}`}
+                label={tr("Tapping term — {0}", label)}
                 min={1}
                 max={5000}
                 value={settings.tappingTermMs}
@@ -935,10 +953,10 @@ export function SettingsEditor() {
                 }
               />
               <label className="form-label">
-                Resolução
+                {tr("Resolution")}{" "}
                 <select
                   className="field"
-                  aria-label={`Resolução — ${label}`}
+                  aria-label={tr("Resolution — {0}", label)}
                   value={settings.flavor}
                   onChange={(e) =>
                     edit((p) => {
@@ -959,10 +977,10 @@ export function SettingsEditor() {
       })}
       <NativeSettings />
       <div className="resource-card">
-        <h3>Bluetooth e energia</h3>
+        <h3>{tr("Bluetooth and power")}</h3>
         <div className="flex flex-wrap gap-5 items-center mt-3">
           <NumberField
-            label="Perfis Bluetooth"
+            label={tr("Bluetooth profiles")}
             min={1}
             max={5}
             value={p.options.bluetoothProfiles}
@@ -982,10 +1000,10 @@ export function SettingsEditor() {
                 })
               }
             />{" "}
-            Repouso automático
+            {tr("Automatic sleep")}{" "}
           </label>
           <NumberField
-            label="Inatividade para repouso (ms)"
+            label={tr("Sleep timeout (ms)")}
             min={1000}
             max={86400000}
             value={p.options.sleepTimeoutMs}

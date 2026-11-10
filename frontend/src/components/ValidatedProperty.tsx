@@ -1,3 +1,5 @@
+import { localizeMessage } from "../i18n";
+import { useLocale } from "../i18n";
 import { useEffect, useState } from "react";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import { useDraftError } from "../utils/useDraftError";
@@ -15,6 +17,7 @@ export function ValidatedProperty({
   number?: boolean;
   ariaLabel?: string;
 }) {
+  useLocale();
   const project = useKeyboardStore((s) => s.project);
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
@@ -35,7 +38,7 @@ export function ValidatedProperty({
       />
       {error && (
         <span className="binding-error" role="alert">
-          {error}
+          {localizeMessage(error)}
         </span>
       )}
     </>

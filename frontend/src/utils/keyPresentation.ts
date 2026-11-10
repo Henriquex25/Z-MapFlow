@@ -1,3 +1,4 @@
+import { tr } from "../i18n";
 import type { Project } from "../types/keyboard";
 import { bindingParts } from "./bindingParameters";
 import { formatKeyVisuals, type KeyVisuals } from "./keyFormatter";
@@ -122,7 +123,12 @@ export function presentKey(
         ...tap.visuals,
         main: tap.visuals?.main ?? "",
         modifier: holdText,
-        description: `${behavior.name}: tocar ${visualSummary(tap.visuals)}; segurar ${holdText}`,
+        description: tr(
+          "{0}: tap {1}; hold {2}",
+          behavior.name,
+          visualSummary(tap.visuals),
+          holdText,
+        ),
       },
     };
   }

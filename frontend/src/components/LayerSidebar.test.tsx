@@ -17,11 +17,11 @@ it("selects, adds, removes and opens the context menu for the correct layer", ()
   const nav = screen.getByRole("button", { name: "Navegação" });
   fireEvent.click(nav);
   expect(handlers.onSelect).toHaveBeenCalledWith("nav");
-  fireEvent.click(within(nav.closest(".layer-tab") as HTMLElement).getByTitle("Remover Camada"));
+  fireEvent.click(within(nav.closest(".layer-tab") as HTMLElement).getByTitle("Remove layer"));
   expect(handlers.onRemove).toHaveBeenCalledWith(1);
   fireEvent.contextMenu(nav);
   expect(handlers.onContextMenu.mock.calls[0][1]).toBe(1);
-  fireEvent.click(screen.getByRole("button", { name: "Adicionar camada" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add layer" }));
   expect(handlers.onAdd).toHaveBeenCalledOnce();
 });
 it("keeps the active layer identified and disables addition at ZMK's layer limit", () => {
@@ -29,7 +29,7 @@ it("keeps the active layer identified and disables addition at ZMK's layer limit
   const layers = Array.from({ length: 32 }, (_, i) => ({
     ...structuredClone(first),
     id: `layer_${i}`,
-    name: `Camada ${i}`,
+    name: `Layer ${i}`,
   }));
   render(
     <LayerSidebar
@@ -42,6 +42,6 @@ it("keeps the active layer identified and disables addition at ZMK's layer limit
       onContextMenu={vi.fn()}
     />,
   );
-  expect(screen.getByRole("button", { name: "Camada 31" })).toHaveAttribute("aria-current", "true");
-  expect(screen.getByRole("button", { name: "Adicionar camada" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Layer 31" })).toHaveAttribute("aria-current", "true");
+  expect(screen.getByRole("button", { name: "Add layer" })).toBeDisabled();
 });

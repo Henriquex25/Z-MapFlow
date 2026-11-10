@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   DndContext,
@@ -33,6 +34,7 @@ export function LayerSidebar({
   onReorder: (from: number, to: number) => void;
   onContextMenu: (e: MouseEvent, index: number) => void;
 }) {
+  useLocale();
   const list = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);
   const sensors = useSensors(
@@ -60,13 +62,13 @@ export function LayerSidebar({
   }, [activeId, layers]);
   const ids = layers.map((l) => l.id);
   return (
-    <aside className="layer-sidebar" aria-label="Camadas do keymap">
+    <aside className="layer-sidebar" aria-label={tr("Keymap layers")}>
       <div className="layer-sidebar-heading">
-        <span>Camadas</span>
+        <span>{tr("Layers")}</span>
         <button
           className="btn icon-btn"
-          aria-label="Adicionar camada"
-          title="Adicionar camada"
+          aria-label={tr("Add layer")}
+          title={tr("Add layer")}
           disabled={layers.length >= 32}
           onClick={onAdd}
         >
@@ -103,19 +105,19 @@ export function LayerSidebar({
         <div className="layer-pages">
           <button
             className="btn icon-btn"
-            aria-label="Camadas anteriores"
-            title="Coluna anterior"
+            aria-label={tr("Previous layers")}
+            title={tr("Previous column")}
             onClick={() =>
               list.current?.scrollBy({ left: -list.current.clientWidth, behavior: "smooth" })
             }
           >
             <ChevronLeft size={15} />
           </button>
-          <span>{layers.length} camadas</span>
+          <span>{tr("{0} layers", layers.length)}</span>
           <button
             className="btn icon-btn"
-            aria-label="Próximas camadas"
-            title="Próxima coluna"
+            aria-label={tr("Next layers")}
+            title={tr("Next column")}
             onClick={() =>
               list.current?.scrollBy({ left: list.current.clientWidth, behavior: "smooth" })
             }

@@ -1,35 +1,48 @@
-# Publicar versões
+# Publishing releases
 
-## Preparação do repositório
+## Repository setup
 
-O mantenedor deve habilitar **Settings → Pages → Source: GitHub Actions** e disponibilizar o repositório publicamente para que documentação, releases e consulta anônima sejam acessíveis à comunidade. O código de atualização não contém tokens. A alteração de visibilidade não é feita por nenhum script deste projeto.
+The repository and releases must be public for anonymous community downloads and update checks. Configure **Settings → Pages → Source: GitHub Actions** for the documentation. Scripts do not change repository visibility.
 
-Opcionalmente, configure proteção da branch principal exigindo o CI. Ative **Private vulnerability reporting** para receber relatos de segurança privados.
+Consider requiring CI on the main branch and enable GitHub’s private vulnerability reporting.
 
-## Fluxo
+## One version source
 
-1. Integre as mudanças na branch principal e confira o CI.
-2. Crie uma tag SemVer estável, por exemplo `v0.1.0`, no commit desejado e envie-a:
+Change **only `internal/version/VERSION`** to bump the app version. It contains stable `MAJOR.MINOR.PATCH`, without a `v` prefix.
+
+Go embeds this file. The CLI, header badge, updater, native Wails package metadata and release scripts all read it. The frontend has no independent app version. The Wails wrapper supplies derived native metadata only during a build.
+
+## Publish
+
+1. Update the central version file, merge the release changes and verify CI.
+2. Tag the reviewed commit with the matching version:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag "v$(python3 scripts/project_version.py)"
+git push origin "v$(python3 scripts/project_version.py)"
 ```
 
-O workflow `release.yml` executa o CI, compila o aplicativo Linux, injeta versão/commit, monta o pacote e os checksums e cria uma release em rascunho. Só publica depois que todos os assets foram enviados. Uma falha deixa o rascunho fora do atualizador.
+The workflow rejects a tag that differs from the central file. It runs CI, builds Linux with the embedded version, creates the package and checksums, and uploads a draft release. It publishes only after all assets are present. A failed build/upload leaves the draft outside the updater.
 
-Tags publicadas não devem ser reutilizadas. Para corrigir um pacote, publique uma versão nova. Pré-releases e versões com sufixos não são distribuídas por esse workflow inicial.
+Never reuse a published tag. Publish a new version to correct an artifact. The initial workflow distributes stable tags only.
 
-## Assets
+## Assets and update contract
 
-- `z-mapflow_VERSAO_linux_amd64.tar.gz`: instalação inicial, ícone, licença e script.
-- `z-mapflow_linux_amd64`: executável usado pelo atualizador.
-- `checksums.txt`: SHA-256 de todos os assets acima.
+- `z-mapflow_VERSION_linux_amd64.tar.gz`: initial installation package, icon, license and installer.
+- `z-mapflow_linux_amd64`: executable consumed by the updater.
+- `checksums.txt`: SHA-256 of those assets.
 
-Os nomes fazem parte do contrato com o atualizador. O download é sempre do repositório fixo `Henriquex25/Z-MapFlow`. O aplicativo compara versão estável, sistema e arquitetura; revalida a release ao instalar e confere os bytes e executa o novo binário com `--version` antes da troca, verificando também dependências de runtime.
+Asset names are part of the updater contract. Downloads come from `Henriquex25/Z-MapFlow`; the app rechecks the chosen release, verifies bytes and runs `--version` before replacement to check the version and runtime libraries. Keep release publishing rights limited to trusted maintainers.
 
-A versão anterior é preservada, e falhas de substituição/execução imediata fazem rollback. Isso não detecta automaticamente todos os problemas de funcionamento após a nova GUI iniciar; é necessário testar a release com o pacote instalado.
+A complete previous executable is retained as `.previous`. Replacement is atomic and immediate launch failures trigger rollback. Problems that occur after the GUI opens may require manual restoration; test the installed package before announcing it.
 
-## Validação antes de anunciar
+## Local build and package
 
-Baixe a release publicada, instale num perfil temporário e confirme abertura, versão, importação, compilação e fluxo de atualização de uma versão anterior. As verificações de CI não confirmam o funcionamento físico no teclado. Não há assinatura de código de macOS/Windows nem distribuição oficial para esses sistemas nesta etapa.
+```sh
+python3 scripts/wails.py build -tags webkit2_41
+python3 scripts/package_release.py
+```
+
+The packager rejects an executable whose reported version differs from the central file. No version argument or version linker override is needed.
+
+Before announcing a release, check installation, version display, import, firmware building and updating from an earlier version in a temporary user profile. CI does not validate physical keyboard behavior. Windows/macOS packages and code signing are not part of the initial release workflow.

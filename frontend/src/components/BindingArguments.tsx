@@ -1,3 +1,4 @@
+import { localizeMessage, tr, useLocale } from "../i18n";
 import { useEffect, useId, useState } from "react";
 import type { Project } from "../types/keyboard";
 import { useKeyboardStore } from "../store/useKeyboardStore";
@@ -24,6 +25,7 @@ export function BindingArguments({
   onChange: (code: string) => void;
   context?: BindingContext;
 }) {
+  useLocale();
   const plugin = useKeyboardStore((s) => s.plugin),
     id = useId();
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -59,7 +61,7 @@ export function BindingArguments({
           {spec.kind === "layer" ? (
             <select
               className="field"
-              aria-label={`${label} — camada ${i + 1}`}
+              aria-label={tr("{0} — layer {1}", label, i + 1)}
               value={normalizeBinding(candidate, project).split(/\s+/)[i + 1]}
               onChange={(e) => apply(i, e.target.value)}
             >
@@ -72,20 +74,20 @@ export function BindingArguments({
           ) : spec.kind === "profile" ? (
             <select
               className="field"
-              aria-label={`${label} — argumento ${i + 1}`}
+              aria-label={tr("{0} — argument {1}", label, i + 1)}
               value={draft[i] ?? "0"}
               onChange={(e) => apply(i, e.target.value)}
             >
               {Array.from({ length: project.options.bluetoothProfiles }, (_, n) => (
                 <option key={n} value={n}>
-                  Perfil {n + 1}
+                  {tr("Profile")} {n + 1}
                 </option>
               ))}
             </select>
           ) : spec.choices ? (
             <select
               className="field"
-              aria-label={`${label} — argumento ${i + 1}`}
+              aria-label={tr("{0} — argument {1}", label, i + 1)}
               value={draft[i] ?? ""}
               onChange={(e) => apply(i, e.target.value)}
             >
@@ -103,13 +105,15 @@ export function BindingArguments({
               className={`field ${error ? "invalid-field" : ""}`}
               aria-invalid={!!error}
               aria-describedby={error ? `${id}-error` : undefined}
-              aria-label={`${label} — argumento ${i + 1}`}
+              aria-label={tr("{0} — argument {1}", label, i + 1)}
               value={draft[i] ?? ""}
               list={spec.kind === "keycode" ? `${id}-keys` : undefined}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setShowSuggestions(false)}
               spellCheck={false}
-              placeholder={spec.kind === "keycode" ? "A, LCTRL, LC(A)…" : "Número ou expressão ZMK"}
+              placeholder={
+                spec.kind === "keycode" ? "A, LCTRL, LC(A)…" : tr("Number or ZMK expression")
+              }
               onChange={(e) => apply(i, e.target.value)}
             />
           )}
@@ -124,7 +128,7 @@ export function BindingArguments({
       )}
       {error && (
         <p className="binding-error" id={`${id}-error`} role="alert">
-          {error}
+          {localizeMessage(error)}
         </p>
       )}
     </div>

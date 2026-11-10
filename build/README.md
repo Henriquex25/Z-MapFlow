@@ -38,4 +38,10 @@ build with `wails build`.
 
 Replace `build/appicon.png` with the project's square PNG logo (1024×1024 recommended). Linux embeds this file as the window icon and the release installer uses it for the application launcher. Preserve vector sources, when available, under `assets/branding/`.
 
-The existing `build/windows/icon.ico` is a derived default icon. Regenerate/remove it when preparing Windows packaging with a new logo so Wails does not reuse an old derivative. See `docs/community/branding.md`.
+The `build/windows/icon.ico` file is derived from the same PNG. Regenerate it when changing the logo so Windows packaging does not reuse an old derivative. See `docs/community/branding.md`.
+
+## Application version
+
+Edit only `internal/version/VERSION`. Run Wails through `python3 scripts/wails.py build` (or `dev` / `generate module`) so native metadata is supplied from that source. `wails.json` deliberately has no independently maintained `productVersion`; platform templates consume the generated value during the command.
+
+The in-app header and browser favicon import `build/appicon.png` directly. Linux embeds the same source as the window icon; the installer copies it for the application launcher. An installed Linux app refreshes that launcher image from its embedded icon on startup after a binary update. The Windows `build/windows/icon.ico` derivative has also been regenerated from this logo.

@@ -1,7 +1,9 @@
+import { tr, useLocale } from "../i18n";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { GripHorizontal } from "lucide-react";
 
 export function WorkspaceSplit({ children, palette }: { children: ReactNode; palette: ReactNode }) {
+  useLocale();
   const host = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; height: number } | null>(null);
   const [height, setHeight] = useState<number | null>(null);
@@ -36,14 +38,14 @@ export function WorkspaceSplit({ children, palette }: { children: ReactNode; pal
       <div
         className="workspace-splitter"
         role="separator"
-        aria-label="Ajustar espaço entre teclado e paleta"
+        aria-label={tr("Adjust keyboard and palette space")}
         aria-orientation="horizontal"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={share}
-        aria-valuetext={`${share}% do espaço para a paleta`}
+        aria-valuetext={tr("{0}% of space for the palette", share)}
         tabIndex={0}
-        title="Arraste para dividir o espaço · Setas para ajustar · Duplo clique para restaurar"
+        title={tr("Drag to split space · Arrow keys to adjust · Double-click to reset")}
         onDoubleClick={() => setHeight(null)}
         onKeyDown={(e) => {
           if (e.key === "Home") {

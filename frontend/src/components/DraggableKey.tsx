@@ -1,3 +1,4 @@
+import { tr, useLocale } from "../i18n";
 import { useId } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { IKeyAction } from "../types/keyboard";
@@ -13,6 +14,7 @@ export function DraggableKey({
   className?: string;
   validationContext?: BindingContext;
 }) {
+  useLocale();
   const id = useId();
   const { project, plugin } = useKeyboardStore();
   const error = project ? validateBinding(action.code, project, plugin, validationContext) : "";
@@ -28,9 +30,9 @@ export function DraggableKey({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      aria-label={`Arrastar ${action.label || action.code}`}
+      aria-label={tr("Drag {0}", action.label || action.code)}
       aria-pressed={selected}
-      title={error || "Clique para selecionar ou arraste até o destino"}
+      title={error || tr("Click to select or drag to a destination")}
       aria-invalid={!!error}
       onClick={(event) => {
         event.stopPropagation();

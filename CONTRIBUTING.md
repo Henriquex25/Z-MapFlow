@@ -1,16 +1,16 @@
-# Contribuir com o Z-MapFlow
+# Contributing to Z-MapFlow
 
-Obrigado por ajudar a melhorar a edição de teclados ZMK. Contribuições de código, documentação, usabilidade e novos teclados são bem-vindas.
+Code fixes, documentation, translations, usability improvements and new keyboard plugins are welcome.
 
-- [Guia da comunidade](docs/community/contributing.md)
-- [Ambiente e verificações](docs/community/development.md)
-- [Contrato de plugins](docs/plugins.md)
-- [Publicação de versões](docs/community/releases.md)
+- [Community guide](https://henriquex25.github.io/Z-MapFlow/community/contributing)
+- [Development environment and checks](docs/community/development.md)
+- [Step-by-step keyboard plugin guide](docs/plugins.md)
+- [Release process and central version](docs/community/releases.md)
 
-Use os formulários de issues para bugs, sugestões e suporte a teclados. Antes de mudanças grandes, discuta a proposta em uma issue. PRs devem explicar o problema, a mudança e a validação feita, com imagens quando a interface mudar.
+Use the issue forms for bugs, features and proposed keyboards. Discuss substantial changes before implementing them. PRs should describe the concrete problem, resulting behavior and validation, with screenshots for interface changes.
 
-Leia `AGENT.md`. Mantenha regras de hardware nos plugins, snapshots imutáveis e compatibilidade de projetos salvos. Teste o comportamento relevante sem usar volumes/dispositivos reais em testes automatizados de flash.
+Read `AGENT.md`. Keep hardware-specific rules in plugins, preserve immutable snapshots and saved project compatibility, and use simulated volumes for automated flash tests. Regenerate Wails bindings when changing Go models/API methods.
 
-Execute os testes pertinentes e atualize a documentação. Ao mudar os modelos Go ou a API Wails, regenere `frontend/wailsjs`. Nunca inclua credenciais nem arquivos pessoais.
+The UI and default documentation are English. Update `internal/i18n/pt-BR.json` for visible strings and preserve the distinction between interface language and keyboard layout. The application version is owned solely by `internal/version/VERSION`.
 
-O projeto é MIT. Suas contribuições são disponibilizadas sob a mesma licença. Preserve avisos de dependências e assets de terceiros. Respeito é obrigatório em issues, PRs e revisões; ataques pessoais, discriminação e assédio não são aceitos.
+Do not include credentials or personal configuration. The project uses MIT; contributions use the same license. Preserve third-party notices. Harassment, discrimination and personal attacks are not accepted in issues, pull requests or reviews.

@@ -1,22 +1,22 @@
-# Contribuir
+# Contributing
 
-Correções, documentação, sugestões de usabilidade e plugins são bem-vindos. O projeto usa licença **MIT**; ao enviar código, você concorda em disponibilizar sua contribuição sob a mesma licença.
+Code fixes, documentation, translations, usability improvements and keyboard plugins are welcome. The project uses the **MIT license**; submitted contributions are distributed under that license.
 
 ## Issues
 
-Use o formulário apropriado para bug, sugestão ou novo teclado. Inclua passos reproduzíveis e o resultado esperado. Para bugs de firmware, informe teclado, controladora, variante e revisão ZMK. Não publique tokens nem configurações pessoais sem revisar o conteúdo.
+Choose the bug, feature or keyboard support form. Provide reproducible steps and the expected result. For firmware problems, include the keyboard, controller, variant and ZMK revision. Review files before attaching them and do not publish credentials or personal configuration unintentionally.
 
-Vulnerabilidades devem seguir [SECURITY.md no repositório](https://github.com/Henriquex25/Z-MapFlow/blob/main/SECURITY.md).
+Report exploitable vulnerabilities according to [SECURITY.md](https://github.com/Henriquex25/Z-MapFlow/blob/main/SECURITY.md).
 
 ## Pull requests
 
-1. Faça um fork e crie uma branch para uma mudança com objetivo definido.
-2. Leia o guia de [desenvolvimento](./development) e as regras do `AGENT.md`.
-3. Implemente e valide a mudança; atualize os guias afetados.
-4. Abra um PR usando o template e descreva o problema, o comportamento resultante e como verificou.
+1. Fork the repository and create a branch with a focused objective.
+2. Read [development](./development) and the rules in `AGENT.md`.
+3. Implement and validate the change; update affected guides and translations.
+4. Open a PR using the template, explaining the problem, resulting behavior and verification.
 
-Para mudanças maiores, proponha a ideia numa issue antes de investir na implementação. Comentários de revisão devem ser respeitosos, concretos e centrados no código. Não são aceitos ataques pessoais, assédio ou discriminação.
+Discuss larger changes in an issue first. Be respectful and focus reviews on the code. Harassment, discrimination and personal attacks are not accepted.
 
-## Novos teclados
+## New keyboards
 
-Use o [contrato de plugins](../plugins). Geometria, matriz, controladoras e alvos pertencem ao plugin; o core deve continuar independente de qualquer teclado específico. Informe quais builds e quais testes físicos foram realizados.
+Follow the [step-by-step plugin guide](../plugins). Hardware geometry, matrix order, controllers and build targets belong in a plugin, while shared functionality belongs in the core. State which builds and physical tests you performed. A working build does not prove successful flashing or correct hardware operation.

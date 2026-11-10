@@ -30,6 +30,10 @@ export function FlashFirmware(arg1, arg2, arg3) {
   return window['go']['main']['App']['FlashFirmware'](arg1, arg2, arg3);
 }
 
+export function GetAppInfo() {
+  return window['go']['main']['App']['GetAppInfo']();
+}
+
 export function GetBuild(arg1) {
   return window['go']['main']['App']['GetBuild'](arg1);
 }
@@ -84,6 +88,10 @@ export function SaveProject(arg1) {
 
 export function SelectBootloader(arg1) {
   return window['go']['main']['App']['SelectBootloader'](arg1);
+}
+
+export function SetAppLanguage(arg1) {
+  return window['go']['main']['App']['SetAppLanguage'](arg1);
 }
 
 export function StartBuild() {
