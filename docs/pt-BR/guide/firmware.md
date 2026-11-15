@@ -14,13 +14,14 @@ O histórico permite recuperar firmwares de compilações anteriores. Confira a 
 
 ## Flash por UF2
 
-Escolha **Fazer flash** para abrir o guia visual. Seus três cartões numerados orientam a conexão, a escolha da metade e a conferência do volume:
+Escolha **Fazer flash** para abrir o assistente por etapas. A barra de progresso mostra a etapa atual, e **Voltar** permite conferir as escolhas anteriores antes do envio.
 
-1. **Conecte por USB.** Conecte uma metade em modo bootloader. Abra **Como entrar no bootloader** para consultar as instruções da sua controladora.
-2. **Escolha a metade conectada.** Selecione o botão da metade para o app usar o firmware correspondente.
-3. **Confira o volume do bootloader.** Um único volume detectado é selecionado automaticamente. Se houver vários, escolha um ou use **Selecionar volume manualmente**.
-4. Use **Enviar firmware**, espere a controladora reiniciar e teste o novo layout. Repita para os demais alvos necessários.
+1. **Metade.** Escolha a metade que você vai conectar e use **Avançar**.
+2. **Conexão.** Siga as instruções de bootloader da sua controladora. Um único volume detectado é selecionado automaticamente. Se houver vários, escolha um ou use **Selecionar volume manualmente**. Use **Avançar** quando houver um volume selecionado.
+3. **Envio.** Confira a metade, o volume do bootloader e o nome do firmware. Use **Enviar firmware** para iniciar. A navegação fica bloqueada durante o envio; se um volume detectado desaparecer antes de enviar, o assistente retorna à conexão.
+4. **Resultado.** Espere o teclado reiniciar e teste o novo layout. O resultado distingue arquivo enviado, gravação final não confirmada e cópia interrompida. Use **Gravar próxima metade** para iniciar a próxima metade ou **Concluir** após enviar todos os alvos.
 
+Cada tela mostra somente os controles da etapa atual. Para avançar, selecione a metade ou o volume, conforme a etapa. O arquivo só é enviado ao usar **Enviar firmware** na tela de revisão.
 O aplicativo escolhe o artefato do alvo informado. Uma cópia concluída confirma o envio, mas o funcionamento final deve ser verificado no teclado. O aplicativo não ativa automaticamente o bootloader.
 
 ## Reinicialização e avisos de gravação final

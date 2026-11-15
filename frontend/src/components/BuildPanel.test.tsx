@@ -48,24 +48,31 @@ it("requires the connected half, allows retry, and selects the corresponding art
     <BuildPanel build={build} plugins={[s.plugin]} currentRevision="saved1" onError={vi.fn()} />,
   );
   fireEvent.click(screen.getByRole("button", { name: "Flash firmware" }));
-  const send = await screen.findByRole("button", { name: "Send firmware" });
-  expect(send).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Send firmware" })).not.toBeInTheDocument();
+  async function review() {
+    const next = screen.getByRole("button", { name: "Next step" });
+    await waitFor(() => expect(next).toBeEnabled());
+    fireEvent.click(next);
+  }
   fireEvent.click(screen.getByRole("button", { name: "Left" }));
-  await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeEnabled(),
-  );
+  await review(); // Select half → connect.
+  await review(); // Detect volume → review.
   vi.mocked(api.flash).mockRejectedValueOnce(new Error("Reconecte o volume"));
   fireEvent.click(screen.getByRole("button", { name: "Send firmware — Left" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Reconecte o volume");
+  fireEvent.click(screen.getByRole("button", { name: "Reconnect and retry" }));
+  await review();
   fireEvent.click(screen.getByRole("button", { name: "Send firmware — Left" }));
   await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("File sent"));
   expect(api.flash).toHaveBeenLastCalledWith("123", "left", "/test/UF2");
+  fireEvent.click(screen.getByRole("button", { name: "Flash next half" }));
   fireEvent.click(screen.getByRole("button", { name: "Right" }));
-  await waitFor(() =>
-    expect(screen.getByRole("button", { name: "Send firmware — Right" })).toBeEnabled(),
-  );
+  await review();
+  await review();
   fireEvent.click(screen.getByRole("button", { name: "Send firmware — Right" }));
   await waitFor(() => expect(api.flash).toHaveBeenLastCalledWith("123", "right", "/test/UF2"));
+  expect(await screen.findByRole("button", { name: "Finish" })).toBeEnabled();
 });
 
 it.each(["/tmp/firmwares", ""])(

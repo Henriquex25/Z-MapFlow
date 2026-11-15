@@ -110,9 +110,9 @@ Use [issues](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose) for bug
 
 ## Version and releases
 
-**Edit only [`internal/version/VERSION`](internal/version/VERSION) to change the application version.** Go embeds this file; the CLI, header badge, updater, native build metadata and release packaging all read it. The frontend has no separate application version.
+**Edit only [`VERSION`](VERSION) to change the application version.** Go embeds this file; the CLI, header badge, updater, native build metadata and release packaging all read it. The frontend has no separate application version.
 
-A release tag must match that file. The release workflow verifies the match, runs CI, builds the app and uploads all assets and checksums before publishing the release. See [publishing releases](https://henriquex25.github.io/Z-MapFlow/community/releases).
+After updating `VERSION`, commit and push to `main`, then wait for CI to pass. In GitHub Actions, manually run **Build Linux release draft** on `main`. It verifies successful CI for that exact commit, builds the app and creates a draft with the installation package, updater executable, checksums and generated release notes. Review the draft in Releases, mark it as **Latest** and publish it manually. Installed apps discover the newer version after publication. See [publishing releases](https://henriquex25.github.io/Z-MapFlow/community/releases).
 
 Place the square PNG app logo in [`build/appicon.png`](build/appicon.png), preferably at 1024×1024. See [branding](https://henriquex25.github.io/Z-MapFlow/community/branding) for platform-specific derivatives.
 

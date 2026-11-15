@@ -18,7 +18,7 @@ def package(version: str, binary: Path, output: Path):
     if not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
         raise ValueError("Use a stable SemVer version without the v prefix")
     if version != current_version():
-        raise ValueError("Release version must match internal/version/VERSION")
+        raise ValueError("Release version must match VERSION")
     binary = binary.resolve()
     actual = subprocess.check_output([str(binary), "--version"], text=True).strip()
     if actual != version:

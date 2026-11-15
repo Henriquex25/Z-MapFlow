@@ -35,7 +35,7 @@ Frontend data types derive from these models; do not maintain separate geometry 
 
 ## Version
 
-`internal/version/VERSION` is the single version source. Go embeds it, and the CLI, header, updater and package scripts consume it. `scripts/wails.py` temporarily supplies this value to Wails native package metadata and restores the configuration afterwards. Do not add independent app versions to frontend manifests or linker flags.
+`VERSION` is the single version source. Go embeds it, and the CLI, header, updater and package scripts consume it. `scripts/wails.py` temporarily supplies this value to Wails native package metadata and restores the configuration afterwards. Do not add independent app versions to frontend manifests or linker flags.
 
 ## Interface translation
 

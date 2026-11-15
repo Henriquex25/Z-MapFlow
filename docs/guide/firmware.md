@@ -14,13 +14,14 @@ Build history lets you recover previous artifacts. Check the revision and target
 
 ## UF2 flashing
 
-Choose **Flash firmware** to open the visual guide. Its three numbered cards walk you through connecting, choosing a half and checking the drive:
+Choose **Flash firmware** to open the step-by-step wizard. The progress bar shows the current stage, and **Previous step** lets you review earlier choices before sending.
 
-1. **Connect by USB.** Connect one half in bootloader mode. Open **Bootloader instructions** for your controller's instructions.
-2. **Choose the connected half.** Select its large button so the app can use the matching firmware.
-3. **Check the bootloader drive.** A single detected volume is selected automatically. If several are present, choose one, or use **Select volume manually**.
-4. Choose **Send firmware**, wait for the controller to restart and test the new layout. Repeat for the remaining targets as required.
+1. **Choose half.** Select the half you will connect, then choose **Next step**.
+2. **Connect.** Follow your controller's bootloader instructions. A single detected volume is selected automatically. If several are present, choose one, or use **Select volume manually**. Continue with **Next step** once a volume is selected.
+3. **Send.** Review the selected half, bootloader drive and firmware filename. Choose **Send firmware** to start the transfer. Navigation is disabled while it is sending; if a detected drive disappears before sending, the wizard returns to the connection step.
+4. **Result.** Wait for the keyboard to restart and test the new layout. The result distinguishes a completed file transfer, an unconfirmed final write and an interrupted copy. Use **Flash next half** to start the next half, or **Finish** after all targets have been sent.
 
+Each screen shows only the controls for its current step. Advancing requires a selected half or drive, as appropriate. Nothing is sent until you explicitly choose **Send firmware** on the review screen.
 The app selects the artifact associated with the target. A completed copy confirms transfer, but you must verify the firmware’s behavior on the keyboard. Bootloader entry is manual.
 
 ## Restart and final write warnings

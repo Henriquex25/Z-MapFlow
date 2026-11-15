@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-function openModal() {
+function openModal(connect = true) {
   const { plugin } = fixture();
   plugin.variants[0].targets.push({
     id: "right",
@@ -45,14 +45,61 @@ function openModal() {
   };
   const onClose = vi.fn();
   render(<FlashModal build={build} plugin={plugin} onClose={onClose} />);
-  fireEvent.click(screen.getByRole("button", { name: "Left" }));
+  if (connect) {
+    fireEvent.click(screen.getByRole("button", { name: "Left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  }
   return onClose;
 }
 async function sendLeft() {
+  const next = screen.getByRole("button", { name: "Next step" });
+  await waitFor(() => expect(next).toBeEnabled());
+  fireEvent.click(next);
   const send = screen.getByRole("button", { name: "Send firmware — Left" });
   await waitFor(() => expect(send).toBeEnabled());
   fireEvent.click(send);
 }
+
+it("guides the user through required selections, preserves them on back, and sends only after review", async () => {
+  openModal(false);
+  expect(screen.getByRole("heading", { name: "Which half are you flashing?" })).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Previous step" })).toBeDisabled();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  expect(api.volumes).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Left" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+  expect(screen.getByRole("heading", { name: "Connect Left by USB" })).toHaveFocus();
+  expect(api.flash).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Previous step" }));
+  expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Right" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  expect(screen.getByRole("heading", { name: "Review and send" })).toHaveFocus();
+  expect(screen.getByText("right.uf2")).toBeInTheDocument();
+  expect(screen.getByText(drive.path)).toBeInTheDocument();
+  expect(api.flash).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — Right" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("File sent — Right");
+  expect(api.flash).toHaveBeenCalledWith("build", "right", drive.path);
+});
+
+it("returns to the connection step if the detected drive disappears during review", async () => {
+  vi.useFakeTimers();
+  openModal();
+  await act(async () => {});
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeEnabled();
+  vi.mocked(api.volumes).mockResolvedValue([]);
+  await act(async () => vi.advanceTimersByTimeAsync(2000));
+  expect(screen.getByRole("heading", { name: "Connect Left by USB" })).toHaveFocus();
+  expect(screen.queryByRole("button", { name: "Send firmware — Left" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
+  expect(api.flash).not.toHaveBeenCalled();
+});
 
 it("keeps a final write failure unconfirmed until the user tests and confirms the keyboard", async () => {
   vi.mocked(api.flash).mockResolvedValue({
@@ -66,7 +113,7 @@ it("keeps a final write failure unconfirmed until the user tests and confirms th
   expect(warning).toHaveTextContent("input/output error");
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   expect(screen.queryByText("Confirmed by you")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Right" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Right" })).not.toBeInTheDocument();
   expect(api.flash).toHaveBeenCalledTimes(1);
 
   // The warning remains understandable when switching language while it is open.
@@ -78,6 +125,7 @@ it("keeps a final write failure unconfirmed until the user tests and confirms th
   );
   expect(screen.getByText("Confirmado por você")).toBeInTheDocument();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Gravar próxima metade" }));
   expect(screen.getByRole("button", { name: "Direita" })).toBeEnabled();
   expect(api.flash).toHaveBeenCalledTimes(1);
 });
@@ -108,11 +156,11 @@ it("clears a disconnected detected drive instead of retaining a stale selection"
   vi.useFakeTimers();
   openModal();
   await act(async () => {});
-  expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled();
   vi.mocked(api.volumes).mockResolvedValue([]);
   await act(async () => vi.advanceTimersByTimeAsync(2000));
   expect(screen.getByRole("combobox", { name: "Bootloader volume" })).toHaveValue("");
-  expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
 });
 
 it("requires a choice when multiple volumes are present and supports a manually selected drive", async () => {
@@ -125,7 +173,7 @@ it("requires a choice when multiple volumes are present and supports a manually 
   const select = screen.getByRole("combobox", { name: "Bootloader volume" });
   await waitFor(() => expect(within(select).getAllByRole("option")).toHaveLength(3));
   expect(select).toHaveValue("");
-  expect(screen.getByRole("button", { name: "Send firmware — Left" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Select volume manually" }));
   await waitFor(() => expect(select).toHaveValue("/manual/UF2"));
   await sendLeft();
@@ -147,5 +195,9 @@ it("prevents closing or starting another transfer while sending", async () => {
   fireEvent.keyDown(window, { key: "Escape" });
   expect(close).not.toHaveBeenCalled();
   await act(async () => finish({ status: "sent", detail: "" }));
-  expect(screen.getByRole("button", { name: "Close" })).toBeEnabled();
+  for (const button of screen.getAllByRole("button", { name: "Close" })) {
+    expect(button).toBeEnabled();
+  }
+  fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
+  expect(close).toHaveBeenCalledOnce();
 });

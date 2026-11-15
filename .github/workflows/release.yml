@@ -1,23 +1,39 @@
-name: Release
+name: Build Linux release draft
 on:
-  push:
-    tags: ['v*.*.*']
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: release-${{ github.ref }}
+  group: linux-release-draft
   cancel-in-progress: false
 jobs:
   verify:
-    uses: ./.github/workflows/ci.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate VERSION and require successful CI for this exact main commit
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release_preflight.py
   package:
     needs: verify
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
@@ -26,17 +42,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Validate stable release tag
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          python3 -c 'import os,re; assert re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", os.environ["RELEASE_TAG"]), "Use vMAJOR.MINOR.PATCH"'
-          test "$RELEASE_TAG" = "v$(python3 scripts/project_version.py)" || { echo "Tag must match internal/version/VERSION"; exit 1; }
       - run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
       - run: go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)
       - name: Build versioned desktop
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_COMMIT: ${{ github.sha }}
         run: |
           python3 scripts/wails.py build -tags webkit2_41 -skipbindings -m -nosyncgomod -ldflags "-X z-mapflow/internal/version.Commit=$RELEASE_COMMIT"
@@ -48,26 +57,24 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 7
-  publish:
-    needs: package
+  draft:
+    needs: [verify, package]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: release-assets
           path: dist
-      - name: Publish complete release
+      - name: Create complete draft for manual review
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          if gh release view "$RELEASE_TAG" --json isDraft >/dev/null 2>&1; then
-            test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true || { echo 'This version is already published; use a new tag.'; exit 1; }
-            gh release upload "$RELEASE_TAG" dist/* --clobber
-          else
-            gh release create "$RELEASE_TAG" dist/* --draft --verify-tag --generate-notes --title "Z-MapFlow $RELEASE_TAG"
-          fi
-          gh release edit "$RELEASE_TAG" --draft=false --latest
+          RELEASE_VERSION: ${{ needs.verify.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: python3 scripts/create_release_draft.py

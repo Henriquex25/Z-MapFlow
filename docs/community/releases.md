@@ -8,23 +8,33 @@ Consider requiring CI on the main branch and enable GitHub’s private vulnerabi
 
 ## One version source
 
-Change **only `internal/version/VERSION`** to bump the app version. It contains stable `MAJOR.MINOR.PATCH`, without a `v` prefix.
+Change **only `VERSION` at the repository root** to bump the app version. It contains stable `MAJOR.MINOR.PATCH`, without a `v` prefix.
 
-Go embeds this file. The CLI, header badge, updater, native Wails package metadata and release scripts all read it. The frontend has no independent app version. The Wails wrapper supplies derived native metadata only during a build.
+The entry point embeds this root file and initializes the shared version before the app starts. The CLI, header badge, updater, native Wails package metadata and release scripts all read it. The frontend has no independent app version. The Wails wrapper supplies derived native metadata only during a build.
 
-## Publish
+## Build a release draft
 
-1. Update the central version file, merge the release changes and verify CI.
-2. Tag the reviewed commit with the matching version:
+1. Merge the changes you want to release into `main`.
+2. Update the root `VERSION` file, for example to `0.1.1`, commit and push to `main`.
+3. Wait for **CI** to complete successfully for that exact commit, including the app and documentation jobs.
+4. Open **GitHub → Actions → Build Linux release draft → Run workflow**, select **main** and run it.
+5. Wait for the workflow to finish. It checks the version and prior CI, builds Linux x86_64, verifies the package checksums and creates a **draft** release named `Z-MapFlow v0.1.1`, with all assets and generated release notes.
 
-```sh
-git tag "v$(python3 scripts/project_version.py)"
-git push origin "v$(python3 scripts/project_version.py)"
-```
+The workflow must be merged into the default branch before the manual button becomes available. See [GitHub's manual workflow instructions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 
-The workflow rejects a tag that differs from the central file. It runs CI, builds Linux with the embedded version, creates the package and checksums, and uploads a draft release. It publishes only after all assets are present. A failed build/upload leaves the draft outside the updater.
+The workflow runs only when manually requested. You do not need to create or push a tag yourself. The draft uses `v` followed by `VERSION` and targets the commit selected when the workflow was started, even if `main` advances during the build. The workflow never publishes the release automatically.
 
-Never reuse a published tag. Publish a new version to correct an artifact. The initial workflow distributes stable tags only.
+If CI is still running or failed for that commit, draft generation stops before the build. A build failure does not create a release. If asset upload fails, a partial draft can remain: keep it unpublished and rerun after fixing the failure. A retry can refresh the assets of an existing draft for the same commit without changing its title or notes. A draft for another commit is rejected; remove that draft or increment `VERSION`. Published releases cannot be overwritten by this workflow.
+
+## Review and publish manually
+
+1. Open **GitHub → Releases** and edit the generated draft.
+2. Check its version, title, notes and the three assets listed below. Download and test the installation package before publishing. Resolve any upload failure before publishing a partial draft.
+3. Keep it as a stable release, select **Set as the latest release** and choose **Publish release**.
+
+Drafts and prereleases stay outside the updater. After publication as **Latest**, installed apps check it at startup and offer to update when its version is newer than their embedded version. An app already running `0.1.0` will not offer an update to `0.1.0`; use a higher version for subsequent changes.
+
+Never reuse a published version or move a published tag. Publish a new version to correct an artifact. Only stable `MAJOR.MINOR.PATCH` releases are supported by this flow.
 
 ## Assets and update contract
 

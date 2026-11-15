@@ -1,17 +1,26 @@
-// Package version exposes the single application version embedded from VERSION.
+// Package version exposes the application version embedded by the entry point.
 package version
 
 import (
-	_ "embed"
+	"fmt"
+	"regexp"
 	"strings"
 )
 
-//go:embed VERSION
-var source string
-
-// Version is derived from VERSION; release tags must match this file.
-var Version = strings.TrimSpace(source)
+// Version is initialized from the root VERSION before the application starts.
+var Version = "dev"
 var Commit = "unknown"
+
+var stableVersion = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+
+func Set(source string) error {
+	value := strings.TrimSpace(source)
+	if !stableVersion.MatchString(value) {
+		return fmt.Errorf("VERSION must contain MAJOR.MINOR.PATCH without a v prefix")
+	}
+	Version = value
+	return nil
+}
 
 type Info struct {
 	Version string `json:"version"`

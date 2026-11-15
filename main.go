@@ -20,6 +20,15 @@ var assets embed.FS
 //go:embed build/appicon.png
 var appIcon []byte
 
+//go:embed VERSION
+var appVersion string
+
+func init() {
+	if err := version.Set(appVersion); err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--version" {
 		fmt.Println(version.Version)
