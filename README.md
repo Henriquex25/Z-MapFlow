@@ -16,6 +16,14 @@ A desktop ZMK keymap editor inspired by VIAL. **Drag and drop keys, build firmwa
 
 *The editor keeps your keyboard layout and action palette together, with save and build actions on the right and firmware controls below.*
 
+### From a saved layout to guided flashing
+
+Compile your saved layout locally with Docker, then follow the flash wizard for each half. Choose the connected half, check its bootloader drive and review the matching firmware before sending—all from the same desktop app.
+
+![Z-MapFlow flash wizard at step 3, reviewing the left half, its bootloader drive and the matching UF2 firmware](docs/public/images/z-mapflow-flash-wizard.png)
+
+*Example of the review step: the selected half, bootloader drive, firmware file and build revision stay visible before you send. See the [build and flash guide](https://henriquex25.github.io/Z-MapFlow/guide/firmware) for the complete workflow.*
+
 ## Install and use
 
 The initial distribution supports **Linux x86_64** with GTK 3 and WebKitGTK 4.1. Download the `.tar.gz` package from Releases, extract it, and run `./install.sh` from the extracted directory. The installer creates an application menu entry and installs into your user account. Go and Node are not required. See the [installation guide](https://henriquex25.github.io/Z-MapFlow/guide/install) for runtime dependencies.

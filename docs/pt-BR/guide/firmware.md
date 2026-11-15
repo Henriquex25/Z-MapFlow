@@ -24,6 +24,10 @@ Escolha **Fazer flash** para abrir o assistente por etapas. A barra de progresso
 Cada tela mostra somente os controles da etapa atual. Para avançar, selecione a metade ou o volume, conforme a etapa. O arquivo só é enviado ao usar **Enviar firmware** na tela de revisão.
 O aplicativo escolhe o artefato do alvo informado. Uma cópia concluída confirma o envio, mas o funcionamento final deve ser verificado no teclado. O aplicativo não ativa automaticamente o bootloader.
 
+![Assistente de flash do Z-MapFlow mostrando a metade esquerda, o volume do bootloader e o firmware UF2 correspondente antes do envio](/images/z-mapflow-flash-wizard.png)
+
+*Exemplo da etapa 3: confira o alvo, o firmware e a revisão da compilação antes de usar Enviar firmware. A captura mostra a interface padrão em inglês.*
+
 ## Reinicialização e avisos de gravação final
 
 Bootloaders UF2 podem reiniciar automaticamente após receber o firmware, removendo o volume USB antes de o sistema operacional terminar a confirmação final de gravação. Na SuperMini nRF52840, o autor do projeto confirmou que o teclado funcionou após o app informar:

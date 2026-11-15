@@ -24,6 +24,10 @@ Choose **Flash firmware** to open the step-by-step wizard. The progress bar show
 Each screen shows only the controls for its current step. Advancing requires a selected half or drive, as appropriate. Nothing is sent until you explicitly choose **Send firmware** on the review screen.
 The app selects the artifact associated with the target. A completed copy confirms transfer, but you must verify the firmware’s behavior on the keyboard. Bootloader entry is manual.
 
+![Z-MapFlow flash wizard reviewing the left half, bootloader drive and matching UF2 firmware before sending](/images/z-mapflow-flash-wizard.png)
+
+*Example of step 3: review the target, firmware and build revision before choosing Send firmware.*
+
 ## Restart and final write warnings
 
 UF2 bootloaders can restart automatically after receiving firmware, removing their USB drive before the operating system finishes its final write confirmation. On SuperMini nRF52840, the project author observed a working keyboard after the app reported:
