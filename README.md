@@ -20,9 +20,44 @@ A desktop ZMK keymap editor inspired by VIAL. **Drag and drop keys, build firmwa
 
 The initial distribution supports **Linux x86_64** with GTK 3 and WebKitGTK 4.1. Download the `.tar.gz` package from Releases, extract it, and run `./install.sh` from the extracted directory. The installer creates an application menu entry and installs into your user account. Go and Node are not required. See the [installation guide](https://henriquex25.github.io/Z-MapFlow/guide/install) for runtime dependencies.
 
+On Ubuntu/Pop!_OS/Debian, install the required runtime once before running the installer:
+
+```sh
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-0
+```
+
 The interface defaults to **English**. Choose **Settings → Application → Interface language → Português (Brasil)** to switch immediately. This preference is saved on your computer, separately from your project. It does not change the operating system keyboard layout, ZMK keycodes or firmware settings.
 
-Docker is required to build firmware, but editing and saving work without it. At startup, the app checks public stable GitHub releases. You can defer an update or save your changes, download and verify the update, install it and restart. The previous executable is retained for recovery.
+At startup, the app checks public stable GitHub releases. You can defer an update or save your changes, download and verify the update, install it and restart. The previous executable is retained for recovery.
+
+### Docker for firmware builds
+
+**Docker must be installed and running to compile keyboard firmware.** Install [Docker Engine or Docker Desktop](https://docs.docker.com/get-started/get-docker/) and start it before using **Build** or **Save and build**. The app needs access to the Docker daemon; Docker Desktop's active CLI context must be available to it.
+
+Editing and saving layouts, and importing/exporting keymaps, work without Docker. See the [firmware build guide](https://henriquex25.github.io/Z-MapFlow/guide/firmware).
+
+### Installation problems
+
+**Missing WebKitGTK 4.1 dependency**
+
+If `./install.sh` stops with this message:
+
+```text
+./z-mapflow: error while loading shared libraries: libwebkit2gtk-4.1.so.0: cannot open shared object file: No such file or directory
+```
+
+The system is missing a library needed to start the app. Lines ending in `OK` or `SUCESSO` confirm that package files passed their checksum verification; the runtime check is a separate step. The installation stops before replacing application files when this dependency is missing.
+
+On Ubuntu/Pop!_OS/Debian, run these commands from the extracted folder:
+
+```sh
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-0
+./install.sh
+```
+
+The archive uses system libraries, and WebKitGTK 4.0 alone does not supply the required 4.1 library. Once the dependency is installed, you can rerun the same installer. See [installation problems](https://henriquex25.github.io/Z-MapFlow/guide/install#installation-problems) for more detail.
 
 ## Keyboard support and plugins
 
@@ -46,7 +81,7 @@ Read the **[step-by-step plugin guide](https://henriquex25.github.io/Z-MapFlow/p
 - Validate action names, parameter counts and types before assignments; invalid drafts preserve the last valid value.
 - Import/export JSON projects and ZMK `.keymap` configurations, including supported `.conf`, local `.h` headers and `build.yaml` settings.
 - Configure Kconfig flags, target snippets, CMake arguments, pointing features, lighting and Studio USB presets.
-- Add language headers and use their aliases from the action palette.
+- Choose the keyboard language in the palette, use included ABNT2 characters, or add another language through **Languages → Find languages → Add language (.h)**.
 - Build immutable saved revisions in Docker, inspect logs and recover artifacts from build history.
 - Export firmware with a completion notification, then follow the UF2 flashing flow for each target.
 

@@ -12,7 +12,7 @@ Opcionalmente, configure proteção da branch principal exigindo o CI. Ative **P
 2. Atualize o arquivo `VERSION` na raiz, por exemplo para `0.1.1`, faça commit e push para `main`.
 3. Aguarde o workflow **CI** concluir com sucesso para esse commit exato, incluindo os jobs do app e da documentação.
 4. Abra **GitHub → Actions → Build Linux release draft → Run workflow**, selecione **main** e execute.
-5. Aguarde a conclusão. O workflow valida a versão e o CI anterior, compila Linux x86_64, confere os checksums e cria uma release **draft** chamada `Z-MapFlow v0.1.1`, com todos os assets e notas geradas automaticamente.
+5. Aguarde a conclusão. O workflow valida a versão e o CI anterior, compila Linux x86_64, confere os checksums e cria uma release **draft** chamada `v0.1.1`, com todos os assets e notas geradas automaticamente.
 
 O workflow precisa estar na branch padrão para o botão de execução manual aparecer. Veja as [instruções oficiais do GitHub](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 

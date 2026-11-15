@@ -499,6 +499,7 @@ export function getPaletteKeyWidth(code: string): number {
     "&blank": 42,
     "&kp BSPC": 90,
     "&kp KP_N0": 90,
+    "&kp KP_ENTER": 66,
     "&kp TAB": 66,
     "&kp BSLH": 66,
     "&kp CLCK": 78,

@@ -12,6 +12,8 @@ A paleta inferior reúne teclas, modificadores, tap/hold, camadas, Bluetooth, mo
 
 Ações principais ficam na lateral direita, com ícones e tooltips. As camadas ficam à esquerda do teclado, com rolagem quando necessário.
 
+A paleta de Teclas ocupa a largura disponível da janela, preservando a largura mínima das teclas. Em janelas menores, use a rolagem horizontal para alcançar as demais teclas. Selecione **Idioma das teclas** na paleta para acessar ABNT2 ou um idioma importado; veja [idiomas do teclado](./configuration#escolher-o-idioma-das-teclas).
+
 ## Comportamentos, macros e combos
 
 **Comportamentos** combinam ações reutilizáveis: toque/segurar, sequência de toques, ação conforme modificador, entre outros. Cada uso pode ter seus próprios parâmetros. **Macros** executam sequências; **Combos** disparam uma ação ao pressionar várias posições simultaneamente.

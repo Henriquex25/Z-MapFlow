@@ -2,12 +2,15 @@ import { useAppPreferences } from "../i18n/preferences";
 import * as go from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
 import type { Project, Build, Session, Plugin } from "../types/keyboard";
+import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 const model = (p: Project) => models.Project.createFrom(p);
 async function native<T>(run: () => Promise<T>): Promise<T> {
   await go.SetAppLanguage(useAppPreferences.getState().locale);
   return run();
 }
 export const api = {
+  findLanguageHeaders: () =>
+    BrowserOpenURL("https://github.com/joelspadin/zmk-locale-generator/releases/latest"),
   appInfo: go.GetAppInfo,
   checkUpdates: go.CheckForUpdates,
   updateProgress: go.GetUpdateProgress,

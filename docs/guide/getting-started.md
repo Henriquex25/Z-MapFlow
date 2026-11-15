@@ -12,6 +12,8 @@ The bottom palette contains keys, modifiers, tap/hold, layers, Bluetooth, mouse,
 
 Main actions are in the right sidebar with tooltips. Layers are on the left of the keyboard, with scrolling when needed. The app version appears discreetly in the header.
 
+The Keys palette expands across the available window width while preserving minimum key widths. On narrower windows, scroll horizontally to reach the remaining keys. Select **Keyboard language** in the palette to access ABNT2 or an imported language; see [keyboard languages](./configuration#choose-the-keyboard-language).
+
 ## Behaviors, macros and combos
 
 **Behaviors** provide reusable actions, including tap/hold, tap sequences and modifier-dependent alternatives. Each use may have different parameters. **Macros** run action sequences. **Combos** trigger an action when selected key positions are pressed together.

@@ -4,6 +4,7 @@ import { useKeyboardStore } from "../store/useKeyboardStore";
 import { type KeyVisuals } from "../utils/keyFormatter";
 import { presentKey, readableName } from "../utils/keyPresentation";
 import { keyIcons } from "../utils/keyIcons";
+import { headerCharacter } from "../utils/keyboardLanguage";
 
 interface KeyProps {
   action: IKeyAction;
@@ -15,11 +16,18 @@ export function Key({ action, className = "", compact = false }: KeyProps) {
   useLocale();
   const project = useKeyboardStore((s) => s.project);
   const presentation = presentKey(action.code, project);
+  const sourceAlias = /^&kp\s+([A-Z][A-Z0-9_]+)$/.exec(action.code)?.[1];
+  const character =
+    project && presentation.visuals?.main === sourceAlias
+      ? headerCharacter(action.code, project)
+      : undefined;
   const custom = presentation.name;
   const visuals: KeyVisuals | null =
     !compact && custom
       ? { main: readableName(action.label || custom), description: custom }
-      : presentation.visuals;
+      : character
+        ? { main: character, description: character }
+        : presentation.visuals;
   const alternatives = compact ? presentation.alternatives : undefined;
   const widthClass = className.includes("w-") ? "" : "w-14";
   const heightClass = className.includes("h-") ? "" : "h-14";

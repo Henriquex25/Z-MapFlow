@@ -14,10 +14,20 @@ In **Settings**, configure available options and additional Kconfig flags such a
 
 Snippets and CMake arguments belong to individual build targets. USB typing and Studio’s USB transport are separate features; select the options supported by your revision and hardware. See the [official ZMK documentation](https://zmk.dev/docs) for their dependencies.
 
-## Keyboard language headers
+## Choose the keyboard language
 
-Import or create a local header such as `keys_pt_abnt2.h` and use its corresponding include when needed. Defined aliases appear in the **Languages** palette and accompany the project, export and firmware build.
+Use the **Keyboard language** selector in the action palette. Choose **US / ANSI** or **Portuguese (Brazil) — ABNT2**, or a previously imported header. The same selection is available in **Settings → Operating system layout**.
 
-The operating system keyboard layout must match the codes the keyboard sends. Changing the palette’s system layout does not rewrite existing bindings.
+For ABNT2, select Portuguese and the palette opens **Languages** with its included characters, such as `Ç`. Drag a character onto a key, or click it and then click its destination. You can search by character or alias. Existing assignments keep their codes when you choose another language.
+
+### Add another language
+
+1. Open **Languages → Find languages**. This opens the [ZMK Locale Generator headers](https://github.com/joelspadin/zmk-locale-generator/releases/latest) in your browser. Download the `.h` matching the keyboard layout configured on your computer.
+2. Choose **Add language (.h)** in the palette and select that file. Keep any local header dependencies beside it when importing.
+3. The app selects the imported header and shows its aliases. Drag them onto your keyboard. If a header explicitly annotates a character, the app can display that symbol; otherwise it shows the alias name.
+
+The app retains the imported files and include statements in the project, keymap export and firmware build. **Settings → Headers and languages** lets you create or edit a header as an advanced option. Import refuses conflicting files with different contents.
+
+Configure the same keyboard layout in your operating system. The app does not switch the OS layout: [ZMK sends key codes interpreted by the host](https://zmk.dev/blog/2024/01/05/zmk-tools#zmk-locale-generator).
 
 **Interface language is separate:** English or Brazilian Portuguese under **Settings → Application** changes app controls only. It does not enable ABNT2, change your firmware or translate user-created layer/macro names.

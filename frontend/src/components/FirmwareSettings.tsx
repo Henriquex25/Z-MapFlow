@@ -1,6 +1,7 @@
 import { tr, useLocale } from "../i18n";
 import { useEffect, useState } from "react";
-import { api } from "../services/api";
+import { useImportLanguageHeaders } from "../hooks/useImportLanguageHeaders";
+import { setKeyboardLanguage } from "../utils/keyboardLanguage";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import {
   configEntries,
@@ -106,6 +107,7 @@ export function FirmwareSettings() {
   useLocale();
   const { project: p, plugin, edit } = useKeyboardStore();
   const [headerName, setHeaderName] = useState("");
+  const { importHeaders, importing } = useImportLanguageHeaders();
   if (!p || !plugin) return null;
   const variant = plugin.variants.find((v) => v.id === p.variantId)!;
   const central = variant.targets.find((t) => t.role === "central" || t.role === "standalone");
@@ -119,33 +121,7 @@ export function FirmwareSettings() {
       }
       Object.assign(target, patch);
     });
-  const importHeaders = async () => {
-    try {
-      const bundle = await api.importHeaders();
-      if (!bundle?.name) return;
-      const headers = bundle.files;
-      const conflicts = Object.keys(headers).filter(
-        (name) => p.headers?.[name] !== undefined && p.headers[name] !== headers[name],
-      );
-      if (conflicts.length) {
-        useKeyboardStore.setState({
-          error: tr(
-            "Headers already exist with different contents: {0}. Rename or edit the existing header.",
-            conflicts.join(", "),
-          ),
-        });
-        return;
-      }
-      edit((p) => {
-        p.headers = { ...p.headers, ...headers };
-        p.options.locale = bundle.name === "keys_pt_abnt2.h" ? "pt-br" : `header:${bundle.name}`;
-        if (!(p.preamble ?? "").includes(`"${bundle.name}"`))
-          p.preamble = `${p.preamble ?? ""}\n#include "${bundle.name}"\n`;
-      });
-    } catch (e) {
-      useKeyboardStore.setState({ error: String(e) });
-    }
-  };
+
   return (
     <>
       <div className="resource-card">
@@ -244,7 +220,7 @@ export function FirmwareSettings() {
       <div className="resource-card">
         <div className="section-toolbar">
           <h3>{tr("Headers and languages")}</h3>
-          <button className="btn" onClick={importHeaders}>
+          <button className="btn" disabled={importing} onClick={importHeaders}>
             {tr("Import .h header")}{" "}
           </button>
         </div>
@@ -271,8 +247,7 @@ export function FirmwareSettings() {
                   [headerName]:
                     "#pragma once\n#include <dt-bindings/zmk/keys.h>\n\n// Exemplo: #define ES_NTIL SEMI\n",
                 };
-                p.preamble = `${p.preamble ?? ""}\n#include "${headerName}"\n`;
-                p.options.locale = `header:${headerName}`;
+                setKeyboardLanguage(p, `header:${headerName}`);
               });
               setHeaderName("");
             }}

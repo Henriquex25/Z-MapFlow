@@ -18,7 +18,7 @@ The entry point embeds this root file and initializes the shared version before 
 2. Update the root `VERSION` file, for example to `0.1.1`, commit and push to `main`.
 3. Wait for **CI** to complete successfully for that exact commit, including the app and documentation jobs.
 4. Open **GitHub → Actions → Build Linux release draft → Run workflow**, select **main** and run it.
-5. Wait for the workflow to finish. It checks the version and prior CI, builds Linux x86_64, verifies the package checksums and creates a **draft** release named `Z-MapFlow v0.1.1`, with all assets and generated release notes.
+5. Wait for the workflow to finish. It checks the version and prior CI, builds Linux x86_64, verifies the package checksums and creates a **draft** release named `v0.1.1`, with all assets and generated release notes.
 
 The workflow must be merged into the default branch before the manual button becomes available. See [GitHub's manual workflow instructions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 

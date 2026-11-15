@@ -7,9 +7,33 @@ cd "$package_dir"
 if ! command -v sha256sum >/dev/null 2>&1; then
   echo 'O comando sha256sum é necessário para conferir este pacote.' >&2; exit 1
 fi
+printf '[1/3] Verifying package files...\n'
 sha256sum -c checksums.txt
 # Verify runtime libraries before changing an existing installation.
-./z-mapflow --version >/dev/null
+printf '[2/3] Checking desktop runtime dependencies...\n'
+if ! runtime_output=$(./z-mapflow --version 2>&1); then
+  printf 'The desktop runtime check failed.\n%s\n\n' "$runtime_output" >&2
+  case "$runtime_output" in
+    *libwebkit2gtk-4.1.so*|*libjavascriptcoregtk-4.1.so*|*libsoup-3.0.so*|*libgtk-3.so*)
+      cat >&2 <<'RUNTIME_HELP'
+Package files passed verification, but a required system library is missing.
+On Ubuntu, Pop!_OS or Debian, install them with:
+
+  sudo apt update
+  sudo apt install libwebkit2gtk-4.1-0
+
+Then run ./install.sh again from this folder.
+Other Linux distributions need GTK 3 and WebKitGTK 4.1 runtime packages.
+RUNTIME_HELP
+      ;;
+    *)
+      printf 'Check the error above and use a package compatible with your Linux system and architecture.\n' >&2
+      ;;
+  esac
+  printf 'Installation stopped before changing application files.\n' >&2
+  exit 1
+fi
+printf '[3/3] Installing Z-MapFlow for the current user...\n'
 user_data_dir=${XDG_DATA_HOME:-"$HOME/.local/share"}
 install_dir="$user_data_dir/z-mapflow"
 case "$install_dir" in *'"'*|*'`'*|*'$'*|*'\'*) echo 'O caminho de instalação contém caracteres não suportados.' >&2; exit 1;; esac

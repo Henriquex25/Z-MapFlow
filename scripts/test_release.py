@@ -49,6 +49,55 @@ class ReleaseTest(unittest.TestCase):
                 with self.subTest(version=version), self.assertRaises(ValueError):
                     package(version, binary, Path(tmp) / "out")
 
+    def test_failed_runtime_probe_explains_missing_libraries_and_preserves_installations(self):
+        failures = [
+            ("./z-mapflow: error while loading shared libraries: libwebkit2gtk-4.1.so.0: cannot open shared object file: No such file or directory", True),
+            ("./z-mapflow: Exec format error", False),
+        ]
+        for previous_installation in [False, True]:
+            for failure, expects_runtime_hint in failures:
+                with self.subTest(previous=previous_installation, failure=failure), tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    version = current_version()
+                    binary = root / "binary"
+                    binary.write_text('#!/bin/sh\n'
+                        'if [ -n "${ZMAPFLOW_TEST_RUNTIME_ERROR:-}" ]; then\n'
+                        '  printf "%s\\n" "$ZMAPFLOW_TEST_RUNTIME_ERROR" >&2\n'
+                        '  exit 127\n'
+                        'fi\n'
+                        f'printf "{version}\\n"\n')
+                    binary.chmod(0o755)
+                    output = root / "dist"
+                    package(version, binary, output)
+                    with tarfile.open(output / f"z-mapflow_{version}_linux_amd64.tar.gz") as tar:
+                        tar.extractall(root / "extracted", filter="data")
+                    folder = root / f"extracted/z-mapflow-{version}"
+                    home = root / "home"
+                    data = root / "data with spaces"
+                    installed = data / "z-mapflow/z-mapflow"
+                    launcher = data / "applications/z-mapflow.desktop"
+                    if previous_installation:
+                        installed.parent.mkdir(parents=True)
+                        installed.write_bytes(b"previous working application")
+                        launcher.parent.mkdir(parents=True)
+                        launcher.write_text("previous launcher")
+                    env = dict(os.environ, HOME=str(home), XDG_DATA_HOME=str(data),
+                               ZMAPFLOW_TEST_RUNTIME_ERROR=failure)
+                    result = subprocess.run([str(folder / "install.sh"), "--no-launch"], env=env, capture_output=True, text=True)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(failure, result.stderr)
+                    self.assertIn("Installation stopped before changing application files", result.stderr)
+                    self.assertNotIn("Z-MapFlow installed.", result.stdout)
+                    self.assertEqual("sudo apt install libwebkit2gtk-4.1-0" in result.stderr, expects_runtime_hint)
+                    self.assertFalse((home / ".local/bin/z-mapflow").exists())
+                    if previous_installation:
+                        self.assertEqual(installed.read_bytes(), b"previous working application")
+                        self.assertEqual(launcher.read_text(), "previous launcher")
+                        self.assertEqual(sorted(p.name for p in installed.parent.iterdir()), ["z-mapflow"])
+                    else:
+                        self.assertFalse(data.exists())
+                        self.assertFalse(home.exists())
+
 class WailsVersionTest(unittest.TestCase):
     def test_native_metadata_uses_central_version_and_restores_after_failure(self):
         from unittest.mock import patch

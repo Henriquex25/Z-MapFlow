@@ -1,7 +1,11 @@
 import { tr, useLocale } from "../i18n";
 import { headerSymbols } from "../utils/firmwareSettings";
+import { headerCharacter, keyboardLanguageHeaders } from "../utils/keyboardLanguage";
+import { useImportLanguageHeaders } from "../hooks/useImportLanguageHeaders";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, FileUp } from "lucide-react";
+import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
+import { api } from "../services/api";
 import { DraggableKey } from "./DraggableKey";
 import { BindingDrop } from "./BindingDrop";
 import { getPaletteKeyWidth, formatKeyVisuals } from "../utils/keyFormatter";
@@ -129,6 +133,19 @@ const numpadCluster = [
   ["&kp KP_N0", "&kp KP_DOT", "&blank"],
 ];
 
+const clusterGap = 18;
+const keyboardClusters = [mainCluster, navCluster, numpadCluster].map((rows) => ({
+  rows,
+  minWidth: Math.max(
+    ...rows.map(
+      (row) => row.reduce((sum, code) => sum + getPaletteKeyWidth(code), 0) + (row.length - 1) * 4,
+    ),
+  ),
+}));
+const keyboardMinWidth =
+  keyboardClusters.reduce((sum, cluster) => sum + cluster.minWidth, 0) +
+  (keyboardClusters.length - 1) * clusterGap;
+
 const basicKeysQuickList = [
   "&kp A",
   "&kp B",
@@ -214,6 +231,7 @@ export function ActionTray() {
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Keys");
   const [search, setSearch] = useState("");
+  const { importHeaders, importing } = useImportLanguageHeaders();
   useEffect(() => {
     if (bodyRef.current) {
       bodyRef.current.scrollTop = 0;
@@ -250,7 +268,14 @@ export function ActionTray() {
   const filtered = (items: IKeyAction[]) =>
     items.map(localize).filter((a) => {
       const visuals = formatKeyVisuals(displayCode(a.code, p));
-      return [a.code, a.label, visuals?.main, visuals?.modifier, visuals?.description]
+      return [
+        a.code,
+        a.label,
+        headerCharacter(a.code, p),
+        visuals?.main,
+        visuals?.modifier,
+        visuals?.description,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(search.toLowerCase());
@@ -270,7 +295,7 @@ export function ActionTray() {
       ))}
     </div>
   );
-  const languages = headerSymbols(p.headers).map((symbol) => ({
+  const languages = headerSymbols(keyboardLanguageHeaders(p)).map((symbol) => ({
     ...action(`&kp ${symbol}`),
     label: symbol,
   }));
@@ -287,6 +312,16 @@ export function ActionTray() {
             {tr(t)}
           </button>
         ))}
+        {(tab === "Keys" || tab === "Languages") && (
+          <KeyboardLanguageSelect
+            compact
+            onChange={(locale) => {
+              setTab(locale === "us" ? "Keys" : "Languages");
+              setSearch("");
+              setCollapsed(false);
+            }}
+          />
+        )}
         <input
           className="field ml-auto max-w-48"
           aria-label={tr("Search actions")}
@@ -343,23 +378,39 @@ export function ActionTray() {
             ).concat(custom, languages),
           )
         ) : tab === "Keys" ? (
-          <div className="palette-keyboard">
-            {[mainCluster, navCluster, numpadCluster].map((cluster, i) => (
-              <div key={i} className="palette-keyboard-cluster">
-                {cluster.map((row, r) => (
+          <div className="palette-keyboard" style={{ minWidth: keyboardMinWidth, gap: clusterGap }}>
+            {keyboardClusters.map((cluster, i) => (
+              <div
+                key={i}
+                className="palette-keyboard-cluster"
+                style={{
+                  minWidth: cluster.minWidth,
+                  flexBasis: cluster.minWidth,
+                  flexGrow: cluster.minWidth,
+                }}
+              >
+                {cluster.rows.map((row, r) => (
                   <div key={r} className="palette-keyboard-row">
                     {row.map((code, c) =>
                       code === "&none" || code === "&blank" ? (
                         <div
                           key={c}
                           className="palette-key-slot"
-                          style={{ width: getPaletteKeyWidth(code) }}
+                          style={{
+                            minWidth: getPaletteKeyWidth(code),
+                            flexBasis: getPaletteKeyWidth(code),
+                            flexGrow: getPaletteKeyWidth(code),
+                          }}
                         />
                       ) : (
                         <div
                           key={c}
                           className="palette-key-slot"
-                          style={{ width: getPaletteKeyWidth(code) }}
+                          style={{
+                            minWidth: getPaletteKeyWidth(code),
+                            flexBasis: getPaletteKeyWidth(code),
+                            flexGrow: getPaletteKeyWidth(code),
+                          }}
                         >
                           <DraggableKey action={localize(action(code))} className="w-full h-full" />
                         </div>
@@ -371,13 +422,35 @@ export function ActionTray() {
             ))}
           </div>
         ) : tab === "Languages" ? (
-          <div>
+          <div className="palette-language-panel">
+            <div className="palette-language-help">
+              <p className="hint">
+                {tr(
+                  "Choose the same keyboard layout in your operating system. Drag a character below onto your keyboard.",
+                )}
+              </p>
+              <div className="palette-language-buttons">
+                <button className="btn" onClick={() => api.findLanguageHeaders()}>
+                  {tr("Find languages")}
+                </button>
+                <button
+                  className="btn"
+                  disabled={importing}
+                  onClick={async () => {
+                    if (await importHeaders()) setSearch("");
+                  }}
+                >
+                  <FileUp size={16} aria-hidden="true" />
+                  {tr("Add language (.h)")}
+                </button>
+              </div>
+            </div>
             {languages.length ? (
               list(languages)
             ) : (
               <p className="hint">
                 {tr(
-                  "Add a header in Settings → Headers and languages. Portuguese ABNT2 is also available in the system layout selector.",
+                  "Choose a keyboard language above. For another language, use Find languages to download its ZMK .h file, then Add language (.h).",
                 )}{" "}
               </p>
             )}

@@ -50,7 +50,7 @@ def main(directory=Path("dist")):
     else:
         subprocess.run([
             "gh", "release", "create", tag, *assets, "--repo", repository,
-            "--draft", "--target", sha, "--generate-notes", "--title", f"Z-MapFlow {tag}",
+            "--draft", "--target", sha, "--generate-notes", "--title", tag,
         ], check=True)
     print(f"Draft {tag} is ready. Review its assets and notes, then publish it manually as Latest.")
 

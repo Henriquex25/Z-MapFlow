@@ -1,3 +1,4 @@
+import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { AppSettings } from "./AppSettings";
 import { tr, useLocale } from "../i18n";
 import { useState } from "react";
@@ -862,28 +863,7 @@ export function SettingsEditor() {
       <div className="resource-card">
         <h3>{tr("System layout and features")}</h3>
         <div className="flex flex-wrap items-center gap-5 mt-3">
-          <label className="form-label">
-            {tr("Operating system layout")}{" "}
-            <select
-              className="field"
-              value={p.options.locale}
-              onChange={(e) =>
-                edit((p) => {
-                  p.options.locale = e.target.value;
-                })
-              }
-            >
-              <option value="us">US / ANSI</option>
-              <option value="pt-br">{tr("Portuguese (Brazil) — ABNT2")}</option>
-              {Object.keys(p.headers ?? {})
-                .filter((name) => name !== "keys_pt_abnt2.h")
-                .map((name) => (
-                  <option key={name} value={`header:${name}`}>
-                    Header: {name}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <KeyboardLanguageSelect label="Operating system layout" />
           {plugin.capabilities.includes("display") && (
             <label>
               <input

@@ -790,5 +790,11 @@
   "Choose another half": "Escolher outra metade",
   "Flash again": "Gravar novamente",
   "Flash next half": "Gravar próxima metade",
-  "Finish": "Concluir"
+  "Finish": "Concluir",
+  "Keyboard language": "Idioma das teclas",
+  "Header: {0}": "Header: {0}",
+  "Choose the same keyboard layout in your operating system. Drag a character below onto your keyboard.": "Configure o mesmo layout de teclado no sistema operacional. Arraste um caractere abaixo para seu teclado.",
+  "Find languages": "Encontrar idiomas",
+  "Add language (.h)": "Adicionar idioma (.h)",
+  "Choose a keyboard language above. For another language, use Find languages to download its ZMK .h file, then Add language (.h).": "Escolha o idioma das teclas acima. Para outro idioma, use Encontrar idiomas para baixar o arquivo ZMK .h e depois Adicionar idioma (.h)."
 }

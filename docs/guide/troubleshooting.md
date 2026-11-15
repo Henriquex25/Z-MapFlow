@@ -1,5 +1,9 @@
 # Troubleshooting
 
+## Installation stops after the package checks
+
+If files show `OK` or `SUCESSO` and the next message mentions a missing `libwebkit2gtk-4.1.so.0`, the package verification passed and a required system dependency is missing. See [installation problems](./install#installation-problems) for the exact error and commands to install the runtime and retry.
+
 ## The app does not open
 
 Check the architecture and GTK/WebKit libraries in the [installation guide](./install). Run the executable from a terminal to inspect the system error. Official Linux packages use WebKitGTK 4.1.

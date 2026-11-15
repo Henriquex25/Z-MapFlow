@@ -4,16 +4,21 @@ O Z-MapFlow está disponível **somente para Linux x86_64**, com GTK 3 e WebKitG
 
 ## Instalar em poucos passos
 
+No Ubuntu, Pop!_OS ou Debian compatível, instale o runtime gráfico uma vez antes de executar o pacote baixado:
+
+```sh
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-0
+```
+
+O gerenciador de pacotes instala também o GTK e as demais dependências desse runtime. Esses pacotes do sistema exigem acesso de administrador; o aplicativo é instalado na pasta do usuário.
+
 1. Abra [GitHub Releases](https://github.com/Henriquex25/Z-MapFlow/releases/latest) e baixe `z-mapflow_VERSAO_linux_amd64.tar.gz`.
 2. Extraia o arquivo e, dentro da pasta extraída, execute `./install.sh` no terminal. O instalador abre o aplicativo e cria uma entrada **Z-MapFlow** no menu de aplicativos.
 
 A instalação é feita na pasta do usuário, sem `sudo`. Go, Node e ferramentas de desenvolvimento não são necessários. Nas próximas vezes, abra pelo menu de aplicativos.
 
-Se faltarem bibliotecas no Ubuntu/Pop!_OS/Debian compatível, instale:
-
-```sh
-sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0
-```
+Em outras distribuições Linux, instale os pacotes de runtime GTK 3 e WebKitGTK 4.1 pelo gerenciador de pacotes da distribuição.
 
 O pacote inclui `checksums.txt`; o instalador confere o executável antes de copiá-lo. Para conferir também o arquivo baixado, obtenha `checksums.txt` da mesma release e execute na pasta dos downloads:
 
@@ -21,7 +26,45 @@ O pacote inclui `checksums.txt`; o instalador confere o executável antes de cop
 sha256sum --ignore-missing -c checksums.txt
 ```
 
-Para compilar firmwares, instale e inicie também o [Docker](https://docs.docker.com/get-started/get-docker/). Docker Desktop funciona quando seu contexto está disponível no CLI.
+## Docker para compilar firmware
+
+**O Docker precisa estar instalado e em execução para compilar o firmware do teclado.** Instale o [Docker Engine ou Docker Desktop](https://docs.docker.com/get-started/get-docker/) e inicie o serviço Docker ou o aplicativo Desktop antes de usar **Compilar** ou **Salvar e compilar**.
+
+O Z-MapFlow precisa ter acesso ao serviço Docker. Docker Desktop funciona quando seu contexto ativo está disponível pelo CLI. Se o app não conseguir acessar o Docker, consulte [problemas com Docker](./troubleshooting#docker-nao-e-encontrado).
+
+Editar e salvar layouts e importar/exportar keymaps funciona sem Docker. Consulte [compilação e flash do firmware](./firmware) quando estiver pronto para compilar.
+
+## Problemas de instalação
+
+### Biblioteca WebKitGTK 4.1 ausente
+
+**O que aparece**
+
+O instalador confere os arquivos do pacote com sucesso e depois para com a mensagem:
+
+```text
+./z-mapflow: error while loading shared libraries: libwebkit2gtk-4.1.so.0: cannot open shared object file: No such file or directory
+```
+
+**O que significa**
+
+Falta uma biblioteca do sistema necessária para abrir o app. O arquivo baixado usa as bibliotecas GTK 3 e WebKitGTK 4.1 instaladas no computador. Ter WebKitGTK 4.0 instalado não fornece a biblioteca exigida pela release.
+
+As linhas terminadas em `OK` ou `SUCESSO` confirmam apenas que os arquivos correspondem aos checksums do pacote. A verificação seguinte confere se o app consegue iniciar com as bibliotecas do sistema. Se ela falhar, a instalação para antes de criar ou substituir arquivos do aplicativo. As novas compilações do instalador identificam separadamente a conferência dos arquivos, a checagem de dependências e a instalação.
+
+**Como resolver**
+
+No Ubuntu, Pop!_OS ou Debian compatível, execute os comandos abaixo na pasta do pacote descompactado:
+
+```sh
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-0
+./install.sh
+```
+
+O gerenciador de pacotes instala também as dependências desse runtime. Essa preparação do sistema é necessária uma vez; o app continua sendo instalado na pasta do usuário. Em outras distribuições, instale os runtimes GTK 3 e WebKitGTK 4.1 pelo gerenciador de pacotes correspondente.
+
+Você pode reutilizar o arquivo que já baixou. A instalação termina quando aparece `Z-MapFlow installed. Open it from your application menu.` Se outro erro persistir, inclua a saída completa do terminal e a distribuição/versão do Linux em uma [issue de instalação](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose).
 
 ## Atualização automática
 

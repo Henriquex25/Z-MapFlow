@@ -1,5 +1,9 @@
 # Problemas frequentes
 
+## A instalação para depois de conferir os arquivos
+
+Se os arquivos mostram `OK` ou `SUCESSO` e a mensagem seguinte informa que falta `libwebkit2gtk-4.1.so.0`, o pacote passou na verificação e falta uma dependência do sistema. Veja [problemas de instalação](./install#problemas-de-instalacao) para a mensagem completa e os comandos para instalar o runtime e tentar novamente.
+
 ## O aplicativo não abre
 
 Confira a arquitetura e as bibliotecas GTK/WebKit indicadas na [instalação](./install). Execute o binário no terminal para obter a mensagem do sistema. Pacotes oficiais Linux usam WebKitGTK 4.1.
