@@ -1,5 +1,6 @@
 import appIcon from "../../build/appicon.png";
 import { AppVersion } from "./components/AppVersion";
+import { CommunitySupport } from "./components/CommunitySupport";
 import { localizeMessage, tr, useLocale } from "./i18n";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -352,6 +353,12 @@ export default function App() {
               {dirty ? tr("Unsaved changes") : savedProject ? tr("Saved") : tr("Not saved yet")}
             </span>
           </div>
+        </div>
+        <div className="app-header-actions">
+          <span id="app-update-status" className="app-update-slot" />
+          <CommunitySupport
+            paused={busy || running || !!drag || !!confirm || !!sources || editingKey !== null}
+          />
         </div>
       </header>
       {(error || store.error) && (

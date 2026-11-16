@@ -45,3 +45,8 @@ Quando a cópia completa retorna sem erro, mas a sincronização ou o fechamento
 - Se a própria cópia for interrompida, o aplicativo informa um erro. Uma cópia incompleta não oferece a confirmação de gravação final.
 
 O app não repete o envio nem declara o teclado funcional apenas porque o volume desapareceu.
+
+
+## Unidades USB no Windows
+
+Coloque a metade conectada em bootloader e aguarde sua unidade UF2 aparecer no Explorador. O app descobre unidades locais pela API Win32 e confere `INFO_UF2.TXT` com a controladora selecionada. Se não aparecer, selecione manualmente a raiz da unidade, como `E:\`. Informe explicitamente a metade conectada: a unidade não identifica sozinha esquerda ou direita. A cópia é feita diretamente pelo aplicativo Windows, sem encaminhar USB para o Docker. A validação com teclado físico no Windows ainda está pendente.

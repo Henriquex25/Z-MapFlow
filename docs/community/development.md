@@ -60,3 +60,20 @@ ZMAPFLOW_DOCKER_TEST=1 go test ./internal/firmware -run '^TestDockerIntegration$
 ```
 
 This downloads dependencies and compiles firmware without flashing hardware. Automated copy tests must use simulated volumes.
+
+## Windows development and validation
+
+Use Windows x64, Go from `go.mod`, Node 24, the matching Wails CLI, Microsoft WebView2 and NSIS on PATH. Build without Linux WebKit tags:
+
+```powershell
+npm ci --prefix frontend
+npm run build --prefix frontend
+go test ./...
+go vet ./...
+python scripts/wails.py build -platform windows/amd64 -webview2 embed -nsis -installscope user -skipbindings -m -nosyncgomod
+python scripts/package_windows.py
+```
+
+The Windows CI job performs these checks and runs `python scripts/windows_install_smoke.py` on its clean runner account. That smoke test installs to a temporary directory with spaces, checks payload/version/notices, uninstalls and verifies configuration survives. Do not run it on an account with an existing installation. The updater test uses simulated parent/helper/app processes, never an actual keyboard.
+
+Linux can cross-build the executable/NSIS installer with the same Wails command if NSIS is installed. Windows packaging runs a real executable version probe and must run on Windows. Cross-compilation alone does not validate WebView2, Docker Desktop or physical UF2 transfer.

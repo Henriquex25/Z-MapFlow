@@ -17,8 +17,8 @@ The entry point embeds this root file and initializes the shared version before 
 1. Merge the changes you want to release into `main`.
 2. Update the root `VERSION` file, for example to `0.1.1`, commit and push to `main`.
 3. Wait for **CI** to complete successfully for that exact commit, including the app and documentation jobs.
-4. Open **GitHub → Actions → Build Linux release draft → Run workflow**, select **main** and run it.
-5. Wait for the workflow to finish. It checks the version and prior CI, builds Linux x86_64, verifies the package checksums and creates a **draft** release named `v0.1.1`, with all assets and generated release notes.
+4. Open **GitHub → Actions → Build release draft → Run workflow**, select **main** and run it.
+5. Wait for the workflow to finish. It checks the version and prior CI, builds Linux and Windows x64, verifies the package checksums and creates a **draft** release named `v0.1.1`, with all assets and generated release notes.
 
 The workflow must be merged into the default branch before the manual button becomes available. See [GitHub's manual workflow instructions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 
@@ -29,7 +29,7 @@ If CI is still running or failed for that commit, draft generation stops before 
 ## Review and publish manually
 
 1. Open **GitHub → Releases** and edit the generated draft.
-2. Check its version, title, notes and the three assets listed below. Download and test the installation package before publishing. Resolve any upload failure before publishing a partial draft.
+2. Check its version, title, notes and the five assets listed below. Download and test the installation package before publishing. Resolve any upload failure before publishing a partial draft.
 3. Keep it as a stable release, select **Set as the latest release** and choose **Publish release**.
 
 Drafts and prereleases stay outside the updater. After publication as **Latest**, installed apps check it at startup and offer to update when its version is newer than their embedded version. An app already running `0.1.0` will not offer an update to `0.1.0`; use a higher version for subsequent changes.
@@ -40,7 +40,9 @@ Never reuse a published version or move a published tag. Publish a new version t
 
 - `z-mapflow_VERSION_linux_amd64.tar.gz`: initial installation package, icon, license and installer.
 - `z-mapflow_linux_amd64`: executable consumed by the updater.
-- `checksums.txt`: SHA-256 of those assets.
+- `z-mapflow_VERSION_windows_amd64_setup.exe`: per-user Windows installer, shortcuts, WebView2 bootstrapper and notices.
+- `z-mapflow_windows_amd64.exe`: Windows executable consumed by the updater.
+- `checksums.txt`: combined SHA-256 manifest for all four assets.
 
 Asset names are part of the updater contract. Downloads come from `Henriquex25/Z-MapFlow`; the app rechecks the chosen release, verifies bytes and runs `--version` before replacement to check the version and runtime libraries. Keep release publishing rights limited to trusted maintainers.
 
@@ -53,6 +55,13 @@ python3 scripts/wails.py build -tags webkit2_41
 python3 scripts/package_release.py
 ```
 
+On Windows, with NSIS on PATH:
+
+```powershell
+python scripts/wails.py build -platform windows/amd64 -webview2 embed -nsis -installscope user -skipbindings -m -nosyncgomod
+python scripts/package_windows.py
+```
+
 The packager rejects an executable whose reported version differs from the central file. No version argument or version linker override is needed.
 
-Before announcing a release, check installation, version display, import, firmware building and updating from an earlier version in a temporary user profile. CI does not validate physical keyboard behavior. Windows/macOS packages and code signing are not part of the initial release workflow.
+Before announcing a release, check installation, version display, import, firmware building and updating from an earlier version in a temporary user profile. CI does not validate physical keyboard behavior. The CI Windows job runs native updater tests plus an installation/uninstallation smoke test and uploads a temporary test package. Physical keyboard behavior and the desktop GUI still need validation on Windows. Windows builds are currently unsigned; macOS packaging and code signing remain future work. The release workflow waits for both package jobs and verifies both manifests before creating a draft; one platform failing cannot produce a new partial-platform release.

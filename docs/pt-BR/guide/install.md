@@ -1,8 +1,8 @@
 # Instalação e atualização
 
-O Z-MapFlow está disponível **somente para Linux x86_64**, com GTK 3 e WebKitGTK 4.1, compilado no Ubuntu 22.04. Windows, macOS e outras arquiteturas estão fora do escopo atual de distribuição. O instalador e o atualizador automático atendem Linux.
+O Z-MapFlow atende **Linux x86_64**, com **builds Windows x64 em testes iniciais**. O workflow manual atualizado gera pacotes dos dois sistemas; releases anteriores podem conter apenas Linux. A execução do CI nativo e a validação com teclado físico no Windows ainda são necessárias para confirmar o suporte. macOS e Windows ARM64 ainda não têm pacotes.
 
-## Instalar em poucos passos
+## Linux x86_64
 
 No Ubuntu, Pop!_OS ou Debian compatível, instale o runtime gráfico uma vez antes de executar o pacote baixado:
 
@@ -25,6 +25,22 @@ O pacote inclui `checksums.txt`; o instalador confere o executável antes de cop
 ```sh
 sha256sum --ignore-missing -c checksums.txt
 ```
+
+## Windows x64
+
+1. Baixe `z-mapflow_VERSAO_windows_amd64_setup.exe` nas [Releases](https://github.com/Henriquex25/Z-MapFlow/releases/latest), quando o asset Windows estiver disponível.
+2. Feche uma instância aberta do Z-MapFlow, execute o instalador e escolha **Install**. A instalação fica em `%LOCALAPPDATA%\Programs\Z-MapFlow`, com atalhos no menu Iniciar e na área de trabalho, sem exigir administrador para o app.
+3. Abra **Z-MapFlow** pelo menu Iniciar ou pela última tela do instalador.
+
+É necessário Windows 10/11 x64 e Microsoft WebView2. O instalador e o app incluem o bootstrapper oficial da Microsoft; se o runtime estiver ausente, é necessário acesso à internet para obtê-lo. O usuário não precisa instalar Go, Node ou Wails. Os builds iniciais não têm assinatura digital, então o Windows pode exibir um aviso de editor desconhecido/SmartScreen. Baixe apenas da release oficial e, se necessário, confira o hash:
+
+```powershell
+Get-FileHash .\z-mapflow_VERSAO_windows_amd64_setup.exe -Algorithm SHA256
+```
+
+Compare com a linha correspondente em `checksums.txt` da mesma release. O asset `z-mapflow_windows_amd64.exe` é usado pelo atualizador; prefira o arquivo de setup para instalar.
+
+Para compilar firmware, instale o [Docker Desktop para Windows](https://docs.docker.com/desktop/setup/install/windows-install/), habilite contêineres Linux (normalmente com WSL 2) e inicie o Docker. A edição/exportação de keymaps funciona sem Docker. Conecte o teclado diretamente ao Windows em bootloader para fazer flash; não é necessário passar o USB para o contêiner. O aplicativo usa a descoberta nativa de unidades do Windows e permite selecionar a unidade manualmente.
 
 ## Docker para compilar firmware
 
@@ -72,7 +88,7 @@ Ao iniciar, o aplicativo consulta a última release pública estável do reposit
 
 Havendo alterações, o botão é **Salvar e atualizar**. Corrija campos inválidos antes de prosseguir. Compilações e gravações em andamento devem terminar ou ser canceladas primeiro.
 
-O aplicativo baixa o executável correspondente ao sistema e arquitetura, confere tamanho, SHA-256 e o digest do GitHub quando disponível, verifica o formato/arquitetura Linux e executa uma conferência de versão sem abrir a interface (incluindo bibliotecas necessárias), instala e reinicia. O executável anterior fica como `z-mapflow.previous`. Uma falha na substituição ou ao iniciar o novo processo restaura o anterior.
+O aplicativo baixa o executável correspondente ao sistema e arquitetura, confere tamanho, SHA-256 e o digest do GitHub quando disponível, verifica o formato e a arquitetura do executável (ELF no Linux, PE no Windows) e executa uma conferência de versão sem abrir a interface (incluindo bibliotecas necessárias), instala e reinicia. O executável anterior fica como `z-mapflow.previous`. Uma falha na substituição ou ao iniciar o novo processo restaura o anterior.
 
 Sem internet, com limite da API ou sem releases públicas, o editor continua disponível. Clique no indicador de atualizações no cabeçalho para tentar novamente. Não é necessário login nem token no aplicativo; releases de um repositório privado não ficam disponíveis para esta consulta pública.
 
@@ -85,3 +101,8 @@ A instalação fica em `${XDG_DATA_HOME:-$HOME/.local/share}/z-mapflow`. Para re
 ## Idioma e versão do aplicativo
 
 A interface abre em inglês. Em **Settings → Application → Interface language**, selecione **Português (Brasil)**. A preferência fica salva neste computador e não muda o layout do teclado nem o firmware. A versão atual aparece discretamente ao lado do nome do aplicativo.
+
+
+No Windows, um processo auxiliar confirma que está pronto e aguarda o app anterior encerrar antes de substituir o `.exe` bloqueado. Ele confere novamente os bytes, preserva `z-mapflow.exe.previous` e reinicia o app. Falhas antes da transferência de controle aparecem no aplicativo; falhas posteriores são informadas por uma mensagem nativa. Isso não detecta todos os problemas após a nova interface abrir.
+
+Projetos, histórico, preferências de apoio e dados do WebView2 ficam em `%APPDATA%\z-mapflow`. O diretório do WebView2 é estável entre atualizações. Use **Configurações → Aplicativos → Z-MapFlow → Desinstalar** para remover o programa. Os dados da configuração são preservados. O instalador remove apenas arquivos do aplicativo, sem apagar recursivamente a pasta escolhida.

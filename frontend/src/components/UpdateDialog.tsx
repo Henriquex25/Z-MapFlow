@@ -1,4 +1,5 @@
 import { localizeMessage, tr, useLocale } from "../i18n";
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../services/api";
 import { isDirty, useKeyboardStore } from "../store/useKeyboardStore";
@@ -14,6 +15,14 @@ const stages: Record<string, string> = {
 };
 export function UpdateDialog() {
   useLocale();
+  const [statusSlot, setStatusSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const locate = () => setStatusSlot(document.getElementById("app-update-status"));
+    locate();
+    const observer = new MutationObserver(locate);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
   const [update, setUpdate] = useState<updates.Info | null>(null);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
@@ -88,17 +97,20 @@ export function UpdateDialog() {
       setBusy(false);
     }
   };
+  const statusButton = (
+    <button
+      className={`update-status${statusSlot ? "" : " update-status-floating"}`}
+      disabled={checking || busy}
+      onClick={check}
+      title={localizeMessage(status)}
+      aria-label={tr("Check for updates")}
+    >
+      {checking ? tr("Checking for updates…") : localizeMessage(status || tr("Updates"))}
+    </button>
+  );
   return (
     <>
-      <button
-        className="update-status"
-        disabled={checking || busy}
-        onClick={check}
-        title={localizeMessage(status)}
-        aria-label={tr("Check for updates")}
-      >
-        {checking ? tr("Checking for updates…") : localizeMessage(status || tr("Updates"))}
-      </button>
+      {statusSlot ? createPortal(statusButton, statusSlot) : statusButton}
       {update && (
         <div className="modal-backdrop update-backdrop">
           <section

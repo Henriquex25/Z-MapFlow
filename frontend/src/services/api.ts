@@ -4,11 +4,20 @@ import { models } from "../../wailsjs/go/models";
 import type { Project, Build, Session, Plugin } from "../types/keyboard";
 import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 const model = (p: Project) => models.Project.createFrom(p);
+export type CommunityKind = "star" | "donation";
+export const communityLinks = {
+  star: "https://github.com/Henriquex25/Z-MapFlow",
+  donation: "https://www.buymeacoffee.com/henriquemiranda",
+} as const;
 async function native<T>(run: () => Promise<T>): Promise<T> {
   await go.SetAppLanguage(useAppPreferences.getState().locale);
   return run();
 }
 export const api = {
+  communityStatus: go.GetCommunityStatus,
+  recordCommunityMinute: go.RecordCommunityMinute,
+  dismissCommunityPrompt: go.DismissCommunityPrompt,
+  openCommunityPage: (kind: CommunityKind) => BrowserOpenURL(communityLinks[kind]),
   findLanguageHeaders: () =>
     BrowserOpenURL("https://github.com/joelspadin/zmk-locale-generator/releases/latest"),
   appInfo: go.GetAppInfo,

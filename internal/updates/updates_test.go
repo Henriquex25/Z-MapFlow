@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -63,7 +64,7 @@ func testManager(t *testing.T) *fixture {
 			}
 		case "/checksums.txt":
 			fmt.Fprint(w, f.sums)
-		case "/z-mapflow_linux_amd64":
+		case "/z-mapflow_linux_amd64", "/z-mapflow_windows_amd64.exe":
 			w.Write(f.body)
 		default:
 			http.NotFound(w, r)
@@ -82,7 +83,42 @@ func testManager(t *testing.T) *fixture {
 	f.m.arch = "amd64"
 	f.m.executable = func() (string, error) { return f.target, nil }
 	f.m.validateBinary = func(context.Context, string, string) error { return nil }
+	f.m.applyUpdate = replaceAndRestart
 	return f
+}
+
+func TestWindowsAssetAndDeferredHandoff(t *testing.T) {
+	f := testManager(t)
+	f.m.goos = "windows"
+	f.release.Assets[0].Name = "z-mapflow_windows_amd64.exe"
+	f.release.Assets[0].URL = strings.Replace(f.release.Assets[0].URL, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe", 1)
+	f.sums = strings.ReplaceAll(f.sums, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe")
+	var staged string
+	f.m.applyUpdate = func(_ context.Context, stage, target, version string, sum []byte, _ func(string) error) (bool, error) {
+		if filepath.Ext(stage) != ".exe" || target != f.target || version != "1.2.0" || len(sum) != 32 {
+			t.Fatal("invalid Windows handoff")
+		}
+		staged = stage
+		return true, nil
+	}
+	info, err := f.m.Check(context.Background())
+	if err != nil || !info.Available || !info.Supported {
+		t.Fatal(info, err)
+	}
+	if err := f.m.Install(context.Background(), "1.2.0", func(string) error { t.Fatal("parent must not restart before helper replacement"); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(staged); err != nil || string(data) != "new executable" {
+		t.Fatal("download was deleted before helper could install it")
+	}
+	if data, err := os.ReadFile(f.target); err != nil || string(data) != "original executable" {
+		t.Fatal("parent replaced a locked executable")
+	}
+	f.m.arch = "arm64"
+	info, err = f.m.Check(context.Background())
+	if err != nil || info.Supported {
+		t.Fatal("Windows ARM64 must remain unsupported", info, err)
+	}
 }
 func TestCheckRelease(t *testing.T) {
 	f := testManager(t)
@@ -148,7 +184,7 @@ func TestSuccessfulInstallAndBackup(t *testing.T) {
 		t.Fatal(string(old), e)
 	}
 	stat, _ := os.Stat(f.target)
-	if stat.Mode().Perm() != 0755 {
+	if runtime.GOOS != "windows" && stat.Mode().Perm() != 0755 {
 		t.Fatal(stat.Mode())
 	}
 	if f.m.Status().Stage != "restarting" {
@@ -238,11 +274,17 @@ func TestMain(m *testing.M) {
 		fmt.Println("1.2.0")
 		os.Exit(0)
 	}
+	if nativeTestMain() {
+		os.Exit(0)
+	}
 	os.Exit(m.Run())
 }
+
+var nativeTestMain = func() bool { return false }
+
 func TestNewExecutableVersionProbe(t *testing.T) {
-	if _, e := os.Stat("/proc/self/exe"); e != nil {
-		t.Skip("Linux executable probe")
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		t.Skip("desktop executable probe")
 	}
 	t.Setenv("ZMAPFLOW_UPDATE_VERSION_HELPER", "1")
 	filename, e := os.Executable()

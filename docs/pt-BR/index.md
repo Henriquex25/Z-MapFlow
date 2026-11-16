@@ -34,4 +34,4 @@ O Z-MapFlow reúne edição de layout, compilação de firmware e flash guiado n
 
 Contribua com correções, documentação, traduções ou [um plugin para outro teclado](/pt-BR/plugins).
 
-**Disponível somente para Linux x86_64**, com Sofle v2 como primeiro teclado compatível. Versões para macOS e Windows estão fora do escopo atual. A compatibilidade de outros teclados entra por plugins. A interface inicia em inglês, com Português (Brasil) disponível em Configurações → Aplicativo. Compilação bem-sucedida não substitui a validação no hardware.
+**Linux x86_64, com builds Windows x64 em testes iniciais**, e Sofle v2 como primeiro teclado compatível. O workflow atualizado gera os pacotes Windows; releases anteriores podem conter apenas Linux. macOS está planejado. A compatibilidade de outros teclados entra por plugins. A interface inicia em inglês, com Português (Brasil) disponível em Configurações → Aplicativo. Compilação bem-sucedida não substitui a validação no hardware.

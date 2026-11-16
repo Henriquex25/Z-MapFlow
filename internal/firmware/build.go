@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 	"z-mapflow/internal/devices"
+	"z-mapflow/internal/hostcmd"
 	"z-mapflow/internal/models"
 	"z-mapflow/internal/project"
 	"z-mapflow/internal/storage"
@@ -49,8 +50,10 @@ type DockerProvider struct{}
 func (DockerProvider) Run(ctx context.Context, dir string, p models.Project, plugin models.Plugin, log func(string)) error {
 	preflight, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	if out, err := exec.CommandContext(preflight, "docker", "info", "--format", "{{.ServerVersion}}").CombinedOutput(); err != nil {
+	if out, err := hostcmd.CommandContext(preflight, "docker", "info", "--format", "{{.OSType}}").CombinedOutput(); err != nil {
 		return fmt.Errorf("Docker indisponível. Inicie o Docker e confira o acesso do seu usuário: %s (%w)", strings.TrimSpace(string(out)), err)
+	} else if strings.TrimSpace(string(out)) != "linux" {
+		return fmt.Errorf("Docker must use Linux containers. In Docker Desktop, switch to Linux containers and try again.")
 	}
 	variant, _ := project.Variant(p, plugin)
 	// Every argument is shell-quoted; keymap and headers remain data files.
@@ -77,37 +80,37 @@ func (DockerProvider) Run(ctx context.Context, dir string, p models.Project, plu
 	defer func() {
 		cleanup, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		_ = exec.CommandContext(cleanup, "docker", "rm", "-f", name).Run()
+		_ = hostcmd.CommandContext(cleanup, "docker", "rm", "-f", name).Run()
 	}()
 	log("Preparando container temporário e cache do ZMK…")
-	create := exec.CommandContext(ctx, "docker", "create", "--name", name, "--mount", "type=volume,src="+cache+",dst=/workspace", "-w", "/workspace", plugin.BuildImage, "sh", "-c", script.String())
+	create := hostcmd.CommandContext(ctx, "docker", "create", "--name", name, "--mount", "type=volume,src="+cache+",dst=/workspace", "-w", "/workspace", plugin.BuildImage, "sh", "-c", script.String())
 	if err := stream(create, log); err != nil {
 		return fmt.Errorf("não foi possível criar o container: %w", err)
 	}
-	if out, err := exec.CommandContext(ctx, "docker", "cp", filepath.Join(dir, "config")+string(os.PathSeparator)+".", name+":/input").CombinedOutput(); err != nil {
+	if out, err := hostcmd.CommandContext(ctx, "docker", "cp", filepath.Join(dir, "config")+string(os.PathSeparator)+".", name+":/input").CombinedOutput(); err != nil {
 		return fmt.Errorf("falha ao enviar configuração ao container: %s (%w)", out, err)
 	}
-	cmd := exec.CommandContext(ctx, "docker", "start", "-a", name)
+	cmd := hostcmd.CommandContext(ctx, "docker", "start", "-a", name)
 
 	// Killing the Docker CLI alone leaves a daemon-owned container alive.
 	cmd.Cancel = func() error {
 		cleanup, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_ = exec.CommandContext(cleanup, "docker", "stop", "-t", "2", name).Run()
+		_ = hostcmd.CommandContext(cleanup, "docker", "stop", "-t", "2", name).Run()
 		return cmd.Process.Kill()
 	}
 	cmd.WaitDelay = 15 * time.Second
 	if err := stream(cmd, log); err != nil {
 		return err
 	}
-	exitCode, err := exec.CommandContext(ctx, "docker", "inspect", "--format", "{{.State.ExitCode}}", name).Output()
+	exitCode, err := hostcmd.CommandContext(ctx, "docker", "inspect", "--format", "{{.State.ExitCode}}", name).Output()
 	if err != nil {
 		return err
 	}
 	if strings.TrimSpace(string(exitCode)) != "0" {
 		return fmt.Errorf("o compilador encerrou com código %s; veja os logs", strings.TrimSpace(string(exitCode)))
 	}
-	if out, err := exec.CommandContext(ctx, "docker", "cp", name+":/output/.", filepath.Join(dir, "artifacts")).CombinedOutput(); err != nil {
+	if out, err := hostcmd.CommandContext(ctx, "docker", "cp", name+":/output/.", filepath.Join(dir, "artifacts")).CombinedOutput(); err != nil {
 		return fmt.Errorf("falha ao recuperar firmware: %s (%w)", out, err)
 	}
 	return nil

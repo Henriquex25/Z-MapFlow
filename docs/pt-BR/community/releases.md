@@ -11,8 +11,8 @@ Opcionalmente, configure proteção da branch principal exigindo o CI. Ative **P
 1. Integre na `main` as mudanças que deseja distribuir.
 2. Atualize o arquivo `VERSION` na raiz, por exemplo para `0.1.1`, faça commit e push para `main`.
 3. Aguarde o workflow **CI** concluir com sucesso para esse commit exato, incluindo os jobs do app e da documentação.
-4. Abra **GitHub → Actions → Build Linux release draft → Run workflow**, selecione **main** e execute.
-5. Aguarde a conclusão. O workflow valida a versão e o CI anterior, compila Linux x86_64, confere os checksums e cria uma release **draft** chamada `v0.1.1`, com todos os assets e notas geradas automaticamente.
+4. Abra **GitHub → Actions → Build release draft → Run workflow**, selecione **main** e execute.
+5. Aguarde a conclusão. O workflow valida a versão e o CI anterior, compila Linux e Windows x64, confere os checksums e cria uma release **draft** chamada `v0.1.1`, com todos os assets e notas geradas automaticamente.
 
 O workflow precisa estar na branch padrão para o botão de execução manual aparecer. Veja as [instruções oficiais do GitHub](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 
@@ -23,7 +23,7 @@ Se o CI desse commit estiver em andamento ou tiver falhado, a geração para ant
 ## Revisar e publicar manualmente
 
 1. Abra **GitHub → Releases** e edite o draft gerado.
-2. Confira versão, título, descrição e os três assets abaixo. Baixe e teste o pacote de instalação antes de publicar. Resolva falhas de upload antes de publicar um draft incompleto.
+2. Confira versão, título, descrição e os cinco assets abaixo. Baixe e teste o pacote de instalação antes de publicar. Resolva falhas de upload antes de publicar um draft incompleto.
 3. Mantenha como versão estável, marque **Set as the latest release** e use **Publish release**.
 
 Drafts e pré-releases ficam fora do atualizador. Depois da publicação como **Latest**, os apps consultam a versão ao iniciar e oferecem atualização quando ela é maior que a versão embutida. Um app que já está em `0.1.0` não oferece atualização para `0.1.0`; use uma versão superior para as próximas mudanças.
@@ -34,7 +34,9 @@ Não reutilize uma versão publicada nem mova sua tag. Para corrigir um pacote, 
 
 - `z-mapflow_VERSAO_linux_amd64.tar.gz`: instalação inicial, ícone, licença e script.
 - `z-mapflow_linux_amd64`: executável usado pelo atualizador.
-- `checksums.txt`: SHA-256 de todos os assets acima.
+- `z-mapflow_VERSAO_windows_amd64_setup.exe`: instalador Windows por usuário, atalhos, bootstrapper WebView2 e licenças.
+- `z-mapflow_windows_amd64.exe`: executável Windows usado pelo atualizador.
+- `checksums.txt`: SHA-256 combinado dos quatro arquivos acima.
 
 Os nomes fazem parte do contrato com o atualizador. O download é sempre do repositório fixo `Henriquex25/Z-MapFlow`. O aplicativo compara versão estável, sistema e arquitetura; revalida a release ao instalar e confere os bytes e executa o novo binário com `--version` antes da troca, verificando também dependências de runtime.
 
@@ -42,7 +44,7 @@ A versão anterior é preservada, e falhas de substituição/execução imediata
 
 ## Validação antes de anunciar
 
-Baixe os assets do draft, instale num perfil temporário e confirme abertura, versão, importação, compilação e fluxo de atualização de uma versão anterior. As verificações de CI não confirmam o funcionamento físico no teclado. Não há assinatura de código de macOS/Windows nem distribuição oficial para esses sistemas nesta etapa.
+Baixe os assets do draft, instale num perfil temporário e confirme abertura, versão, importação, compilação e fluxo de atualização de uma versão anterior. As verificações de CI não confirmam o funcionamento físico no teclado. O CI inclui testes nativos do atualizador e instalação/desinstalação no Windows e disponibiliza um pacote temporário para testes. O workflow de release aguarda ambos os sistemas e verifica os dois manifests antes de criar o draft. Os executáveis Windows iniciais não têm assinatura digital; macOS e assinatura permanecem como trabalho futuro. A interface e o teclado físico no Windows ainda precisam de validação.
 
 ## Fonte única da versão
 

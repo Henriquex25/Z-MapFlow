@@ -34,4 +34,4 @@ Z-MapFlow brings layout editing, firmware compilation and guided flashing into t
 
 Contribute fixes, documentation, translations or [a plugin for another keyboard](/plugins).
 
-**Available for Linux x86_64 only**, with Sofle v2 as the first supported keyboard. macOS and Windows releases are outside the current scope. Other keyboards can be added through plugins. The interface defaults to English, with Brazilian Portuguese available in Settings → Application. Successful compilation does not replace hardware validation.
+**Linux x86_64, with Windows x64 builds in initial testing**, and Sofle v2 as the first supported keyboard. Windows packages are produced by the updated workflow; older releases may contain Linux only. macOS is planned. Other keyboards can be added through plugins. The interface defaults to English, with Brazilian Portuguese available in Settings → Application. Successful compilation does not replace hardware validation.

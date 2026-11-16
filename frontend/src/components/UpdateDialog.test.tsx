@@ -49,6 +49,27 @@ it("checks once on startup even under StrictMode and lets the user dismiss", asy
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(api.installUpdate).not.toHaveBeenCalled();
 });
+
+it("places update status in the loaded header without overlapping support buttons", async () => {
+  vi.mocked(api.checkUpdates).mockResolvedValue({ ...available, available: false });
+  render(<UpdateDialog />);
+  await screen.findByRole("button", { name: "Check for updates" });
+  const slot = document.createElement("span");
+  slot.id = "app-update-status";
+  await act(async () => {
+    document.body.append(slot);
+  });
+  const status = screen.getByRole("button", { name: "Check for updates" });
+  expect(slot).toContainElement(status);
+  expect(status).not.toHaveClass("update-status-floating");
+  expect(api.checkUpdates).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    slot.remove();
+  });
+  expect(screen.getByRole("button", { name: "Check for updates" })).toHaveClass(
+    "update-status-floating",
+  );
+});
 it("saves pending edits before installing the selected release", async () => {
   useKeyboardStore.getState().edit((p) => {
     p.layout.layers[0].name = "Edited";

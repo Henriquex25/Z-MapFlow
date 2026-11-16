@@ -5,10 +5,13 @@ import {models} from '../models';
 import {flash} from '../models';
 import {version} from '../models';
 import {firmware} from '../models';
+import {community} from '../models';
 
 export function CancelBuild():Promise<void>;
 
 export function CheckForUpdates():Promise<updates.Info>;
+
+export function DismissCommunityPrompt(arg1:string):Promise<void>;
 
 export function ExportFirmware(arg1:string):Promise<string>;
 
@@ -25,6 +28,8 @@ export function GetAppInfo():Promise<version.Info>;
 export function GetBuild(arg1:string):Promise<firmware.Build>;
 
 export function GetBuildStatus():Promise<firmware.Build>;
+
+export function GetCommunityStatus():Promise<community.Status>;
 
 export function GetUpdateProgress():Promise<updates.Progress>;
 
@@ -43,6 +48,8 @@ export function LoadProject():Promise<models.Session>;
 export function NewProject(arg1:string):Promise<models.Session>;
 
 export function PreviewSources(arg1:models.Project):Promise<Array<firmware.SourceFile>>;
+
+export function RecordCommunityMinute():Promise<community.Status>;
 
 export function SaveAndBuild(arg1:models.Project):Promise<models.Project>;
 

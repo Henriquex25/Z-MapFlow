@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"z-mapflow/internal/keymap"
@@ -40,22 +41,25 @@ func TestBuildSettingsRoundTripAndShellQuoting(t *testing.T) {
 	if !reflect.DeepEqual(imported.BuildTargets, p.BuildTargets) {
 		t.Fatalf("lost settings: %+v", imported.BuildTargets)
 	}
-	// Execute against a stub, verifying exact argv and no command substitution.
-	fake := filepath.Join(dir, "west")
-	if e = os.WriteFile(fake, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\"\n"), 0700); e != nil {
-		t.Fatal(e)
-	}
-	command := exec.Command("sh", "-c", TargetBuildCommand(p, variant, variant.Targets[0]))
-	command.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"))
-	out, e := command.CombinedOutput()
-	if e != nil {
-		t.Fatalf("%s: %v", out, e)
-	}
-	if !strings.Contains(string(out), value+"\n") || !strings.Contains(string(out), "-S\nstudio-rpc-usb-uart\n") {
-		t.Fatalf("arguments changed: %s", out)
-	}
-	if _, e = os.Stat(marker); !os.IsNotExist(e) {
-		t.Fatal("shell expansion executed")
+	// This script runs in the Linux build container, never on the Windows host.
+	if runtime.GOOS != "windows" {
+		// Execute against a stub, verifying exact argv and no command substitution.
+		fake := filepath.Join(dir, "west")
+		if e = os.WriteFile(fake, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\"\n"), 0700); e != nil {
+			t.Fatal(e)
+		}
+		command := exec.Command("sh", "-c", TargetBuildCommand(p, variant, variant.Targets[0]))
+		command.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"))
+		out, e := command.CombinedOutput()
+		if e != nil {
+			t.Fatalf("%s: %v", out, e)
+		}
+		if !strings.Contains(string(out), value+"\n") || !strings.Contains(string(out), "-S\nstudio-rpc-usb-uart\n") {
+			t.Fatalf("arguments changed: %s", out)
+		}
+		if _, e = os.Stat(marker); !os.IsNotExist(e) {
+			t.Fatal("shell expansion executed")
+		}
 	}
 	path := filepath.Join(dir, "sofle.keymap")
 	if e = WriteKeymapBundle(path, KeymapBundle(path, files), false); e != nil {

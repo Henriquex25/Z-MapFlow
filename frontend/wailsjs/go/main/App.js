@@ -10,6 +10,10 @@ export function CheckForUpdates() {
   return window['go']['main']['App']['CheckForUpdates']();
 }
 
+export function DismissCommunityPrompt(arg1) {
+  return window['go']['main']['App']['DismissCommunityPrompt'](arg1);
+}
+
 export function ExportFirmware(arg1) {
   return window['go']['main']['App']['ExportFirmware'](arg1);
 }
@@ -40,6 +44,10 @@ export function GetBuild(arg1) {
 
 export function GetBuildStatus() {
   return window['go']['main']['App']['GetBuildStatus']();
+}
+
+export function GetCommunityStatus() {
+  return window['go']['main']['App']['GetCommunityStatus']();
 }
 
 export function GetUpdateProgress() {
@@ -76,6 +84,10 @@ export function NewProject(arg1) {
 
 export function PreviewSources(arg1) {
   return window['go']['main']['App']['PreviewSources'](arg1);
+}
+
+export function RecordCommunityMinute() {
+  return window['go']['main']['App']['RecordCommunityMinute']();
 }
 
 export function SaveAndBuild(arg1) {

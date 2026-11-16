@@ -1,8 +1,8 @@
 # Installation and updates
 
-Z-MapFlow is currently available for **Linux x86_64 only**, using GTK 3 and WebKitGTK 4.1, built on Ubuntu 22.04. Windows, macOS and other architectures are outside the current release scope. The installer and automatic updater support Linux.
+Z-MapFlow supports **Linux x86_64**, with **Windows x64 builds in initial testing**. The updated manual release workflow produces packages for both platforms; older published releases may contain Linux only. Native Windows CI and physical keyboard validation are still required before treating Windows support as verified. macOS and Windows ARM64 are not packaged yet.
 
-## Install
+## Linux x86_64
 
 On Ubuntu, Pop!_OS or a compatible Debian system, install the desktop runtime once before running the downloaded package:
 
@@ -23,6 +23,22 @@ The installer verifies the extracted files and checks that the executable can re
 ```sh
 sha256sum --ignore-missing -c checksums.txt
 ```
+
+## Windows x64
+
+1. Download `z-mapflow_VERSION_windows_amd64_setup.exe` from [Releases](https://github.com/Henriquex25/Z-MapFlow/releases/latest), when the Windows asset is available.
+2. Close an existing Z-MapFlow instance, run the installer and choose **Install**. It installs under `%LOCALAPPDATA%\Programs\Z-MapFlow`, with Start menu and desktop shortcuts, without requiring administrator access for the app.
+3. Open **Z-MapFlow** from Start or the installer finish page.
+
+Windows 10/11 x64 and Microsoft WebView2 are required. The installer and app embed Microsoft's WebView2 bootstrapper; if the runtime is missing, installation needs internet access to obtain it. Go, Node and Wails are not required for users. These initial Windows executables are unsigned, so Windows may show an unknown-publisher/SmartScreen warning. Download only from the official release page and verify the installer if needed:
+
+```powershell
+Get-FileHash .\z-mapflow_VERSION_windows_amd64_setup.exe -Algorithm SHA256
+```
+
+Compare the hash with the matching line in `checksums.txt` from the same release. The raw `z-mapflow_windows_amd64.exe` asset is intended for auto-update; prefer the setup asset for installation.
+
+For firmware builds, install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/), enable its Linux-container backend (normally WSL 2) and start it. Docker is not needed just to edit/export keymaps. Connect the keyboard to Windows directly in bootloader mode for flashing; no USB passthrough into Docker is needed. The app uses native Windows drive discovery, with manual drive selection as a fallback.
 
 ## Docker for firmware builds
 
@@ -76,7 +92,9 @@ At startup, the app checks the latest public stable release from the official re
 
 Correct invalid fields first. Firmware builds and transfers must finish or be cancelled before updating.
 
-The updater selects the asset for your OS/architecture, verifies its size, SHA-256 and GitHub digest when available, checks the Linux executable format and architecture, and runs a version probe to check runtime dependencies. It makes a complete `.previous` backup, replaces the executable atomically and restarts after the old process exits. Immediate replacement or restart failures restore the previous executable.
+The updater selects the asset for your OS/architecture, verifies its size, SHA-256 and GitHub digest when available, checks the executable format and architecture (Linux ELF or Windows PE), and runs a version probe to check runtime dependencies. It makes a complete `.previous` backup, replaces the executable atomically and restarts after the old process exits. Immediate replacement or restart failures restore the previous executable.
+
+On Windows, a helper first signals that it is ready, then waits for the old process to exit before replacing its locked `.exe`. It rechecks the downloaded file, keeps `z-mapflow.exe.previous` and restarts the app. Errors before handoff remain in the app; errors after exit are reported by a native message. Immediate replacement/restart failure preserves or restores the previous executable. Temporary helper executables are cleaned on a later startup once they are no longer in use.
 
 This does not detect every functional problem after the new GUI starts. See [troubleshooting](./troubleshooting) for manual recovery.
 
@@ -86,4 +104,6 @@ The editor remains usable offline or when GitHub is unavailable. Click the updat
 
 Projects and builds live in the app’s configuration directory, normally `~/.config/z-mapflow`; `XDG_CONFIG_HOME` is respected. Updating the executable does not delete those files.
 
-The executable is installed under `${XDG_DATA_HOME:-$HOME/.local/share}/z-mapflow`. To remove the app, remove that directory, its `applications/z-mapflow.desktop` launcher under the same data directory and `~/.local/bin/z-mapflow`. Keep the configuration directory if you want to reinstall later.
+On Windows, projects, build history, support preferences and WebView2 preferences live under `%APPDATA%\z-mapflow`. The WebView2 data path remains stable after updates. Use **Settings → Apps → Z-MapFlow → Uninstall** to remove the app; configuration is preserved for reinstallation.
+
+On Linux, the executable is installed under `${XDG_DATA_HOME:-$HOME/.local/share}/z-mapflow`. To remove the app, remove that directory, its `applications/z-mapflow.desktop` launcher under the same data directory and `~/.local/bin/z-mapflow`. Keep the configuration directory if you want to reinstall later.

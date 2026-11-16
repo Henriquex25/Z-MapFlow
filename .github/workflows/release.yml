@@ -1,10 +1,10 @@
-name: Build Linux release draft
+name: Build release draft
 on:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: linux-release-draft
+  group: release-draft
   cancel-in-progress: false
 jobs:
   verify:
@@ -25,7 +25,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/release_preflight.py
-  package:
+  linux:
     needs: verify
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -53,12 +53,54 @@ jobs:
           cd dist && sha256sum -c checksums.txt
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: release-assets
+          name: package-linux
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+  windows:
+    needs: verify
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install matching Wails CLI and NSIS
+        shell: pwsh
+        run: |
+          $wailsVersion = go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2
+          go install "github.com/wailsapp/wails/v2/cmd/wails@$wailsVersion"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          choco install nsis --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Join-Path ${env:ProgramFiles(x86)} 'NSIS' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Build and package Windows x64
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          CGO_ENABLED: '0'
+        shell: pwsh
+        run: |
+          python scripts/wails.py build -platform windows/amd64 -webview2 embed -nsis -installscope user -skipbindings -m -nosyncgomod -ldflags "-X z-mapflow/internal/version.Commit=$env:RELEASE_COMMIT"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/package_windows.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: package-windows
           path: dist/*
           if-no-files-found: error
           retention-days: 7
   draft:
-    needs: [verify, package]
+    needs: [verify, linux, windows]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -70,11 +112,13 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: release-assets
-          path: dist
+          pattern: package-*
+          path: packages
       - name: Create complete draft for manual review
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.verify.outputs.version }}
           RELEASE_COMMIT: ${{ github.sha }}
-        run: python3 scripts/create_release_draft.py
+        run: |
+          python3 scripts/merge_release_assets.py
+          python3 scripts/create_release_draft.py

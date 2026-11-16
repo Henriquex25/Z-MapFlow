@@ -34,6 +34,13 @@ func main() {
 		fmt.Println(version.Version)
 		return
 	}
+	if handled, err := updates.HandleHelper(os.Args[1:]); handled {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := updates.WaitForParent(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -45,7 +52,7 @@ func main() {
 	app := NewApp()
 
 	// Create application with options
-	err := wails.Run(&options.App{
+	appOptions := &options.App{
 		Title:  "Z-MapFlow",
 		Width:  1440,
 		Height: 900,
@@ -60,7 +67,12 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
-	})
+	}
+	if err := configurePlatform(appOptions); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	err := wails.Run(appOptions)
 
 	if err != nil {
 		println("Error:", err.Error())

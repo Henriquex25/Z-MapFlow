@@ -4,7 +4,7 @@ Replace **`build/appicon.png`** with the main app logo. Use a square PNG, prefer
 
 Linux embeds this file as the window icon and includes it in the installer for the application menu. Rebuild to incorporate a new image. The source file is preserved by builds.
 
-For future Windows packaging, regenerate `build/windows/icon.ico` whenever the source PNG changes so Wails does not reuse an outdated derivative. Apply the same care to an existing macOS `.icns` derivative.
+For Windows packaging, regenerate `build/windows/icon.ico` whenever the source PNG changes so Wails does not reuse an outdated derivative. Apply the same care to an existing macOS `.icns` derivative.
 
 If you have a vector original, keep it under `assets/branding/logo.svg` and export the PNG to `build/appicon.png`. Only contribute artwork you have permission to distribute, preserving relevant third-party notices.
 

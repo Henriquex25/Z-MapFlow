@@ -9,6 +9,7 @@ vi.mock("./services/api", () => ({
   api: {
     load: vi.fn(),
     appInfo: vi.fn(),
+    communityStatus: vi.fn().mockResolvedValue({ prompt: "" }),
     plugins: vi.fn(),
     newProject: vi.fn(),
     status: vi.fn(),

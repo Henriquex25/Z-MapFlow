@@ -33,3 +33,11 @@ The editor validates parameter counts and types before assignment. Invalid draft
 ## Language
 
 Choose the interface language in **Settings → Application**. This does not change your operating system layout or the keycodes in your project. Existing layer and macro names are preserved.
+
+## Support the project
+
+**Star on GitHub** and **Buy me a coffee** remain visible in the header and open their respective pages in your browser. You can also [star the repository](https://github.com/Henriquex25/Z-MapFlow) or [support development](https://www.buymeacoffee.com/henriquemiranda) here. Support is optional; all features remain available.
+
+The app may show a small, non-blocking star invitation after five launches and 30 minutes of active use. A separate donation invitation requires ten launches, two hours of active use and at least three launches after responding to the star invitation. Invitations wait until after the first minute of a session and are hidden during builds, flashing and other dialogs. Background or idle time does not count as active use.
+
+Accepting, closing or choosing **No, thanks** permanently dismisses that invitation on this computer. The matching header button also dismisses it. The buttons remain available for later voluntary support. Counters and responses are stored locally, separately from keyboard projects, and survive updates. The app does not access your GitHub account, add stars automatically or process payments.

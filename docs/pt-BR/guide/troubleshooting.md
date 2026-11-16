@@ -33,3 +33,17 @@ Se a nova versão iniciar e apresentar um problema, feche o app e restaure `z-ma
 ## Reportar um problema
 
 Abra uma [issue](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose) com versão, sistema, teclado/variante, passos e logs. Remova informações pessoais antes de anexar sua configuração. Veja [como contribuir](../community/contributing).
+
+
+## Instalação e atualização no Windows
+
+Use o setup x64 e mantenha o Microsoft WebView2 instalado. Feche uma instância aberta antes de reinstalar. Veja a [instalação Windows](./install#windows-x64).
+
+Para compilar, o Docker Desktop precisa usar contêineres Linux. O comando abaixo deve retornar `linux`:
+
+```powershell
+docker info --format '{{.OSType}}'
+```
+ Se acabou de instalar o Docker, reabra o Z-MapFlow para atualizar o ambiente. O app também verifica os diretórios padrão do Docker Desktop quando o menu Iniciar tem um PATH antigo.
+
+A atualização aguarda o processo anterior encerrar e mantém `z-mapflow.exe.previous`. Em caso de problema após reiniciar, feche o app, preserve uma cópia do executável com falha e copie o backup de volta para `z-mapflow.exe`, ou reinstale um setup oficial anterior. Exporte o projeto antes de voltar para uma versão com outro schema de dados.

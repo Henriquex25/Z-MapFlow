@@ -1,4 +1,4 @@
-// Package updates checks public GitHub releases and installs verified Linux binaries.
+// Package updates checks public GitHub releases and installs verified desktop binaries.
 package updates
 
 import (
@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"debug/elf"
+	"debug/pe"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -22,6 +23,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"z-mapflow/internal/hostcmd"
 )
 
 const Repository = "Henriquex25/Z-MapFlow"
@@ -68,10 +70,11 @@ type Manager struct {
 	executable     func() (string, error)
 	validateBinary func(context.Context, string, string) error
 	allowLocal     bool // Only in same-package tests; never enabled by application configuration.
+	applyUpdate    func(context.Context, string, string, string, []byte, func(string) error) (bool, error)
 }
 
 func New(version string) *Manager {
-	return &Manager{version: version, goos: runtime.GOOS, arch: runtime.GOARCH, executable: os.Executable, validateBinary: validateExecutable,
+	return &Manager{version: version, goos: runtime.GOOS, arch: runtime.GOARCH, executable: os.Executable, validateBinary: validateExecutable, applyUpdate: applyPlatformUpdate,
 		endpoint: "https://api.github.com/repos/" + Repository + "/releases/latest",
 		client: &http.Client{Timeout: 5 * time.Minute, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 10 || req.URL.Scheme != "https" {
@@ -148,6 +151,9 @@ func newer(candidate, current string) bool {
 }
 func (m *Manager) assets(r release) (asset, asset) {
 	name := "z-mapflow_" + m.goos + "_" + m.arch
+	if m.goos == "windows" {
+		name += ".exe"
+	}
 	var binary, sum asset
 	for _, a := range r.Assets {
 		if a.Name == name {
@@ -160,7 +166,7 @@ func (m *Manager) assets(r release) (asset, asset) {
 	return binary, sum
 }
 func (m *Manager) info(r release) Info {
-	result := Info{CurrentVersion: m.version, Supported: m.goos == "linux", ReleaseURL: ReleasesURL}
+	result := Info{CurrentVersion: m.version, Supported: m.goos == "linux" || m.goos == "windows" && m.arch == "amd64", ReleaseURL: ReleasesURL}
 	if r.Tag == "" {
 		result.Message = "Nenhuma versão pública estável disponível."
 		return result
@@ -290,12 +296,21 @@ func (m *Manager) Install(ctx context.Context, expected string, restart func(str
 		return err
 	}
 	// Stage beside the target, checking write access before any large download.
-	stage, err := os.CreateTemp(filepath.Dir(target), ".z-mapflow-update-*")
+	pattern := ".z-mapflow-update-*"
+	if m.goos == "windows" {
+		pattern += ".exe"
+	}
+	stage, err := os.CreateTemp(filepath.Dir(target), pattern)
 	if err != nil {
 		return fmt.Errorf("sem permissão para atualizar; reinstale na pasta do usuário: %w", err)
 	}
 	staged := stage.Name()
-	defer os.Remove(staged)
+	retained := false
+	defer func() {
+		if !retained {
+			os.Remove(staged)
+		}
+	}()
 	defer stage.Close()
 	resp, err := m.request(ctx, binary.URL)
 	if err != nil {
@@ -328,9 +343,18 @@ func (m *Manager) Install(ctx context.Context, expected string, restart func(str
 		return err
 	}
 	m.progressTo("installing", n, binary.Size)
-	backup := target + ".previous"
-	if err = backupExecutable(target, backup); err != nil {
+	retained, err = m.applyUpdate(ctx, staged, target, info.LatestVersion, hash, restart)
+	if err != nil {
 		return err
+	}
+	m.progressTo("restarting", n, binary.Size)
+	return nil
+}
+
+func replaceAndRestart(_ context.Context, staged, target, _ string, _ []byte, restart func(string) error) (bool, error) {
+	backup := target + ".previous"
+	if err := backupExecutable(target, backup); err != nil {
+		return false, err
 	}
 	rollback := func(cause error) error {
 		if e := os.Rename(backup, target); e != nil {
@@ -338,14 +362,13 @@ func (m *Manager) Install(ctx context.Context, expected string, restart func(str
 		}
 		return cause
 	}
-	if err = os.Rename(staged, target); err != nil {
-		return err // The original executable is still at target.
+	if err := os.Rename(staged, target); err != nil {
+		return false, err // The original executable is still at target.
 	}
-	if err = restart(target); err != nil {
-		return rollback(fmt.Errorf("não foi possível reiniciar: %w", err))
+	if err := restart(target); err != nil {
+		return false, rollback(fmt.Errorf("não foi possível reiniciar: %w", err))
 	}
-	m.progressTo("restarting", n, binary.Size)
-	return nil
+	return false, nil
 }
 
 // Keep a complete backup, then replace target atomically: there is never a gap
@@ -397,12 +420,16 @@ func validateELF(filename string) error {
 // The version probe also checks the dynamic loader and runtime libraries before
 // replacing the running application. It never opens a second GUI.
 func validateExecutable(ctx context.Context, filename, expected string) error {
-	if err := validateELF(filename); err != nil {
+	validate := validateELF
+	if runtime.GOOS == "windows" {
+		validate = validatePE
+	}
+	if err := validate(filename); err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	output, err := exec.CommandContext(ctx, filename, "--version").Output()
+	output, err := hostcmd.CommandContext(ctx, filename, "--version").Output()
 	if err != nil {
 		var exit *exec.ExitError
 		if errors.As(err, &exit) {
@@ -412,6 +439,22 @@ func validateExecutable(ctx context.Context, filename, expected string) error {
 	}
 	if strings.TrimSpace(string(output)) != expected {
 		return errors.New("a versão do executável não corresponde à release selecionada")
+	}
+	return nil
+}
+
+func validatePE(filename string) error {
+	f, err := pe.Open(filename)
+	if err != nil {
+		return fmt.Errorf("the download is not a valid Windows executable: %w", err)
+	}
+	defer f.Close()
+	want := map[string]uint16{"amd64": pe.IMAGE_FILE_MACHINE_AMD64, "arm64": pe.IMAGE_FILE_MACHINE_ARM64}[runtime.GOARCH]
+	if f.Machine != want || f.Characteristics&pe.IMAGE_FILE_EXECUTABLE_IMAGE == 0 || f.Characteristics&pe.IMAGE_FILE_DLL != 0 {
+		return errors.New("the executable does not match this app's architecture")
+	}
+	if _, ok := f.OptionalHeader.(*pe.OptionalHeader64); !ok {
+		return errors.New("the Windows executable must be 64-bit")
 	}
 	return nil
 }

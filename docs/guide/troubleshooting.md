@@ -6,11 +6,21 @@ If files show `OK` or `SUCESSO` and the next message mentions a missing `libwebk
 
 ## The app does not open
 
-Check the architecture and GTK/WebKit libraries in the [installation guide](./install). Run the executable from a terminal to inspect the system error. Official Linux packages use WebKitGTK 4.1.
+On Windows, use the x64 setup package, ensure Microsoft WebView2 is installed and close an existing instance before reinstalling. See [Windows installation](./install#windows-x64).
+
+On Linux, check the architecture and GTK/WebKit libraries in the [installation guide](./install). Run the executable from a terminal to inspect the system error. Official Linux packages use WebKitGTK 4.1.
 
 ## Docker is not available
 
 Start Docker Desktop or the Docker service. Check `docker info` and `docker context show` in your terminal. The app needs access to the same context and socket. Do not run the entire app as root.
+
+On Windows, Docker Desktop must be using Linux containers. Confirm the Docker server is using Linux containers:
+
+```powershell
+docker info --format '{{.OSType}}'
+```
+
+The output must be `linux`. If Docker was just installed, reopen Z-MapFlow so it receives the updated environment. The app also checks standard Docker Desktop executable locations when Start has an older PATH.
 
 ## A binding is highlighted in red
 
@@ -32,7 +42,7 @@ See [restart and final write warnings](./firmware#restart-and-final-write-warnin
 
 Updates require public stable releases and internet access. Prereleases are ignored. API limits, a missing asset for your architecture or a non-writable installation may prevent an update. Retry from the header and use the official per-user installation.
 
-If a new release opens but behaves incorrectly, close the app and restore `z-mapflow.previous` in its installation directory, or reinstall an earlier release. Export your project before downgrading across data schema versions.
+If a new release opens but behaves incorrectly, close the app and restore `z-mapflow.previous` in its installation directory, or reinstall an earlier release. On Windows, the backup is `z-mapflow.exe.previous`: close Z-MapFlow, keep a copy of the failing executable and copy the backup back to `z-mapflow.exe`, or rerun a known working official setup package. An update helper cannot replace the app until its previous process exits; if a native update error appears, inspect its message before retrying. Export your project before downgrading across data schema versions.
 
 ## Report a problem
 

@@ -29,3 +29,11 @@ O editor valida tipos e quantidades de parâmetros antes da atribuição. Rascun
 - **Exportar keymap** gera os arquivos ZMK e seus acompanhantes necessários.
 
 **Descartar** restaura o último projeto salvo ou o estado inicial do projeto importado.
+
+## Apoiar o projeto
+
+Os botões **Dar estrela no GitHub** e **Pague um café** ficam visíveis no cabeçalho e abrem suas respectivas páginas no navegador. Você também pode [dar uma estrela](https://github.com/Henriquex25/Z-MapFlow) ou [apoiar o desenvolvimento](https://www.buymeacoffee.com/henriquemiranda) por aqui. O apoio é opcional; todos os recursos continuam disponíveis.
+
+Um pequeno convite, que não bloqueia a edição, pode aparecer após cinco aberturas e 30 minutos de uso ativo. O convite de doação é separado: exige dez aberturas, duas horas de uso ativo e pelo menos três aberturas após responder ao convite de estrela. Os convites aguardam o primeiro minuto da sessão e ficam ocultos durante compilações, flash e outras janelas de diálogo. Tempo em segundo plano ou sem interação não conta como uso ativo.
+
+Aceitar, fechar ou escolher **Não, obrigado** dispensa aquele convite permanentemente neste computador. Usar o botão correspondente no cabeçalho também o dispensa. Os botões continuam disponíveis para quem quiser apoiar depois. Contadores e respostas ficam apenas neste computador, separados do projeto do teclado, e são preservados nas atualizações. O app não acessa sua conta do GitHub, não adiciona estrelas automaticamente e não processa pagamentos.

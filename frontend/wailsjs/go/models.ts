@@ -1,3 +1,20 @@
+export namespace community {
+	
+	export class Status {
+	    prompt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Status(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.prompt = source["prompt"];
+	    }
+	}
+
+}
+
 export namespace firmware {
 	
 	export class Artifact {

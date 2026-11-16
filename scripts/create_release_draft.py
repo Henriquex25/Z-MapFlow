@@ -10,8 +10,16 @@ from project_version import current_version
 from release_preflight import release_context
 
 
-def release_assets(directory, version):
-    names = ["z-mapflow_linux_amd64", f"z-mapflow_{version}_linux_amd64.tar.gz"]
+def asset_names(version, platforms=("linux", "windows")):
+    assets = {
+        "linux": ["z-mapflow_linux_amd64", f"z-mapflow_{version}_linux_amd64.tar.gz"],
+        "windows": ["z-mapflow_windows_amd64.exe", f"z-mapflow_{version}_windows_amd64_setup.exe"],
+    }
+    return [name for platform in platforms for name in assets[platform]]
+
+
+def release_assets(directory, version, platforms=("linux", "windows")):
+    names = asset_names(version, platforms)
     checksums = directory / "checksums.txt"
     hashes = {}
     for line in checksums.read_text().splitlines():

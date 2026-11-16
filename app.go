@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"z-mapflow/internal/community"
 	"z-mapflow/internal/devices"
 	"z-mapflow/internal/devices/soflev2"
 	"z-mapflow/internal/firmware"
@@ -38,6 +39,7 @@ type App struct {
 	updating     atomic.Bool
 	restartReady atomic.Bool
 	uiLocale     atomic.Value
+	community    *community.Service
 }
 
 func NewApp() *App { return &App{} }
@@ -55,10 +57,35 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.projects = &project.Service{Root: root, Registry: a.registry}
+	a.community, err = community.Start(root)
+	if err != nil {
+		runtime.LogWarning(ctx, "Community invitations unavailable: "+err.Error())
+	}
 	a.builds = &firmware.Manager{Root: root, Registry: a.registry}
 	if err := a.builds.Restore(); err != nil {
 		runtime.LogWarning(ctx, "Histórico de compilação indisponível: "+err.Error())
 	}
+}
+
+func (a *App) GetCommunityStatus() (community.Status, error) {
+	if a.community == nil {
+		return community.Status{}, fmt.Errorf("community preferences unavailable")
+	}
+	return a.community.Status(), nil
+}
+
+func (a *App) RecordCommunityMinute() (community.Status, error) {
+	if a.community == nil {
+		return community.Status{}, fmt.Errorf("community preferences unavailable")
+	}
+	return a.community.RecordMinute()
+}
+
+func (a *App) DismissCommunityPrompt(kind string) error {
+	if a.community == nil {
+		return fmt.Errorf("community preferences unavailable")
+	}
+	return a.community.Dismiss(kind)
 }
 func (a *App) shutdown(context.Context) {
 	if a.builds != nil {

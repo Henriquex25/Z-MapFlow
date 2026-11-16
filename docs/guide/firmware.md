@@ -45,3 +45,8 @@ When the full file copy returns successfully but the final sync or close fails, 
 - If the copy itself is interrupted, the app reports an error. It does not offer the final-write confirmation flow for an incomplete copy.
 
 The app does not retry or declare the keyboard functional based only on the drive disappearing.
+
+
+## Windows USB drives
+
+On Windows, put the connected half into bootloader mode and wait for its UF2 drive to appear in Explorer. The app discovers local drives through Win32 and checks `INFO_UF2.TXT` against the selected controller. If discovery misses it, select the drive root manually, such as `E:\`. Choose the connected half explicitly; the drive alone cannot identify left versus right. Flashing copies directly from the Windows app to the drive, without Docker USB passthrough. Physical Windows keyboard validation is still pending.

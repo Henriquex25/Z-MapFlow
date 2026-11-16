@@ -88,7 +88,7 @@ class DraftTest(unittest.TestCase):
         env_patch = patch.dict(os.environ, env, clear=True)
         env_patch.start()
         self.addCleanup(env_patch.stop)
-        names = ["z-mapflow_linux_amd64", f"z-mapflow_{self.version}_linux_amd64.tar.gz"]
+        names = draft.asset_names(self.version)
         for name in names: (self.directory / name).write_bytes(b"packaged release bytes")
         (self.directory / "checksums.txt").write_text("".join(
             f"{hashlib.sha256((self.directory / name).read_bytes()).hexdigest()}  {name}\n" for name in names))
@@ -102,7 +102,7 @@ class DraftTest(unittest.TestCase):
             self.assertIn("--generate-notes", create)
             self.assertEqual(create[create.index("--target") + 1], self.sha)
             self.assertIn(str(self.directory / "checksums.txt"), create)
-            self.assertEqual(len([name for name in create if name.startswith(str(self.directory))]), 3)
+            self.assertEqual(len([name for name in create if name.startswith(str(self.directory))]), 5)
             self.assertNotIn("--latest", create)
 
     def test_resumes_only_a_draft_for_the_same_commit_without_replacing_notes(self):

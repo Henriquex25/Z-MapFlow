@@ -45,6 +45,51 @@ jobs:
         run: python3 scripts/wails.py build -tags webkit2_41 -skipbindings -m -nosyncgomod
       - name: Installer and release contract
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+  windows:
+    name: App / Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
+      - name: Native Go tests, including updater process handoff
+        run: go test ./...
+      - run: go vet ./...
+      - name: Install Wails CLI and NSIS
+        shell: pwsh
+        run: |
+          $wailsVersion = go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2
+          go install "github.com/wailsapp/wails/v2/cmd/wails@$wailsVersion"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          choco install nsis --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Join-Path ${env:ProgramFiles(x86)} 'NSIS' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Build per-user Windows installer
+        run: python scripts/wails.py build -platform windows/amd64 -webview2 embed -nsis -installscope user -skipbindings -m -nosyncgomod
+      - name: Package and test install/uninstall without opening the GUI
+        shell: pwsh
+        run: |
+          python scripts/package_windows.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/windows_install_smoke.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: windows-x64-test-build
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
   docs:
     name: Documentation
     runs-on: ubuntu-latest
