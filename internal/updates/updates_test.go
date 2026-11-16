@@ -88,38 +88,62 @@ func testManager(t *testing.T) *fixture {
 }
 
 func TestWindowsAssetAndDeferredHandoff(t *testing.T) {
-	f := testManager(t)
-	f.m.goos = "windows"
-	f.release.Assets[0].Name = "z-mapflow_windows_amd64.exe"
-	f.release.Assets[0].URL = strings.Replace(f.release.Assets[0].URL, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe", 1)
-	f.sums = strings.ReplaceAll(f.sums, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe")
-	var staged string
-	f.m.applyUpdate = func(_ context.Context, stage, target, version string, sum []byte, _ func(string) error) (bool, error) {
-		if filepath.Ext(stage) != ".exe" || target != f.target || version != "1.2.0" || len(sum) != 32 {
-			t.Fatal("invalid Windows handoff")
-		}
-		staged = stage
-		return true, nil
-	}
-	info, err := f.m.Check(context.Background())
-	if err != nil || !info.Available || !info.Supported {
-		t.Fatal(info, err)
-	}
-	if err := f.m.Install(context.Background(), "1.2.0", func(string) error { t.Fatal("parent must not restart before helper replacement"); return nil }); err != nil {
-		t.Fatal(err)
-	}
-	if data, err := os.ReadFile(staged); err != nil || string(data) != "new executable" {
-		t.Fatal("download was deleted before helper could install it")
-	}
-	if data, err := os.ReadFile(f.target); err != nil || string(data) != "original executable" {
-		t.Fatal("parent replaced a locked executable")
-	}
-	f.m.arch = "arm64"
-	info, err = f.m.Check(context.Background())
-	if err != nil || info.Supported {
-		t.Fatal("Windows ARM64 must remain unsupported", info, err)
+	for name, alias := range map[string]bool{"direct path": false, "equivalent path spelling": true} {
+		t.Run(name, func(t *testing.T) {
+			f := testManager(t)
+			if alias {
+				// Install canonicalizes paths. Windows can also expand short names
+				// and normalize casing; exercise an equivalent spelling on every OS.
+				f.target = filepath.Dir(f.target) + string(os.PathSeparator) + "." + string(os.PathSeparator) + filepath.Base(f.target)
+			}
+			f.m.goos = "windows"
+			f.release.Assets[0].Name = "z-mapflow_windows_amd64.exe"
+			f.release.Assets[0].URL = strings.Replace(f.release.Assets[0].URL, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe", 1)
+			f.sums = strings.ReplaceAll(f.sums, "z-mapflow_linux_amd64", "z-mapflow_windows_amd64.exe")
+			var staged string
+			f.m.applyUpdate = func(_ context.Context, stage, target, version string, sum []byte, _ func(string) error) (bool, error) {
+				if filepath.Ext(stage) != ".exe" {
+					t.Fatalf("Windows stage must have an .exe extension: %q", stage)
+				}
+				actual, err := os.Stat(target)
+				if err != nil {
+					t.Fatalf("handoff target %q: %v", target, err)
+				}
+				want, err := os.Stat(f.target)
+				if err != nil {
+					t.Fatalf("expected target %q: %v", f.target, err)
+				}
+				if !os.SameFile(actual, want) {
+					t.Fatalf("handoff target %q is not the expected file %q", target, f.target)
+				}
+				if version != "1.2.0" || len(sum) != sha256.Size {
+					t.Fatalf("invalid Windows handoff: version=%q, checksum length=%d", version, len(sum))
+				}
+				staged = stage
+				return true, nil
+			}
+			info, err := f.m.Check(context.Background())
+			if err != nil || !info.Available || !info.Supported {
+				t.Fatal(info, err)
+			}
+			if err := f.m.Install(context.Background(), "1.2.0", func(string) error { t.Fatal("parent must not restart before helper replacement"); return nil }); err != nil {
+				t.Fatal(err)
+			}
+			if data, err := os.ReadFile(staged); err != nil || string(data) != "new executable" {
+				t.Fatal("download was deleted before helper could install it")
+			}
+			if data, err := os.ReadFile(f.target); err != nil || string(data) != "original executable" {
+				t.Fatal("parent replaced a locked executable")
+			}
+			f.m.arch = "arm64"
+			info, err = f.m.Check(context.Background())
+			if err != nil || info.Supported {
+				t.Fatal("Windows ARM64 must remain unsupported", info, err)
+			}
+		})
 	}
 }
+
 func TestCheckRelease(t *testing.T) {
 	f := testManager(t)
 	info, e := f.m.Check(context.Background())
