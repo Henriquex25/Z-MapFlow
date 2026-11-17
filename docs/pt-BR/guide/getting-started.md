@@ -6,6 +6,8 @@
 4. Clique numa tecla sem uma ação selecionada para editar seus parâmetros. **Escape** cancela a seleção da paleta.
 5. Use **Salvar** para persistir suas alterações localmente.
 
+Consulte [Teclados compatíveis](./keyboards) para controladoras, encoders/displays opcionais e o port experimental do Silakka54 com fio.
+
 ## Layout e paleta
 
 A paleta inferior reúne teclas, modificadores, tap/hold, camadas, Bluetooth, mouse, recursos e idiomas. A busca expande a paleta quando está recolhida. Arraste a divisória para distribuir o espaço entre a paleta e o layout; Home ou duplo clique restaura a distribuição automática.
@@ -19,6 +21,8 @@ A paleta de Teclas ocupa a largura disponível da janela, preservando a largura 
 **Comportamentos** combinam ações reutilizáveis: toque/segurar, sequência de toques, ação conforme modificador, entre outros. Cada uso pode ter seus próprios parâmetros. **Macros** executam sequências; **Combos** disparam uma ação ao pressionar várias posições simultaneamente.
 
 O editor valida tipos e quantidades de parâmetros antes da atribuição. Rascunhos inválidos aparecem em vermelho, preservam o último valor válido e impedem salvar. Use **Descartar rascunho** na edição de tecla para fechar sem aplicar o texto inválido. A compilação verifica regras adicionais do hardware e de módulos avançados.
+
+Os cartões de comportamentos iniciam recolhidos. Nome, tipo, prévia da ação e botões de atribuir/excluir continuam visíveis. Use a seta ao lado do comportamento para mostrar suas configurações; cada cartão abre de forma independente. Alterações aplicadas são preservadas ao recolher. Corrija rascunhos inválidos antes de fechar o cartão.
 
 ## Salvar e exportar
 

@@ -31,3 +31,9 @@ Os arquivos e includes ficam no projeto e acompanham a exportação do keymap e 
 Configure o mesmo layout de teclado no sistema operacional. O app não altera essa configuração: [o ZMK envia códigos interpretados pelo computador](https://zmk.dev/blog/2024/01/05/zmk-tools#zmk-locale-generator).
 
 **O idioma da interface é independente:** inglês ou Português Brasil em **Configurações → Aplicativo** altera os controles do app. Ele não habilita ABNT2, não altera bindings e não traduz nomes de camadas ou macros criados pelo usuário.
+
+## Bluetooth e energia
+
+Em **Configurações → Bluetooth e energia**, **Inatividade para repouso (minutos)** define o tempo sem atividade antes do repouso automático. Por exemplo, `15` representa 15 minutos e `1.5` representa 90 segundos. O intervalo aceito continua sendo de um segundo a 24 horas, com suporte a frações de minuto.
+
+O backend valida o valor e converte para milissegundos no projeto salvo e em `CONFIG_ZMK_IDLE_SLEEP_TIMEOUT` do ZMK. Abrir um projeto ou importar um `.conf` preserva o valor exato em milissegundos, mesmo quando ele não corresponde a minutos inteiros. Ative **Repouso automático** para usar esse tempo.

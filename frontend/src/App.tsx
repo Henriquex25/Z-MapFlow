@@ -334,6 +334,7 @@ export default function App() {
             <select
               className="keyboard-select"
               aria-label={tr("Keyboard plugin")}
+              title={tr(plugin.name)}
               disabled={busy}
               value={plugin.id}
               onChange={(e) => {
@@ -345,7 +346,7 @@ export default function App() {
             >
               {plugins.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {tr(p.name)}
                 </option>
               ))}
             </select>

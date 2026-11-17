@@ -35,6 +35,25 @@ func fixture(t *testing.T) (*devices.Registry, models.Project) {
 	}
 	return r, p
 }
+
+func TestSleepMinutesGenerateZMKMilliseconds(t *testing.T) {
+	r, p := fixture(t)
+	var err error
+	p.Options.SleepTimeoutMs, err = project.SleepTimeoutMilliseconds(2.5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, err := Generate(p, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name, ".conf") && strings.Contains(file.Content, "CONFIG_ZMK_IDLE_SLEEP_TIMEOUT=150000\n") {
+			return
+		}
+	}
+	t.Fatal("minutes were not converted to milliseconds in the generated ZMK config")
+}
 func TestGenerateDeterministicAndResolved(t *testing.T) {
 	r, p := fixture(t)
 	files, e := Generate(p, r)

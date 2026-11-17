@@ -55,7 +55,7 @@ func (*Device) GetName() string { return "My Keyboard v1" }
 
 `Descriptor()` returns `models.Plugin`, with `ContractVersion: 1`, identity/version, keymap filename prefix, dimensions and all positions.
 
-Each `models.Position` has a stable physical `ID`, a real `KeymapIndex`, `X`, `Y`, `Width`, `Height`, `Rotation` and an optional `SensorID`. Dimensions use key units and rotation uses degrees.
+Each `models.Position` has a stable physical `ID`, a real `KeymapIndex`, `X`, `Y`, `Width`, `Height`, `Rotation` and an optional `SensorID`. `Hidden: true` retains an unpopulated matrix slot in projects and generated bindings without drawing a nonexistent switch (see Silakka54 Wireless). Dimensions use key units and rotation uses degrees.
 
 For example, if the matrix transform defines two consecutive positions:
 
@@ -67,6 +67,10 @@ Positions: []models.Position{
 ```
 
 This is an illustration of geometry only; replace it with the complete mapping for your device. Set `KeyCount` to the matrix transform position count and declare exactly one position per index. Array order and screen coordinates do not replace `KeymapIndex`. The generator sorts bindings by that real index.
+
+A rotation-only encoder may add a position with `KeymapIndex: -1` and `SensorID`, plus a sensor with `ClickKeymapIndex: -1` and empty `CodeClick`. This supplementary control does not increase `KeyCount` and is omitted from physical-position pickers. Never invent a click index: matrix-wired encoder buttons remain ordinary keys. The Lily58 plugin demonstrates this case.
+
+Set `DisableSleep: true` when the controller does not implement deep sleep. New projects then default to sleep disabled, Settings hides that control, validation rejects enabling it and generation omits its unsupported timeout. Existing plugins retain their previous defaults.
 
 IDs must remain stable across cosmetic layout changes. Changing binding order reinterprets existing projects and requires an explicit migration or incompatible plugin version.
 

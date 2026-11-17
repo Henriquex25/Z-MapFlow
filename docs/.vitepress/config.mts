@@ -7,6 +7,7 @@ const english = {
     { text: 'Use the app', items: [
       { text: 'Installation and updates', link: '/guide/install' },
       { text: 'Getting started', link: '/guide/getting-started' },
+      { text: 'Supported keyboards', link: '/guide/keyboards' },
       { text: 'ZMK configuration and languages', link: '/guide/configuration' },
       { text: 'Build and flash firmware', link: '/guide/firmware' },
       { text: 'Troubleshooting', link: '/guide/troubleshooting' },
@@ -28,6 +29,7 @@ const portuguese = {
     { text: 'Usar o aplicativo', items: [
       { text: 'Instalação e atualização', link: '/pt-BR/guide/install' },
       { text: 'Primeiros passos', link: '/pt-BR/guide/getting-started' },
+      { text: 'Teclados compatíveis', link: '/pt-BR/guide/keyboards' },
       { text: 'Configuração ZMK e idiomas', link: '/pt-BR/guide/configuration' },
       { text: 'Compilação e flash', link: '/pt-BR/guide/firmware' },
       { text: 'Problemas frequentes', link: '/pt-BR/guide/troubleshooting' },

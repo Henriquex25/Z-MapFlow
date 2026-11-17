@@ -62,11 +62,12 @@ export function KeyboardLayout({
           }}
         >
           {plugin.positions.map((position) => {
+            if (position.hidden) return null;
             const key = layer.keys.find((k) => k.keymapIndex === position.keymapIndex);
-            if (!key) return null;
             const sensor = position.sensorId
               ? layer.sensors.find((s) => s.id === position.sensorId)
               : null;
+            if ((!key && !sensor) || (!key && onSelect)) return null;
             return (
               <div
                 key={position.id}
@@ -81,7 +82,7 @@ export function KeyboardLayout({
               >
                 {sensor && !onSelect ? (
                   <Sensor sensor={sensor} />
-                ) : (
+                ) : key ? (
                   <DroppableKey
                     action={key}
                     className="w-full h-full"
@@ -89,7 +90,7 @@ export function KeyboardLayout({
                     onClick={onSelect ? () => onSelect(position.keymapIndex) : undefined}
                     onEdit={onEdit ? () => onEdit(position.keymapIndex) : undefined}
                   />
-                )}
+                ) : null}
               </div>
             );
           })}

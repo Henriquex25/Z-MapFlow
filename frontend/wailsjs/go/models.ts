@@ -627,6 +627,7 @@ export namespace models {
 		}
 	}
 	export class Position {
+	    hidden?: boolean;
 	    id: string;
 	    keymapIndex: number;
 	    x: number;
@@ -642,6 +643,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hidden = source["hidden"];
 	        this.id = source["id"];
 	        this.keymapIndex = source["keymapIndex"];
 	        this.x = source["x"];
@@ -667,6 +669,7 @@ export namespace models {
 	    }
 	}
 	export class Plugin {
+	    disableSleep?: boolean;
 	    files: Record<string, string>;
 	    modules: Module[];
 	    bindingArities: Record<string, number>;
@@ -694,6 +697,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.disableSleep = source["disableSleep"];
 	        this.files = source["files"];
 	        this.modules = this.convertValues(source["modules"], Module);
 	        this.bindingArities = source["bindingArities"];

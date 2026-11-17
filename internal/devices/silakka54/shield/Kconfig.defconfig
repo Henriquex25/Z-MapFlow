@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+if SHIELD_SILAKKA54_WIRED_LEFT || SHIELD_SILAKKA54_WIRED_RIGHT
+
+config ZMK_KEYBOARD_NAME
+    default "Silakka54"
+
+config ZMK_SPLIT
+    default y
+
+if SHIELD_SILAKKA54_WIRED_LEFT
+config ZMK_SPLIT_ROLE_CENTRAL
+    default y
+endif
+
+endif

@@ -106,6 +106,10 @@ export function SetAppLanguage(arg1) {
   return window['go']['main']['App']['SetAppLanguage'](arg1);
 }
 
+export function SleepTimeoutMilliseconds(arg1) {
+  return window['go']['main']['App']['SleepTimeoutMilliseconds'](arg1);
+}
+
 export function StartBuild() {
   return window['go']['main']['App']['StartBuild']();
 }

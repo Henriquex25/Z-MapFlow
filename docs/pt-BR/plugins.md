@@ -72,3 +72,11 @@ Após mudanças na API Go, regenere os bindings com `wails generate module`. Os 
 ## Guia de implementação passo a passo
 
 O [guia completo em inglês](../plugins) mostra como coletar os dados de hardware, criar o pacote, mapear posições e encoders, declarar variantes e alvos, registrar o dispositivo em `app.go`, testar geração/build/flash e abrir um PR. Plugins são incluídos no aplicativo; ainda não há instalação dinâmica. Não é necessário criar um componente de teclado em React.
+
+## Posições sem switch e encoders opcionais
+
+`Position.hidden: true` preserva um índice de matriz sem desenhar uma tecla inexistente, como nas quatro posições extras do Silakka54 Wireless. O binding continua presente no projeto e na exportação. Cada índice real continua exigindo exatamente uma posição.
+
+Um encoder somente de rotação pode ter uma posição adicional com `keymapIndex: -1`, `sensorId` e um sensor com `clickKeymapIndex: -1` e `codeClick` vazio. Esse controle não aumenta `keyCount` e não aparece nos seletores de posições físicas. Não presumir onde está o clique: se estiver ligado à matriz, continua sendo uma tecla comum. Consulte o plugin Lily58.
+
+`Plugin.disableSleep: true` declara que a controladora não oferece repouso profundo. Projetos novos iniciam com sleep desativado, o controle fica oculto, a validação rejeita ativá-lo e o gerador omite o timeout incompatível. Plugins anteriores mantêm seus padrões.

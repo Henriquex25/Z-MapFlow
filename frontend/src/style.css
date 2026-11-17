@@ -238,6 +238,7 @@ h3 {
   object-fit: contain;
 }
 .keyboard-select {
+  max-width: clamp(180px, 24vw, 300px);
   appearance: auto;
   background: transparent;
   color: var(--text-secondary);
@@ -1792,7 +1793,19 @@ h3 {
   align-items: center;
   flex-wrap: wrap;
   gap: 14px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+.behavior-card:not(.expanded) {
+  padding: 12px 16px;
+}
+.behavior-body:not([hidden]) {
+  margin-top: 12px;
+}
+.behavior-toggle {
+  flex-shrink: 0;
+}
+.behavior-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
 }
 .behavior-identity,
 .behavior-actions {

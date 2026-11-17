@@ -6,6 +6,8 @@
 4. Click a key without a selected palette action to edit its parameters. **Escape** cancels palette selection.
 5. Choose **Save** to persist the project locally.
 
+See [Supported keyboards](./keyboards) for exact controllers, optional encoders/displays and the experimental wired Silakka54 port.
+
 ## Layout and palette
 
 The bottom palette contains keys, modifiers, tap/hold, layers, Bluetooth, mouse, resources and language aliases. Searching expands a collapsed palette. Drag the divider to share space between the layout and palette; Home or double-click restores the automatic split.
@@ -19,6 +21,8 @@ The Keys palette expands across the available window width while preserving mini
 **Behaviors** provide reusable actions, including tap/hold, tap sequences and modifier-dependent alternatives. Each use may have different parameters. **Macros** run action sequences. **Combos** trigger an action when selected key positions are pressed together.
 
 The editor validates parameter counts and types before assignment. Invalid drafts appear in red, preserve the last valid value and block saving. Use **Discard draft** in the key editor to close without applying invalid text. Firmware compilation checks additional hardware and module rules.
+
+Behavior cards start collapsed. Their name, type, action preview, assignment and delete controls remain visible. Use the arrow beside a behavior to show its settings; each card opens independently. Applied edits survive collapsing. Correct invalid drafts before closing a card.
 
 ## Save and export
 

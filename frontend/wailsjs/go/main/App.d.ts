@@ -59,4 +59,6 @@ export function SelectBootloader(arg1:string):Promise<flash.Volume>;
 
 export function SetAppLanguage(arg1:string):Promise<void>;
 
+export function SleepTimeoutMilliseconds(arg1:number):Promise<number>;
+
 export function StartBuild():Promise<firmware.Build>;

@@ -1,0 +1,8 @@
+file_format: "1"
+id: silakka54_wired
+name: Silakka54 Wired (experimental ZMK port)
+type: shield
+url: https://github.com/Squalius-cephalus/silakka54
+requires: [rp2040_zero]
+features: [keys]
+siblings: [silakka54_wired_left, silakka54_wired_right]

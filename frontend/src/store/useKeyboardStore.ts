@@ -237,8 +237,9 @@ export const useKeyboardStore = create<State>((set, get) => ({
         s = l?.sensors.find((s) => s.id === id);
       if (!l || !s) return;
       code = normalizeBinding(code, p);
-      if (direction === "click") syncClick(l, s.clickKeymapIndex, code);
-      else {
+      if (direction === "click") {
+        if (s.clickKeymapIndex >= 0) syncClick(l, s.clickKeymapIndex, code);
+      } else {
         s.inherited = false;
         if (direction === "cw") s.codeCW = code;
         else s.codeCCW = code;
@@ -255,6 +256,11 @@ export const useKeyboardStore = create<State>((set, get) => ({
     const restored = clone(baseline);
     set({
       project: restored,
+      // Pending asynchronous edits must not reapply themselves after discard.
+      // Mounted field drafts continue to own their usual validation entries.
+      draftErrors: Object.fromEntries(
+        Object.entries(s.draftErrors).filter(([id]) => !id.startsWith("pending:")),
+      ),
       activeLayerId: restored.layout.layers.some((l) => l.id === s.activeLayerId)
         ? s.activeLayerId
         : restored.layout.layers[0].id,
@@ -275,7 +281,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
         s.codeCW = "&trans";
         s.codeCCW = "&trans";
         s.inherited = true;
-        s.codeClick = "&trans";
+        s.codeClick = s.clickKeymapIndex >= 0 ? "&trans" : "";
       });
       p.layout.layers.push(l);
     });
@@ -335,7 +341,7 @@ export const useKeyboardStore = create<State>((set, get) => ({
         s.codeCW = "&trans";
         s.codeCCW = "&trans";
         s.inherited = true;
-        s.codeClick = "&trans";
+        s.codeClick = s.clickKeymapIndex >= 0 ? "&trans" : "";
       });
     }),
   reorderLayers: (start, end) =>

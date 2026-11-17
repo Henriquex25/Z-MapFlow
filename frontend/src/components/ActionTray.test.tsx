@@ -140,3 +140,20 @@ it("uses the selected header's dependencies without mixing in another language",
   expect(palette.getByRole("button", { name: "Drag ES_EXCL" })).toBeVisible();
   expect(palette.queryByRole("button", { name: "Drag FR_EACUTE" })).not.toBeInTheDocument();
 });
+
+it("hides Bluetooth actions and prevents assignments on a USB-only keyboard", () => {
+  const session = fixture();
+  session.plugin.capabilities = [];
+  useKeyboardStore.getState().initialize(session);
+  render(<ActionTray />);
+  expect(screen.queryByRole("button", { name: "Bluetooth" })).not.toBeInTheDocument();
+  expect(validateBinding("&bt BT_CLR", session.project, session.plugin)).toContain(
+    "does not support Bluetooth",
+  );
+  useKeyboardStore.getState().updateKeyCode(0, "&bt BT_CLR");
+  expect(useKeyboardStore.getState().project!.layout.layers[0].keys[0].code).toBe("&kp A");
+  fireEvent.change(screen.getByRole("textbox", { name: "Search actions" }), {
+    target: { value: "BT_CLR" },
+  });
+  expect(screen.queryByRole("button", { name: "Drag &bt BT_CLR" })).not.toBeInTheDocument();
+});

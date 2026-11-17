@@ -1,3 +1,5 @@
+import { BehaviorCard } from "./BehaviorCard";
+import { SleepTimeoutField } from "./SleepTimeoutField";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { AppSettings } from "./AppSettings";
 import { tr, useLocale } from "../i18n";
@@ -296,85 +298,90 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
         </p>
       )}
       {p.layout.behaviors.map((b) => (
-        <article className="resource-card" key={b.id}>
-          <div className="behavior-toolbar">
-            <div className="behavior-identity">
-              <input
-                aria-label={tr("Behavior name")}
-                className="field font-semibold"
-                value={b.name}
-                onChange={(e) =>
-                  edit((p) => {
-                    p.layout.behaviors.find((x) => x.id === b.id)!.name = e.target.value;
-                  })
-                }
-              />
-              <span className="badge">{tr(behaviorKinds[b.kind] ?? b.kind)}</span>
-              {[
-                "sticky-key",
-                "caps-word",
-                "key-repeat",
-                "key-toggle",
-                "toggle-layer",
-                "momentary-layer",
-                "to-layer",
-                "mouse-move",
-                "mouse-scroll",
-              ].includes(b.kind) && (
-                <select
-                  className="field"
-                  aria-label={tr("Base behavior")}
-                  value={b.target ?? ""}
+        <BehaviorCard
+          key={b.id}
+          name={b.name}
+          toolbar={
+            <>
+              <div className="behavior-identity">
+                <input
+                  aria-label={tr("Behavior name")}
+                  className="field font-semibold"
+                  value={b.name}
                   onChange={(e) =>
                     edit((p) => {
-                      const v = p.layout.behaviors.find((v) => v.id === b.id)!;
-                      v.target = e.target.value;
-                      if (v.target) v.bindings = [];
-                      else if (v.kind === "sticky-key") v.bindings = ["&kp LSHFT"];
+                      p.layout.behaviors.find((x) => x.id === b.id)!.name = e.target.value;
                     })
                   }
+                />
+                <span className="badge">{tr(behaviorKinds[b.kind] ?? b.kind)}</span>
+                {[
+                  "sticky-key",
+                  "caps-word",
+                  "key-repeat",
+                  "key-toggle",
+                  "toggle-layer",
+                  "momentary-layer",
+                  "to-layer",
+                  "mouse-move",
+                  "mouse-scroll",
+                ].includes(b.kind) && (
+                  <select
+                    className="field"
+                    aria-label={tr("Base behavior")}
+                    value={b.target ?? ""}
+                    onChange={(e) =>
+                      edit((p) => {
+                        const v = p.layout.behaviors.find((v) => v.id === b.id)!;
+                        v.target = e.target.value;
+                        if (v.target) v.bindings = [];
+                        else if (v.kind === "sticky-key") v.bindings = ["&kp LSHFT"];
+                      })
+                    }
+                  >
+                    <option value="">{tr("New definition")}</option>
+                    {(
+                      {
+                        "sticky-key": ["sk", "sl"],
+                        "caps-word": ["caps_word"],
+                        "key-repeat": ["key_repeat"],
+                        "key-toggle": ["kt"],
+                        "toggle-layer": ["tog"],
+                        "momentary-layer": ["mo"],
+                        "to-layer": ["to"],
+                        "mouse-move": ["mmv"],
+                        "mouse-scroll": ["msc"],
+                      } as Record<string, string[]>
+                    )[b.kind]?.map((v) => (
+                      <option value={v} key={v}>
+                        {tr("Customize &")}
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="behavior-actions">
+                <DraggableKey action={behaviorAction(b)} className="behavior-preview" />
+                <button
+                  className="btn primary"
+                  disabled={!!validateBinding(behaviorAction(b).code, p, plugin)}
+                  title={
+                    validateBinding(behaviorAction(b).code, p, plugin) ||
+                    tr("Choose layout positions to assign this behavior")
+                  }
+                  aria-label={tr("Assign {0} to keyboard", b.name)}
+                  onClick={() => onAssign(behaviorAction(b))}
                 >
-                  <option value="">{tr("New definition")}</option>
-                  {(
-                    {
-                      "sticky-key": ["sk", "sl"],
-                      "caps-word": ["caps_word"],
-                      "key-repeat": ["key_repeat"],
-                      "key-toggle": ["kt"],
-                      "toggle-layer": ["tog"],
-                      "momentary-layer": ["mo"],
-                      "to-layer": ["to"],
-                      "mouse-move": ["mmv"],
-                      "mouse-scroll": ["msc"],
-                    } as Record<string, string[]>
-                  )[b.kind]?.map((v) => (
-                    <option value={v} key={v}>
-                      {tr("Customize &")}
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div className="behavior-actions">
-              <DraggableKey action={behaviorAction(b)} className="behavior-preview" />
-              <button
-                className="btn primary"
-                disabled={!!validateBinding(behaviorAction(b).code, p, plugin)}
-                title={
-                  validateBinding(behaviorAction(b).code, p, plugin) ||
-                  tr("Choose layout positions to assign this behavior")
-                }
-                aria-label={tr("Assign {0} to keyboard", b.name)}
-                onClick={() => onAssign(behaviorAction(b))}
-              >
-                {tr("Assign to keyboard")}{" "}
-              </button>
-              <button className="btn danger" onClick={() => removeResource("behaviors", b.id)}>
-                {tr("Delete")}{" "}
-              </button>
-            </div>
-          </div>
+                  {tr("Assign to keyboard")}{" "}
+                </button>
+                <button className="btn danger" onClick={() => removeResource("behaviors", b.id)}>
+                  {tr("Delete")}{" "}
+                </button>
+              </div>
+            </>
+          }
+        >
           <p className="hint behavior-help">
             {b.kind === "hold-tap"
               ? tr("Define a hold action and a tap action. Each key can use different parameters.")
@@ -635,7 +642,7 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
               )}{" "}
             </p>
           )}
-        </article>
+        </BehaviorCard>
       ))}
     </div>
   );
@@ -959,40 +966,39 @@ export function SettingsEditor() {
       <div className="resource-card">
         <h3>{tr("Bluetooth and power")}</h3>
         <div className="flex flex-wrap gap-5 items-center mt-3">
-          <NumberField
-            label={tr("Bluetooth profiles")}
-            min={1}
-            max={5}
-            value={p.options.bluetoothProfiles}
-            onChange={(n) =>
-              edit((p) => {
-                p.options.bluetoothProfiles = n;
-              })
-            }
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={p.options.sleep}
-              onChange={(e) =>
+          {plugin.capabilities.includes("bluetooth") && (
+            <NumberField
+              label={tr("Bluetooth profiles")}
+              min={1}
+              max={5}
+              value={p.options.bluetoothProfiles}
+              onChange={(n) =>
                 edit((p) => {
-                  p.options.sleep = e.target.checked;
+                  p.options.bluetoothProfiles = n;
                 })
               }
-            />{" "}
-            {tr("Automatic sleep")}{" "}
-          </label>
-          <NumberField
-            label={tr("Sleep timeout (ms)")}
-            min={1000}
-            max={86400000}
-            value={p.options.sleepTimeoutMs}
-            onChange={(n) =>
-              edit((p) => {
-                p.options.sleepTimeoutMs = n;
-              })
-            }
-          />
+            />
+          )}
+          {!plugin.disableSleep && (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={p.options.sleep}
+                  onChange={(e) =>
+                    edit((p) => {
+                      p.options.sleep = e.target.checked;
+                    })
+                  }
+                />{" "}
+                {tr("Automatic sleep")}{" "}
+              </label>
+              <SleepTimeoutField />
+            </>
+          )}
+          {plugin.disableSleep && (
+            <p>{tr("This controller uses USB power and does not support deep sleep.")}</p>
+          )}
         </div>
       </div>
     </div>

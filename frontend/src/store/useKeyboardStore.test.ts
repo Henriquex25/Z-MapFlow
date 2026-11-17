@@ -260,3 +260,22 @@ it("rejects invalid assignment before touching the current or saved layout", () 
   expect(state().project).toEqual(before);
   expect(state().error).toContain("Unknown code");
 });
+
+it("does not create encoder clicks when adding or clearing a rotation-only layer", () => {
+  const session = fixture();
+  session.project.layout.layers[0].sensors = [
+    {
+      id: "rotation",
+      label: "Rotation",
+      clickKeymapIndex: -1,
+      codeClick: "",
+      codeCW: "&kp C_VOL_UP",
+      codeCCW: "&kp C_VOL_DN",
+    },
+  ];
+  state().initialize(session);
+  state().addLayer();
+  expect(state().project!.layout.layers[1].sensors[0].codeClick).toBe("");
+  state().clearLayer(0);
+  expect(state().project!.layout.layers[0].sensors[0].codeClick).toBe("");
+});

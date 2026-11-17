@@ -14,6 +14,7 @@ async function native<T>(run: () => Promise<T>): Promise<T> {
   return run();
 }
 export const api = {
+  sleepTimeoutMilliseconds: go.SleepTimeoutMilliseconds,
   communityStatus: go.GetCommunityStatus,
   recordCommunityMinute: go.RecordCommunityMinute,
   dismissCommunityPrompt: go.DismissCommunityPrompt,

@@ -84,13 +84,15 @@ export function Sensor({ sensor }: SensorProps) {
           label="CCW"
         />
 
-        <SensorDropZone
-          id={`${sensor.id}-click`}
-          sensorId={sensor.id}
-          direction="click"
-          code={sensor.codeClick}
-          label="CLK"
-        />
+        {sensor.clickKeymapIndex >= 0 && (
+          <SensorDropZone
+            id={`${sensor.id}-click`}
+            sensorId={sensor.id}
+            direction="click"
+            code={sensor.codeClick}
+            label="CLK"
+          />
+        )}
 
         <SensorDropZone
           id={`${sensor.id}-cw`}

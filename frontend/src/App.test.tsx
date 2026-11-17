@@ -266,6 +266,7 @@ it("creates and assigns hold-tap and tap-dance behaviors with the configured act
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap / hold" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap/hold" }));
   fireEvent.click(palette().getByRole("button", { name: "Modifiers" }));
   selectKey("&kp LSHFT");
   fireEvent.click(
@@ -288,6 +289,7 @@ it("creates and assigns hold-tap and tap-dance behaviors with the configured act
 
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap sequence" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap sequence" }));
   selectKey("&kp F1");
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Add tap" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New tap sequence to keyboard" }));
@@ -384,6 +386,7 @@ it("accepts zero-parameter behavior composition for hold actions", async () => {
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap / hold" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap/hold" }));
   fireEvent.click(palette().getByRole("button", { name: "Resources" }));
   selectKey("&trans");
   fireEvent.click(
@@ -652,6 +655,7 @@ it("refuses an incompatible hold child before assigning it", async () => {
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap / hold" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap/hold" }));
   fireEvent.click(palette().getByRole("button", { name: "Tap/hold" }));
   fireEvent.click(palette().getByRole("button", { name: "Drag &mt LCTRL TAB" }));
   const target = screen.getByRole("button", {

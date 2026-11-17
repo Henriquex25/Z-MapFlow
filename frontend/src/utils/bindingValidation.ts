@@ -296,6 +296,8 @@ export function validateBinding(
   const f = bindingParts(code.trim()),
     name = f[0]?.slice(1) ?? "";
   if (!/^&[A-Za-z_]\w*$/.test(f[0] ?? "")) return tr("Use a ZMK action, for example &kp A.");
+  if (name === "bt" && plugin && !plugin.capabilities.includes("bluetooth"))
+    return tr("This keyboard does not support Bluetooth.");
   if (seen.has(name)) return tr("A behavior cannot execute itself, directly or indirectly.");
   const kinds = parameterKinds(name, p, plugin);
   if (!kinds) return `Comportamento desconhecido: &${name}.`;
@@ -434,7 +436,7 @@ export function projectBindingError(p: Project, plugin: Plugin | null) {
       if (error) return tr("{0}, key {1}: {2}", layer.name, key.keymapIndex, error);
     }
     for (const s of layer.sensors) {
-      for (const code of [s.codeCW, s.codeCCW, s.codeClick]) {
+      for (const code of [s.codeCW, s.codeCCW, ...(s.clickKeymapIndex >= 0 ? [s.codeClick] : [])]) {
         const error = validateBinding(code, p, plugin);
         if (error) return `${layer.name}, ${s.label}: ${error}`;
       }

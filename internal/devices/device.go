@@ -30,7 +30,7 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 		if _, ok := r.devices[d.ID]; ok {
 			return nil, fmt.Errorf("plugin duplicado: %s", d.ID)
 		}
-		if len(d.Positions) != d.KeyCount {
+		if len(d.Positions) < d.KeyCount {
 			return nil, fmt.Errorf("geometria incompleta: %s", d.ID)
 		}
 		for name := range d.Files {
@@ -71,16 +71,35 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 			}
 		}
 		positionIDs := map[string]bool{}
+		sensors := map[string]models.SensorAction{}
+		for _, sensor := range d.Sensors {
+			if sensor.ID == "" || sensors[sensor.ID].ID != "" || sensor.ClickKeymapIndex < -1 || sensor.ClickKeymapIndex >= d.KeyCount || (sensor.ClickKeymapIndex == -1 && sensor.CodeClick != "") {
+				return nil, fmt.Errorf("sensor inválido no plugin %s", d.ID)
+			}
+			sensors[sensor.ID] = sensor
+		}
 		seen := map[int]bool{}
 		for _, pos := range d.Positions {
 			if pos.ID == "" || positionIDs[pos.ID] || pos.Width <= 0 || pos.Height <= 0 {
 				return nil, fmt.Errorf("posição inválida no plugin %s", d.ID)
 			}
 			positionIDs[pos.ID] = true
+			if pos.SensorID != "" {
+				sensor, ok := sensors[pos.SensorID]
+				if !ok || sensor.ClickKeymapIndex != pos.KeymapIndex || pos.Hidden {
+					return nil, fmt.Errorf("posição de sensor inválida no plugin %s", d.ID)
+				}
+				if pos.KeymapIndex == -1 {
+					continue
+				}
+			}
 			if pos.KeymapIndex < 0 || pos.KeymapIndex >= d.KeyCount || seen[pos.KeymapIndex] {
 				return nil, fmt.Errorf("índice físico inválido no plugin %s", d.ID)
 			}
 			seen[pos.KeymapIndex] = true
+		}
+		if len(seen) != d.KeyCount {
+			return nil, fmt.Errorf("geometria incompleta: %s", d.ID)
 		}
 		r.devices[d.ID] = p
 		r.order = append(r.order, d.ID)

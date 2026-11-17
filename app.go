@@ -15,6 +15,8 @@ import (
 	"sync/atomic"
 	"z-mapflow/internal/community"
 	"z-mapflow/internal/devices"
+	"z-mapflow/internal/devices/lily58"
+	"z-mapflow/internal/devices/silakka54"
 	"z-mapflow/internal/devices/soflev2"
 	"z-mapflow/internal/firmware"
 	"z-mapflow/internal/flash"
@@ -51,7 +53,7 @@ func (a *App) startup(ctx context.Context) {
 		a.initErr = err
 		return
 	}
-	a.registry, err = devices.NewRegistry(soflev2.NewDevice())
+	a.registry, err = devices.NewRegistry(soflev2.NewDevice(), lily58.NewDevice(), silakka54.NewWirelessDevice(), silakka54.NewWiredDevice())
 	if err != nil {
 		a.initErr = err
 		return
@@ -456,6 +458,10 @@ func (a *App) beforeClose(context.Context) bool { return a.updating.Load() && !a
 
 // GetAppInfo is available even when project loading or the network fails.
 func (a *App) GetAppInfo() version.Info { return version.Current() }
+
+func (a *App) SleepTimeoutMilliseconds(minutes float64) (int, error) {
+	return project.SleepTimeoutMilliseconds(minutes)
+}
 
 func (a *App) SetAppLanguage(locale string) error {
 	if locale != "en" && locale != "pt-BR" {

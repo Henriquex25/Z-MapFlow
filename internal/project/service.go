@@ -26,7 +26,7 @@ func (s *Service) New(pluginID string) (models.Project, error) {
 		return models.Project{}, err
 	}
 	p := d.Descriptor()
-	return models.Project{SchemaVersion: SchemaVersion, PluginID: p.ID, PluginVersion: p.Version, VariantID: p.Variants[0].ID, Layout: d.GetDefaultLayout(), Options: models.Options{ModTap: NativeHoldTap("hold-preferred"), LayerTap: NativeHoldTap("tap-preferred"), Locale: "us", Display: hasCapability(p, "display"), Pointing: hasCapability(p, "pointing"), TappingTermMs: 200, QuickTapMs: 0, Flavor: "hold-preferred", BluetoothProfiles: 5, Sleep: true, SleepTimeoutMs: 900000}}, nil
+	return models.Project{SchemaVersion: SchemaVersion, PluginID: p.ID, PluginVersion: p.Version, VariantID: p.Variants[0].ID, Layout: d.GetDefaultLayout(), Options: models.Options{ModTap: NativeHoldTap("hold-preferred"), LayerTap: NativeHoldTap("tap-preferred"), Locale: "us", Display: hasCapability(p, "display"), Pointing: hasCapability(p, "pointing"), TappingTermMs: 200, QuickTapMs: 0, Flavor: "hold-preferred", BluetoothProfiles: 5, Sleep: !p.DisableSleep, SleepTimeoutMs: 900000}}, nil
 }
 func (s *Service) Load() (models.Session, error) {
 	data, err := os.ReadFile(s.path())

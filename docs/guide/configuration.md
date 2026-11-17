@@ -31,3 +31,9 @@ The app retains the imported files and include statements in the project, keymap
 Configure the same keyboard layout in your operating system. The app does not switch the OS layout: [ZMK sends key codes interpreted by the host](https://zmk.dev/blog/2024/01/05/zmk-tools#zmk-locale-generator).
 
 **Interface language is separate:** English or Brazilian Portuguese under **Settings → Application** changes app controls only. It does not enable ABNT2, change your firmware or translate user-created layer/macro names.
+
+## Bluetooth and power
+
+In **Settings → Bluetooth and power**, **Sleep timeout (minutes)** sets the inactivity period before automatic sleep. For example, `15` means 15 minutes and `1.5` means 90 seconds. The existing supported range remains one second to 24 hours; fractions of a minute are accepted.
+
+The backend validates the value and converts it to milliseconds for the saved project and ZMK's `CONFIG_ZMK_IDLE_SLEEP_TIMEOUT`. Opening an existing project or importing a `.conf` preserves its exact millisecond value, including a value that is not a whole number of minutes. Enable **Automatic sleep** to use this timeout.

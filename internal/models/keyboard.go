@@ -140,6 +140,7 @@ type Behavior struct {
 	Flavor                   string            `json:"flavor"`
 }
 type Position struct {
+	Hidden      bool    `json:"hidden,omitempty"` // Unpopulated matrix slot; retain its binding index.
 	ID          string  `json:"id"`
 	KeymapIndex int     `json:"keymapIndex"`
 	X           float64 `json:"x"`
@@ -179,6 +180,7 @@ type PluginAction struct {
 	Code string `json:"code"`
 }
 type Plugin struct {
+	DisableSleep   bool              `json:"disableSleep,omitempty"` // Controller has no deep-sleep implementation.
 	Files          map[string]string `json:"files"`
 	Modules        []Module          `json:"modules"`
 	BindingArities map[string]int    `json:"bindingArities"`

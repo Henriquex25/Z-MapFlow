@@ -38,7 +38,11 @@ func EachBindingContext(p models.Project, visit func(string, bool) error) error 
 			}
 		}
 		for _, s := range l.Sensors {
-			for _, c := range []string{s.CodeCW, s.CodeCCW, s.CodeClick} {
+			codes := []string{s.CodeCW, s.CodeCCW}
+			if s.ClickKeymapIndex >= 0 {
+				codes = append(codes, s.CodeClick)
+			}
+			for _, c := range codes {
 				if err := visit(c, false); err != nil {
 					return fmt.Errorf("%s, %s: %w", l.Name, s.Label, err)
 				}
@@ -147,10 +151,13 @@ func Validate(p models.Project, r *devices.Registry) error {
 				return fmt.Errorf("sensor inválido: %s", sensor.ID)
 			}
 			seenSensors[sensor.ID] = true
-			if keys[sensor.ClickKeymapIndex] != sensor.CodeClick {
+			if (sensor.ClickKeymapIndex >= 0 && keys[sensor.ClickKeymapIndex] != sensor.CodeClick) || (sensor.ClickKeymapIndex < 0 && sensor.CodeClick != "") {
 				return fmt.Errorf("clique do encoder e tecla física estão divergentes")
 			}
 		}
+	}
+	if plugin.DisableSleep && p.Options.Sleep {
+		return fmt.Errorf("o plugin não oferece deep sleep")
 	}
 	if !hasCapability(plugin, "pointing") && p.Options.Pointing {
 		return fmt.Errorf("o plugin não oferece ações de mouse")
@@ -169,7 +176,7 @@ func Validate(p models.Project, r *devices.Registry) error {
 			return fmt.Errorf("parâmetros de %s inválidos", name)
 		}
 	}
-	if p.Options.BluetoothProfiles < 1 || p.Options.BluetoothProfiles > 5 || p.Options.SleepTimeoutMs < 1000 || p.Options.SleepTimeoutMs > 86400000 {
+	if p.Options.BluetoothProfiles < 1 || p.Options.BluetoothProfiles > 5 || p.Options.SleepTimeoutMs < MinSleepTimeoutMs || p.Options.SleepTimeoutMs > MaxSleepTimeoutMs {
 		return fmt.Errorf("configuração de Bluetooth/repouso inválida")
 	}
 	ids := map[string]bool{}

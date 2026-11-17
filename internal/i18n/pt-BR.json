@@ -814,5 +814,17 @@
   "Windows update failed; previous executable: {0}.previous: {1}": "A atualização do Windows falhou; executável anterior: {0}.previous: {1}",
   "invalid Windows update checksum": "Checksum da atualização do Windows inválido",
   "the staged update checksum changed": "O checksum da atualização baixada mudou",
-  "the previous app did not close; no files were replaced": "O aplicativo anterior não encerrou; nenhum arquivo foi substituído"
+  "the previous app did not close; no files were replaced": "O aplicativo anterior não encerrou; nenhum arquivo foi substituído",
+  "Show settings for {0}": "Mostrar configurações de {0}",
+  "Hide settings for {0}": "Ocultar configurações de {0}",
+  "Sleep timeout (minutes)": "Inatividade para repouso (minutos)",
+  "Checking sleep timeout…": "Verificando tempo de repouso…",
+  "Use a sleep timeout between 1 second and 24 hours.": "Use um tempo de repouso entre 1 segundo e 24 horas.",
+  "This controller uses USB power and does not support deep sleep.": "Esta controladora usa alimentação USB e não oferece repouso profundo.",
+  "Left encoder (optional)": "Encoder esquerdo (opcional)",
+  "This keyboard does not support Bluetooth.": "Este teclado não oferece Bluetooth.",
+  "Silakka54 Wireless (nRF52840)": "Silakka54 sem fio (nRF52840)",
+  "Silakka54 Wired (RP2040 Zero, experimental)": "Silakka54 com fio (RP2040 Zero, experimental)",
+  "RP2040 Zero — wired ZMK port (experimental)": "RP2040 Zero — port ZMK com fio (experimental)",
+  "Experimental ZMK port for the original RP2040 Zero wiring: GP0 TX / GP1 RX, full-duplex UART. Flash both halves; this replaces QMK/VIAL. Disconnect power from both halves before connecting the split cable. Use the left half for USB. Hold BOOT while connecting USB to open RPI-RP2, then choose the connected half. Physical hardware validation is still required.": "Port ZMK experimental para a fiação original RP2040 Zero: GP0 TX / GP1 RX, UART full-duplex. Grave ambas as metades; isso substitui QMK/VIAL. Desligue as duas metades antes de conectar o cabo entre elas. Use a metade esquerda para USB. Segure BOOT ao conectar por USB para abrir RPI-RP2 e escolha a metade conectada. Ainda é necessária validação no hardware físico."
 }

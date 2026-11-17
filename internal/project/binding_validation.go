@@ -322,6 +322,9 @@ func validateBinding(code string, p models.Project, plugin models.Plugin, macro 
 		return e
 	}
 	name := strings.TrimPrefix(parts[0], "&")
+	if name == "bt" && !hasCapability(plugin, "bluetooth") {
+		return fmt.Errorf("o plugin não oferece Bluetooth")
+	}
 	kinds := ParameterKinds(name, p, plugin)
 	arity := BuiltinArities()
 	for n, a := range plugin.BindingArities {

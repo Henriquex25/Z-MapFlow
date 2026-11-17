@@ -60,7 +60,7 @@ export function fixture(): Session {
     buildImage: "test",
     config: "",
     overlay: "",
-    capabilities: [],
+    capabilities: ["bluetooth"],
   };
   const project: Project = {
     schemaVersion: 2,

@@ -227,9 +227,13 @@ export function ActionTray() {
   useLocale();
   const p = useKeyboardStore((s) => s.project)!;
   const plugin = useKeyboardStore((s) => s.plugin);
+  const bluetooth = !!plugin?.capabilities.includes("bluetooth");
   const bodyRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Keys");
+  useEffect(() => {
+    if (!bluetooth && tab === "Bluetooth") setTab("Keys");
+  }, [bluetooth, tab]);
   const [search, setSearch] = useState("");
   const { importHeaders, importing } = useImportLanguageHeaders();
   useEffect(() => {
@@ -267,6 +271,7 @@ export function ActionTray() {
   };
   const filtered = (items: IKeyAction[]) =>
     items.map(localize).filter((a) => {
+      if (!bluetooth && (a.code.startsWith("&bt ") || a.code.startsWith("&out "))) return false;
       const visuals = formatKeyVisuals(displayCode(a.code, p));
       return [
         a.code,
@@ -307,11 +312,17 @@ export function ActionTray() {
   return (
     <section aria-label={tr("Action palette")} className="palette" data-collapsed={collapsed}>
       <div className="palette-toolbar">
-        {tabs.map((t) => (
-          <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {tr(t)}
-          </button>
-        ))}
+        {tabs
+          .filter((t) => t !== "Bluetooth" || bluetooth)
+          .map((t) => (
+            <button
+              key={t}
+              className={`tab ${tab === t ? "active" : ""}`}
+              onClick={() => setTab(t)}
+            >
+              {tr(t)}
+            </button>
+          ))}
         {(tab === "Keys" || tab === "Languages") && (
           <KeyboardLanguageSelect
             compact

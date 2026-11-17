@@ -95,9 +95,28 @@ func read(source string, p models.Project, registry *devices.Registry) (models.P
 	if keymap == nil || len(keymap.children) == 0 {
 		return p, fmt.Errorf("nenhuma camada encontrada em zmk,keymap")
 	}
+	// Studio configurations commonly end with empty reserved layers. Keep those
+	// native slots without treating them as malformed editable layers. Moving an
+	// interleaved slot could change layer IDs with reordering enabled, so reject it.
+	var activeLayers, reservedLayers []*node
+	for _, n := range keymap.children {
+		status := n.text("status")
+		if status == "reserved" || status == "disabled" {
+			reservedLayers = append(reservedLayers, n)
+			continue
+		}
+		if len(reservedLayers) > 0 || (status != "" && status != "okay" && status != "ok") {
+			return p, fmt.Errorf("camadas reservadas/desativadas devem ficar após as camadas editáveis")
+		}
+		activeLayers = append(activeLayers, n)
+	}
+	if len(reservedLayers) > 0 {
+		extras = append(extras, &node{name: "/", props: map[string][]string{}, children: []*node{{name: "keymap", props: map[string][]string{}, children: reservedLayers}}})
+	}
+	keymap.children = activeLayers
 	p.Layout = models.KeyboardLayout{Name: plugin.Name, Layers: []models.LayerData{}, Macros: []models.Macro{}, Combos: []models.Combo{}, Behaviors: []models.Behavior{}, ConditionalLayers: []models.ConditionalLayer{}}
 	for i, n := range keymap.children {
-		if err = n.allowed("bindings", "sensor-bindings"); err != nil {
+		if err = n.allowed("bindings", "sensor-bindings", "status"); err != nil {
 			return p, err
 		}
 		codes, e := bindings(n.props["bindings"])
@@ -116,7 +135,9 @@ func read(source string, p models.Project, registry *devices.Registry) (models.P
 			s.CodeCW = "&trans"
 			s.CodeCCW = "&trans"
 			s.Inherited = true
-			s.CodeClick = codes[s.ClickKeymapIndex]
+			if s.ClickKeymapIndex >= 0 {
+				s.CodeClick = codes[s.ClickKeymapIndex]
+			}
 		}
 		p.Layout.Layers = append(p.Layout.Layers, l)
 	}
@@ -217,7 +238,7 @@ func read(source string, p models.Project, registry *devices.Registry) (models.P
 			}
 			continue
 		}
-		if n.name == "&sensors" {
+		if n.name == "&sensors" && len(plugin.Sensors) > 0 {
 			if err = readSensorConfig(n, &p); err != nil {
 				return p, err
 			}
@@ -423,7 +444,11 @@ func read(source string, p models.Project, registry *devices.Registry) (models.P
 		}
 		for si := range l.Sensors {
 			s := &l.Sensors[si]
-			for _, code := range []*string{&s.CodeCW, &s.CodeCCW, &s.CodeClick} {
+			codes := []*string{&s.CodeCW, &s.CodeCCW}
+			if s.ClickKeymapIndex >= 0 {
+				codes = append(codes, &s.CodeClick)
+			}
+			for _, code := range codes {
 				if err = apply(code); err != nil {
 					return p, err
 				}
