@@ -503,6 +503,7 @@ export namespace models {
 	    }
 	}
 	export class Options {
+	    peripheralStatusSync?: boolean;
 	    rgbUnderglow?: boolean;
 	    backlight?: boolean;
 	    softOff?: boolean;
@@ -524,6 +525,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.peripheralStatusSync = source["peripheralStatusSync"];
 	        this.rgbUnderglow = source["rgbUnderglow"];
 	        this.backlight = source["backlight"];
 	        this.softOff = source["softOff"];

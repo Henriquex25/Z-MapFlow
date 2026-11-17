@@ -15,7 +15,7 @@ This is a ZMK BLE receiver. It does not add support for proprietary 2.4 GHz dong
 
 Example device selection in the actual app. No physical firmware transfer was performed for this image.
 
-The standard ZMK firmware does not relay the central’s active-layer/host-output state to peripheral OLEDs. This profile disables those two widgets on the halves to avoid showing stale local state; local battery and peripheral-status widgets remain available. Central-state display synchronization would require additional firmware support.
+By default, the halves show local battery/peripheral status. The optional synchronization below adds a firmware module that relays central state to both halves; the standard ZMK widgets alone do not provide that relay.
 
 ## First setup
 
@@ -29,6 +29,23 @@ The reset file is shared only because this profile uses the same controller/UF2 
 
 A controller can restart before the operating system confirms its last write. For reset firmware, the wizard lets you acknowledge a restart without claiming the keyboard works. Re-enter the bootloader and install keyboard firmware before testing keys. See [UF2 transfer warnings](./firmware#restart-and-final-write-warnings).
 
+## Optional layer and connection synchronization
+
+In **Settings → Keyboard and firmware**, enable **Synchronize layer and connection with the halves**. It is **off by default**, saved in the project, and offered only by compatible hardware profiles. Changing it preserves the keymap. Selecting an unsupported profile turns it off. Imported/exported Z-MapFlow configuration preserves the setting.
+
+- **Off:** no synchronization sender, receiver service or screen is compiled. The halves retain their normal local status display.
+- **On:** the dongle sends the active layer index/name, selected Bluetooth profile and **actual selected output**, including ZMK's USB/BLE fallback. USB power alone is not treated as an active USB output.
+- With **Display** enabled, a compact two-row screen on each half shows the received layer, output/profile and its own battery. `USB / B2` means USB is the active output and Bluetooth profile 2 is selected; `BT 2 online` means Bluetooth profile 2 is the active output. No output is shown as offline. The displayed layer name is bounded to 14 UTF-8 bytes and also includes its index; glyph support depends on the firmware font.
+- With Display disabled, synchronization remains usable but no OLED screen is compiled.
+
+After changing the option, **save, rebuild and flash the dongle and both halves**. The firmware carries out synchronization independently of the desktop app; Z-MapFlow does not need to remain open. All three operational devices must run matching firmware. The setting is compiled into firmware rather than changed live through USB. Ordinary keymap edits can still normally be flashed to the dongle only once the three devices share the same synchronization setting.
+
+State is sent on changes, after connection/encryption/discovery and in a small 20-byte heartbeat every five seconds. No keycodes, WPM or continuous typing stream is transmitted by this module. It uses the existing paired, encrypted split BLE links without adding another pairing. Unchanged heartbeats do not redraw the OLED. Normal display idle/sleep behavior is retained; heartbeats do not count as key activity.
+
+The receiver clears the displayed state on a recognized disconnection or after 15 seconds without a valid snapshot. `Waiting for dongle` / `No sync` indicates unavailable state; reconnecting requests an initial snapshot even if the layer has not changed. This avoids treating a cached layer or connection as current. Reconnection, sleep/wake and the actual OLED appearance still need physical validation.
+
+The switch owns `CONFIG_ZMAPFLOW_STATUS_SYNC`; edit it through this control rather than contradictory `.conf` or per-target overrides. Initial topology migration still uses the pairing-reset workflow above. If previously paired firmware cannot reconnect after all three devices are updated, use the documented reset/reflash procedure.
+
 ## Daily use and reverting
 
 For ordinary keymap updates, choose **Keyboard firmware**, leaving pairing intact. Bindings, layers and most behaviors run on the central, so after initial setup you can usually flash only the receiver and close the wizard. Changes to peripheral hardware, power, encoders or firmware compatibility require updating the affected halves too. The app continues to build all declared targets.
@@ -40,3 +57,5 @@ The two peripheral halves cannot type directly into a computer without the dongl
 The hardware files live in `internal/devices/soflev2/dongle/`. The receiver uses mock scanning and the exact Sofle transform/physical layout from the pinned ZMK revision, with two disabled local sensor placeholders preserving peripheral sensor indices. Each half enables only its own upstream encoder. Hardware roles, reset behavior and target-specific flags come from the plugin rather than keyboard-specific conditions in the editor/build core.
 
 See the [official ZMK dongle guide](https://zmk.dev/docs/hardware-integration/dongle) and [split keyboard roles](https://zmk.dev/docs/features/split-keyboards). New keyboard/controller combinations need verified plugin profiles.
+
+The optional module is included in exported sources under `zmapflow-status/` with `zephyr/module.yml`; no additional west dependency or ZMK fork is needed. Its sources and host protocol/transport simulations live in `internal/zmkmodules/statussync`. It uses a versioned encrypted GATT characteristic, a dedicated sender work queue, discovery/write retries and a coherent receiver cache. This is an experimental extension to the pinned ZMK revision, not an upstream ZMK feature.

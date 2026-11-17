@@ -1,9 +1,11 @@
 import { ArrowRight, Bluetooth, Keyboard, Usb } from "lucide-react";
 import { tr, useLocale } from "../i18n";
 import type { Plugin } from "../types/keyboard";
+import { useKeyboardStore } from "../store/useKeyboardStore";
 
 export function ConnectionTopology({ variant }: { variant: Plugin["variants"][number] }) {
   useLocale();
+  const { project, edit } = useKeyboardStore();
   const central = variant.targets.find((t) => t.kind === "dongle");
   if (!central) return null;
   return (
@@ -42,10 +44,36 @@ export function ConnectionTopology({ variant }: { variant: Plugin["variants"][nu
         )}
       </p>
       <p className="hint">
-        {tr(
-          "Peripheral OLEDs show local battery/status. Active-layer and host-output widgets are disabled because standard ZMK does not relay that central state to the halves.",
-        )}
+        {tr("With synchronization off, peripheral OLEDs show local battery/status only.")}
       </p>
+      {variant.features?.includes("peripheral-status-sync") && project && (
+        <>
+          <label className="flex items-center gap-2 mt-3">
+            <input
+              type="checkbox"
+              checked={!!project.options.peripheralStatusSync}
+              onChange={(e) =>
+                edit((p) => {
+                  p.options.peripheralStatusSync = e.target.checked;
+                })
+              }
+            />
+            {tr("Synchronize layer and connection with the halves")}
+          </label>
+          <p className="hint">
+            {tr(
+              "Optional and off by default. Sends the active layer, selected Bluetooth profile and actual USB/Bluetooth output over the paired link. Rebuild and flash the dongle and both halves when changing this option.",
+            )}
+          </p>
+          {project.options.peripheralStatusSync && (
+            <p className="hint">
+              {tr(
+                "With Display enabled, the OLEDs show synchronized state and local battery. They show a waiting message if the link or synchronized state is lost. The firmware sends changes and a small heartbeat every five seconds.",
+              )}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }

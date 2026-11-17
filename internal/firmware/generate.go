@@ -272,6 +272,12 @@ sensorsDone:
 		config += fmt.Sprintf("CONFIG_ZMK_IDLE_SLEEP_TIMEOUT=%d\n", p.Options.SleepTimeoutMs)
 	}
 	config += fmt.Sprintf("CONFIG_ZMK_DISPLAY=%s\nCONFIG_ZMK_POINTING=%s\n", yesno(p.Options.Display), yesno(p.Options.Pointing))
+	v, _ := project.Variant(p, plugin)
+	for _, feature := range v.Features {
+		if feature == "peripheral-status-sync" {
+			config += "CONFIG_ZMAPFLOW_STATUS_SYNC=" + yesno(p.Options.PeripheralStatusSync) + "\n"
+		}
+	}
 	for _, capability := range plugin.Capabilities {
 		if capability == "bluetooth" {
 			v, _ := project.Variant(p, plugin)
@@ -288,7 +294,11 @@ sensorsDone:
 		}
 	}
 	if p.Options.Display {
-		config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE=y\nCONFIG_ZMK_WIDGET_OUTPUT_STATUS=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
+		if p.Options.PeripheralStatusSync {
+			config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
+		} else {
+			config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE=y\nCONFIG_ZMK_WIDGET_OUTPUT_STATUS=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
+		}
 	}
 
 	if p.Options.RGBUnderglow {

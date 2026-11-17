@@ -98,8 +98,18 @@ func Validate(p models.Project, r *devices.Registry) error {
 	if p.PluginVersion != plugin.Version {
 		return fmt.Errorf("versão do plugin incompatível: %s", p.PluginVersion)
 	}
-	if _, err = Variant(p, plugin); err != nil {
+	variant, err := Variant(p, plugin)
+	if err != nil {
 		return err
+	}
+	if p.Options.PeripheralStatusSync {
+		supported := false
+		for _, feature := range variant.Features {
+			supported = supported || feature == "peripheral-status-sync"
+		}
+		if !supported {
+			return fmt.Errorf("esta variante não oferece sincronização de estado dos periféricos")
+		}
 	}
 	if err = ValidateBuild(p, plugin); err != nil {
 		return err
@@ -453,6 +463,10 @@ func Validate(p models.Project, r *devices.Registry) error {
 	}
 	for _, line := range strings.Split(p.ExtraConfig, "\n") {
 		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		key = strings.TrimSpace(key)
+		if (ok && key == "CONFIG_ZMAPFLOW_STATUS_SYNC") || strings.TrimSpace(line) == "# CONFIG_ZMAPFLOW_STATUS_SYNC is not set" {
+			return fmt.Errorf("use a opção de sincronização de estado em Configurações")
+		}
 		if ok && key == "CONFIG_ZMK_BEHAVIORS_QUEUE_SIZE" {
 			n, e := strconv.Atoi(strings.TrimSpace(value))
 			if e != nil || n < required {

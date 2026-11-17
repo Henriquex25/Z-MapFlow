@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+config ZMAPFLOW_STATUS_SYNC
+    bool "Relay central layer and output state to peripherals"
+    default n
+    depends on ZMK_SPLIT && ZMK_BLE
+    select BT_GATT_CLIENT if ZMK_SPLIT_ROLE_CENTRAL
+    select LV_USE_LABEL if ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL

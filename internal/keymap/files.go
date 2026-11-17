@@ -98,7 +98,18 @@ func ImportFile(path string, base models.Project, registry *devices.Registry) (m
 	}
 	conf, e := readFile(strings.TrimSuffix(path, filepath.Ext(path)) + ".conf")
 	if e == nil {
-		p, e = ImportConfig(string(conf), p)
+		d, _ := registry.Get(p.PluginID)
+		v, _ := project.Variant(p, d.Descriptor())
+		slots := 0
+		for _, t := range v.Targets {
+			if t.Role == "peripheral" {
+				slots++
+			}
+		}
+		if slots == 0 {
+			slots = 1
+		}
+		p, e = ImportConfig(string(conf), p, slots)
 	}
 	if e != nil && !os.IsNotExist(e) {
 		return models.Project{}, e

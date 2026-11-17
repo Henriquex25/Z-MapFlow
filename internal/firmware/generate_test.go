@@ -166,6 +166,10 @@ func TestDockerIntegration(t *testing.T) {
 	if variant := os.Getenv("ZMAPFLOW_DOCKER_VARIANT"); variant != "" {
 		p.VariantID = variant
 	}
+	p.Options.PeripheralStatusSync = os.Getenv("ZMAPFLOW_DOCKER_STATUS_SYNC") == "1"
+	if os.Getenv("ZMAPFLOW_DOCKER_DISPLAY") == "0" {
+		p.Options.Display = false
+	}
 	if os.Getenv("ZMAPFLOW_DOCKER_STUDIO") == "1" {
 		d, _ := r.Get(p.PluginID)
 		v, err := project.Variant(p, d.Descriptor())

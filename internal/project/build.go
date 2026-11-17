@@ -81,6 +81,9 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 				return fmt.Errorf("argumento CMake inválido: use -DNOME=valor")
 			}
 			name := parts[1]
+			if name == "CONFIG_ZMAPFLOW_STATUS_SYNC" {
+				return fmt.Errorf("use a opção de sincronização de estado em Configurações")
+			}
 			if value, managed := definition.Config[name]; managed && value != parts[2] {
 				return fmt.Errorf("%s: %s=%s é obrigatório para este perfil de hardware", definition.Name, name, value)
 			}

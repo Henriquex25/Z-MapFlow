@@ -33,20 +33,21 @@ type HoldTapSettings struct {
 	Flavor        string `json:"flavor"`
 }
 type Options struct {
-	RGBUnderglow      bool             `json:"rgbUnderglow,omitempty"`
-	Backlight         bool             `json:"backlight,omitempty"`
-	SoftOff           bool             `json:"softOff,omitempty"`
-	ModTap            *HoldTapSettings `json:"modTap,omitempty"`
-	LayerTap          *HoldTapSettings `json:"layerTap,omitempty"`
-	Locale            string           `json:"locale"`
-	Display           bool             `json:"display"`
-	Pointing          bool             `json:"pointing"`
-	TappingTermMs     int              `json:"tappingTermMs"`
-	QuickTapMs        int              `json:"quickTapMs"`
-	Flavor            string           `json:"flavor"`
-	BluetoothProfiles int              `json:"bluetoothProfiles"`
-	Sleep             bool             `json:"sleep"`
-	SleepTimeoutMs    int              `json:"sleepTimeoutMs"`
+	PeripheralStatusSync bool             `json:"peripheralStatusSync,omitempty"`
+	RGBUnderglow         bool             `json:"rgbUnderglow,omitempty"`
+	Backlight            bool             `json:"backlight,omitempty"`
+	SoftOff              bool             `json:"softOff,omitempty"`
+	ModTap               *HoldTapSettings `json:"modTap,omitempty"`
+	LayerTap             *HoldTapSettings `json:"layerTap,omitempty"`
+	Locale               string           `json:"locale"`
+	Display              bool             `json:"display"`
+	Pointing             bool             `json:"pointing"`
+	TappingTermMs        int              `json:"tappingTermMs"`
+	QuickTapMs           int              `json:"quickTapMs"`
+	Flavor               string           `json:"flavor"`
+	BluetoothProfiles    int              `json:"bluetoothProfiles"`
+	Sleep                bool             `json:"sleep"`
+	SleepTimeoutMs       int              `json:"sleepTimeoutMs"`
 }
 type KeyAction struct {
 	KeymapIndex int    `json:"keymapIndex"`

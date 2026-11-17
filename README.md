@@ -169,7 +169,7 @@ Place the square PNG app logo in [`build/appicon.png`](build/appicon.png), prefe
 
 ### Sofle USB dongle (experimental)
 
-A third nice!nano v2-compatible nRF52840 controller can act as a USB central for both Sofle v2 halves. The app preserves your layout, builds the receiver/peripheral firmwares and includes a separate pairing-reset mode in the flash wizard. Physical validation is pending. Read the [setup and migration guide](https://henriquex25.github.io/Z-MapFlow/guide/dongle) before switching; the ordinary two-part profile remains available.
+A third nice!nano v2-compatible nRF52840 controller can act as a USB central for both Sofle v2 halves. The app preserves your layout, builds the receiver/peripheral firmwares and includes a separate pairing-reset mode in the flash wizard. An optional, default-off setting synchronizes layer and active connection to both peripheral OLEDs over the paired BLE links. Changing it requires rebuilding/flashing all three devices. Physical validation is pending. Read the [setup and migration guide](https://henriquex25.github.io/Z-MapFlow/guide/dongle) before switching; the ordinary two-part profile remains available.
 
 ## Current limits
 

@@ -16,6 +16,7 @@ export function dongleFixture() {
     ...structuredClone(original),
     id: "dongle",
     name: "USB dongle central",
+    features: ["peripheral-status-sync"],
     targets: [
       {
         ...original.targets[0],

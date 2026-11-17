@@ -50,3 +50,13 @@ it("moves an imported global Studio configuration with its USB snippet", () => {
     "-DCONFIG_ZMK_STUDIO=y",
   );
 });
+
+it("rejects status-sync Kconfig overrides that could desynchronize devices", () => {
+  const { project: p, plugin } = dongleFixture();
+  p.variantId = "dongle";
+  p.extraConfig = "CONFIG_ZMAPFLOW_STATUS_SYNC=y";
+  expect(hardwareConfigError(p, plugin)).toContain("use the synchronization option");
+  p.extraConfig = "";
+  p.buildTargets = [{ targetId: "left", cmakeArgs: ["-DCONFIG_ZMAPFLOW_STATUS_SYNC=y"] }];
+  expect(hardwareConfigError(p, plugin)).toContain("use the synchronization option");
+});

@@ -856,5 +856,13 @@
   "Continue with keyboard firmware": "Continuar com firmware do teclado",
   "Flash next device": "Gravar próximo dispositivo",
   "Building {0}": "Compilando {0}",
-  "Peripheral OLEDs show local battery/status. Active-layer and host-output widgets are disabled because standard ZMK does not relay that central state to the halves.": "Os OLEDs periféricos mostram bateria/status local. Os indicadores de camada ativa e saída do host ficam desativados porque o ZMK padrão não repassa esse estado do central às metades."
+  "Peripheral OLEDs show local battery/status. Active-layer and host-output widgets are disabled because standard ZMK does not relay that central state to the halves.": "Os OLEDs periféricos mostram bateria/status local. Os indicadores de camada ativa e saída do host ficam desativados porque o ZMK padrão não repassa esse estado do central às metades.",
+  "With synchronization off, peripheral OLEDs show local battery/status only.": "Com a sincronização desativada, os OLEDs periféricos mostram apenas bateria/status local.",
+  "Synchronize layer and connection with the halves": "Sincronizar camada e conexão com as metades",
+  "Optional and off by default. Sends the active layer, selected Bluetooth profile and actual USB/Bluetooth output over the paired link. Rebuild and flash the dongle and both halves when changing this option.": "Opcional e desativada por padrão. Envia a camada ativa, o perfil Bluetooth selecionado e a saída USB/Bluetooth efetivamente usada pelo vínculo pareado. Recompile e grave o dongle e ambas as metades ao alterar esta opção.",
+  "With Display enabled, the OLEDs show synchronized state and local battery. They show a waiting message if the link or synchronized state is lost. The firmware sends changes and a small heartbeat every five seconds.": "Com Display ativado, os OLEDs mostram o estado sincronizado e a bateria local. Exibem uma mensagem de espera se o vínculo ou os dados sincronizados forem perdidos. O firmware envia alterações e uma pequena atualização de confirmação a cada cinco segundos.",
+  "This profile does not support peripheral status synchronization.": "esta variante não oferece sincronização de estado dos periféricos",
+  "Use the status synchronization option in Settings.": "use a opção de sincronização de estado em Configurações",
+  "Peripheral status synchronization is not supported by this profile.": "Este perfil não oferece sincronização de estado dos periféricos.",
+  "CONFIG_ZMAPFLOW_STATUS_SYNC: use the synchronization option.": "CONFIG_ZMAPFLOW_STATUS_SYNC: use o controle de sincronização."
 }

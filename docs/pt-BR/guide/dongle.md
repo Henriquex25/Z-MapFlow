@@ -15,7 +15,7 @@ O perfil experimental **nice!nano v2 / SuperMini — dongle USB central** usa tr
 
 Exemplo de seleção de dispositivo na interface real. Nenhum firmware foi enviado a um teclado físico para essa imagem.
 
-O ZMK padrão não repassa o estado da camada ativa/saída do host do central aos OLEDs periféricos. Este perfil desativa esses dois indicadores nas metades para evitar informações locais desatualizadas; os indicadores de bateria local e status periférico continuam disponíveis. Sincronizar o estado do central nas telas exige suporte adicional no firmware.
+Por padrão, as metades mostram bateria/status periférico local. A opção abaixo adiciona um módulo de firmware para transmitir o estado do central às duas metades; os widgets padrão do ZMK, sozinhos, não fazem esse envio.
 
 ## Primeira configuração
 
@@ -29,6 +29,23 @@ O arquivo de reset é compartilhado porque esse perfil usa a mesma controladora/
 
 A controladora pode reiniciar antes de o sistema confirmar a última escrita. No reset, o assistente permite reconhecer o reinício sem declarar o teclado funcional. Entre novamente no bootloader e instale o firmware do teclado antes de testar teclas. Consulte [avisos na última escrita](./firmware#reinicializacao-e-avisos-de-gravacao-final).
 
+## Sincronização opcional de camada e conexão
+
+Em **Configurações → Teclado e firmware**, ative **Sincronizar camada e conexão com as metades**. A opção inicia **desativada**, é salva no projeto e aparece apenas nos perfis compatíveis. Alterá-la preserva o keymap. Selecionar um perfil incompatível a desativa. A importação/exportação da configuração Z-MapFlow preserva esse ajuste.
+
+- **Desativada:** transmissor, serviço receptor e tela sincronizada não são compilados. As metades mantêm o status local normal.
+- **Ativada:** o dongle envia índice/nome da camada ativa, perfil Bluetooth selecionado e a **saída efetivamente selecionada**, incluindo fallback USB/BLE do ZMK. Alimentação USB sozinha não significa saída USB ativa.
+- Com **Display** ativado, cada OLED mostra camada recebida, saída/perfil e bateria local em duas linhas. `USB / B2` indica USB como saída ativa e perfil Bluetooth 2 selecionado; `BT 2 online` indica o perfil Bluetooth 2 como saída ativa. Ausência de saída aparece como offline. O nome da camada é limitado a 14 bytes UTF-8 e acompanhado pelo índice; os caracteres disponíveis dependem da fonte do firmware.
+- Sem Display, a sincronização continua disponível, mas nenhuma tela OLED é compilada.
+
+Após alterar a opção, **salve, recompile e grave o dongle e ambas as metades**. A sincronização é feita pelo firmware e funciona sem manter o Z-MapFlow aberto. Os três dispositivos operacionais precisam de firmware compatível. A opção é compilada, sem alteração instantânea por USB. Depois de alinhar o ajuste nos três dispositivos, mudanças comuns de keymap normalmente continuam exigindo apenas gravar o dongle.
+
+O estado é enviado nas alterações, depois de conexão/criptografia/descoberta e em uma pequena confirmação de 20 bytes a cada cinco segundos. O módulo não transmite keycodes, WPM nem um fluxo contínuo de digitação. Utiliza os vínculos BLE pareados e criptografados existentes, sem outro pareamento. Confirmações sem mudanças não redesenham o OLED. O comportamento normal de inatividade/repouso das telas é mantido; essas confirmações não contam como atividade de teclas.
+
+O receptor invalida o estado exibido quando reconhece a desconexão ou passa 15 segundos sem uma atualização válida. `Waiting for dongle` / `No sync` indica dados indisponíveis. Ao reconectar, recebe um estado inicial mesmo se a camada não mudou. Assim, informações antigas não são apresentadas como atuais. Reconexão, despertar e aparência real dos OLEDs ainda precisam de validação física.
+
+O controle gerencia `CONFIG_ZMAPFLOW_STATUS_SYNC`; use essa opção em vez de overrides contraditórios no `.conf` ou por alvo. A primeira mudança de topologia continua usando o reset descrito acima. Se firmwares anteriormente pareados não reconectarem depois de atualizar os três dispositivos, utilize o procedimento de reset/regravação.
+
 ## Uso diário e retorno ao perfil anterior
 
 Para alterações comuns no keymap, escolha **Firmware do teclado**, mantendo os pareamentos. Bindings, camadas e a maioria dos comportamentos são processados pelo central; depois da configuração inicial, normalmente basta gravar o receptor e fechar o assistente. Mudanças em hardware, energia, encoders ou compatibilidade de firmware exigem atualizar as metades afetadas. O app continua compilando todos os alvos declarados.
@@ -40,3 +57,5 @@ As duas metades periféricas não digitam diretamente no computador sem o dongle
 Os arquivos ficam em `internal/devices/soflev2/dongle/`. O receptor utiliza varredura simulada e o mesmo transform/layout físico Sofle da revisão ZMK fixada, com dois sensores locais desativados que preservam os índices dos sensores periféricos. Cada metade ativa apenas seu encoder definido pelo upstream. Papéis, reset e flags por alvo pertencem ao plugin, sem condições específicas do Sofle no core.
 
 Consulte o [guia oficial de dongle ZMK](https://zmk.dev/docs/hardware-integration/dongle) e os [papéis em teclados split](https://zmk.dev/docs/features/split-keyboards). Outras combinações de teclado/controladora precisam de perfis verificados.
+
+O módulo opcional acompanha os arquivos exportados em `zmapflow-status/` e `zephyr/module.yml`, sem outra dependência west ou fork ZMK. Fontes e simulações do protocolo/transporte ficam em `internal/zmkmodules/statussync`. Utiliza uma característica GATT criptografada e versionada, fila própria de transmissão, tentativas de descoberta/envio e cache coerente no receptor. É uma extensão experimental à revisão ZMK fixada, não um recurso do upstream.

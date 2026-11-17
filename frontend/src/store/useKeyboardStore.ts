@@ -70,6 +70,7 @@ export const content = (source: Project) => {
   p.options.rgbUnderglow ??= false;
   p.options.backlight ??= false;
   p.options.softOff ??= false;
+  p.options.peripheralStatusSync ??= false;
   p.layout.layers.forEach((l) =>
     l.sensors.forEach((s) => {
       s.inherited ??= false;
