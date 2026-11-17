@@ -70,6 +70,17 @@ func (d *Device) Descriptor() models.Plugin {
 	for i := range modern.Targets {
 		modern.Targets[i].Board = "nice_nano@2.0.0//zmk"
 	}
+	for _, v := range []*models.Variant{&modern, &legacy} {
+		v.Features = append(v.Features, "pairing-migration")
+		v.Targets = append(append([]models.Target{}, v.Targets...), models.Target{ID: "settings_reset", Kind: "settings-reset", Name: "Reset pairing", Board: v.Targets[0].Board, Shield: "settings_reset", Artifact: "sofle-settings-reset.uf2", Config: map[string]string{"CONFIG_ZMK_SETTINGS_RESET_ON_START": "y"}})
+		for i := 0; i < 2; i++ {
+			central := "n"
+			if v.Targets[i].Role == "central" {
+				central = "y"
+			}
+			v.Targets[i].Config = map[string]string{"CONFIG_ZMK_SPLIT": "y", "CONFIG_ZMK_SPLIT_ROLE_CENTRAL": central}
+		}
+	}
 	p.Variants = []models.Variant{modern, legacy, dongleVariant(modern)}
 	for i := range p.Positions {
 		if p.Positions[i].SensorID != "" {

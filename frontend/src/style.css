@@ -1292,6 +1292,43 @@ h3 {
   display: block;
   line-height: 1.5;
 }
+.flash-topology-setup {
+  flex-shrink: 0;
+  max-height: 210px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.flash-modal.with-topology {
+  width: 860px;
+}
+.flash-modal > .section-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.flash-modal.with-topology .flash-progress {
+  margin: 12px 0;
+}
+.flash-modal.with-topology .flash-target {
+  min-height: 88px;
+}
+.flash-topology-setup > p {
+  margin: 8px 0 12px;
+}
+.flash-topology-phases {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 10px 0;
+  list-style: none;
+}
+.flash-topology-phases li {
+  flex: 1;
+  min-width: 0;
+}
+.flash-topology-phases .btn {
+  width: 100%;
+}
 .flash-transfer-status p {
   margin-top: 7px;
 }

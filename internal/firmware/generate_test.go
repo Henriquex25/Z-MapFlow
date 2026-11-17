@@ -131,7 +131,7 @@ func TestManagerSnapshotsArtifactsAndRestore(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	done := m.Current()
-	if done.Status != "success" || len(done.Artifacts) != 2 {
+	if done.Status != "success" || len(done.Artifacts) != 3 {
 		t.Fatalf("build: %+v", done)
 	}
 	path, _, saved, e := m.ArtifactPath(b.ID, "left")

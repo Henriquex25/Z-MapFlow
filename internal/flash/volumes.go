@@ -80,8 +80,9 @@ func Discover(variant models.Variant) ([]Volume, error) {
 // Result separates a completed host transfer from a transfer whose final flush
 // could not be confirmed. Neither state proves the keyboard booted successfully.
 type Result struct {
-	Status string `json:"status"` // sent or unconfirmed
-	Detail string `json:"detail"`
+	Status    string `json:"status"` // sent or unconfirmed
+	Detail    string `json:"detail"`
+	ReceiptID string `json:"receiptId,omitempty"`
 }
 
 // Progress counts bytes accepted by the OS, not bytes confirmed in device flash.

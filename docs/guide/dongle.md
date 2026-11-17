@@ -11,9 +11,9 @@ The experimental **nice!nano v2 / SuperMini — USB dongle central** profile use
 
 This is a ZMK BLE receiver. It does not add support for proprietary 2.4 GHz dongles. A compatible nice!nano v2/SuperMini bootloader and pinout are required; a generic “Pro Micro” label alone is insufficient. The receiver uses USB power and needs no switches, encoders, OLED or matrix wiring.
 
-![The flash wizard offers USB dongle, left and right, with a separate pairing-reset mode](/images/z-mapflow-dongle-flash.png)
+![The flash wizard offers USB dongle, left and right, with a separate pairing-reset mode](/images/z-mapflow-topology-reset.png)
 
-Example device selection in the actual app. No physical firmware transfer was performed for this image.
+Example of the required reset stage when changing the central. This image uses the actual UI and Go workflow with simulated transfers; no physical controller was flashed.
 
 By default, the halves show local battery/peripheral status. The optional synchronization below adds a firmware module that relays central state to both halves; the standard ZMK widgets alone do not provide that relay.
 
@@ -22,7 +22,7 @@ By default, the halves show local battery/peripheral status. The optional synchr
 1. Export your project as a backup. In **Settings → Keyboard and firmware → Hardware variant**, choose the USB dongle profile. Your layers, bindings, macros, combos and behaviors stay in the project. The Studio USB preset moves to the new central if previously enabled. Target settings for devices absent from the selected profile are removed; other settings are retained.
 2. Keep or disable **Display** according to the OLEDs on your halves. Display and automatic sleep controls apply to the halves; the receiver has no OLED/local encoder and stays awake. Bluetooth profiles reserve two additional connection/pairing slots for the peripherals.
 3. Choose **Save and build**. The app produces the three device firmwares and one reset firmware. Roles and receiver-specific settings are managed by the profile; contradictory target flags are rejected before saving/building. The Studio USB preset applies to the dongle.
-4. Open **Flash firmware → Reset pairing first**. For **each** of USB dongle, Left and Right: connect that device, double-press RESET, select its UF2 drive, review and send the reset firmware. Let it restart, then disconnect it or turn that half off. Reset clears Bluetooth bonds and stored ZMK settings, including Studio changes; it preserves the bootloader and the project saved in Z-MapFlow. A transfer/restart acknowledgement does not independently verify the erased settings.
+4. Open **Flash firmware**. On the first tracked use, select the setup **currently installed** (a keyboard half as central when migrating from the ordinary setup), or choose **I’m not sure**. The wizard makes **1. Reset every device** mandatory before **2. Install keyboard firmware**. For **each** of USB dongle, Left and Right: connect that device, double-press RESET, select its UF2 drive, review and send the reset firmware. Wait for it to restart, choose **Controller restarted — acknowledge**, then disconnect it or turn that half off. Sending the file alone does not unlock the next stage. Reset clears Bluetooth bonds and stored ZMK settings, including Studio changes; it preserves the bootloader and the project saved in Z-MapFlow. A transfer/restart acknowledgement does not independently verify the erased settings.
 5. Choose **Continue with keyboard firmware**. Put each device back in the bootloader and send its matching firmware: dongle, left, right. Keep the receiver connected to the computer by USB, power both halves, and test switches and encoder rotations/clicks on both sides. The app cannot identify a half from its UF2 volume: select the actual connected device.
 
 The reset file is shared only because this profile uses the same controller/UF2 family on all three devices. Reset/firmware progress is tracked separately in the wizard. The app never sends a file without your explicit review and **Send firmware** action.
@@ -50,11 +50,21 @@ The synchronized screen reserves an 8192-byte LVGL heap on the halves. The 2048-
 
 The switch owns `CONFIG_ZMAPFLOW_STATUS_SYNC`; edit it through this control rather than contradictory `.conf` or per-target overrides. Initial topology migration still uses the pairing-reset workflow above. If previously paired firmware cannot reconnect after all three devices are updated, use the documented reset/reflash procedure.
 
+## Required migration steps and resuming
+
+The app tracks flash workflow locally per keyboard plugin, separately from the saved layout and compiled builds. Switching profiles or importing a JSON does not claim that a device was flashed. The first-use question is necessary because a UF2 volume does not report the installed split roles. Choose the actual installed setup; choosing **I’m not sure** requires a full cleanup.
+
+When the central changes, the final-firmware stage stays locked until all listed devices receive reset firmware and their restarts are acknowledged. The backend enforces the same gate for direct calls and history builds. Failed/incomplete copies never count. A final-write warning can be acknowledged after observing the restart; this does not independently verify erased settings or keyboard operation.
+
+Closing/reopening the wizard or app retains reset acknowledgements and a pending acknowledgement receipt. Recompiling for the same topology retains completed resets while clearing old firmware progress for the new build. A partially flashed migration cannot be bypassed by importing a backup or selecting an older build. Old builds lacking reset firmware ask you to rebuild if cleanup is still required. Nothing is sent automatically.
+
+After a manual/external flash, changing controllers, or switching to another physical keyboard of the same model, use **I flashed outside the app or changed controllers** to invalidate the recorded setup and start guided cleanup. The app cannot observe work done outside it. Local workflow state is not exported inside project JSON.
+
 ## Daily use and reverting
 
 For ordinary keymap updates, choose **Keyboard firmware**, leaving pairing intact. Bindings, layers and most behaviors run on the central, so after initial setup you can usually flash only the receiver and close the wizard. Changes to peripheral hardware, power, encoders or firmware compatibility require updating the affected halves too. The app continues to build all declared targets.
 
-The two peripheral halves cannot type directly into a computer without the dongle. To return to the usual setup, select the original nice!nano/SuperMini profile, clear pairing on the devices with the reset UF2, then flash the normal left/right firmware. The original profile remains the default; choosing the dongle is explicit. When Studio USB was enabled through the preset, switching back moves that preset to the left central again. Re-pair any host Bluetooth connection as needed.
+The two peripheral halves cannot type directly into a computer without the dongle. To return to the usual setup, select the original nice!nano/SuperMini profile, follow the mandatory cleanup of the dongle and both halves, then flash the normal left/right firmware. After resetting the retired dongle, disconnect it; it receives no normal half firmware. The ordinary current and legacy Sofle profiles now build a third, shared reset artifact for this return path. The original profile remains the default; choosing the dongle is explicit. When Studio USB was enabled through the preset, switching back moves that preset to the left central again. Re-pair any host Bluetooth connection as needed.
 
 ## Technical references
 

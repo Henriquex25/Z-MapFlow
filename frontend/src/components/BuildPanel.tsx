@@ -37,7 +37,7 @@ export function BuildPanel({
 }) {
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
-  const [flash, setFlash] = useState(false);
+  const [flash, setFlash] = useState<{ build: Build; plugin: Plugin } | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState("");
   const [toast, setToast] = useState("");
@@ -132,7 +132,12 @@ export function BuildPanel({
               <button className="btn" disabled={exporting} onClick={exportFiles}>
                 {exporting ? tr("Exporting…") : tr("Export firmware")}
               </button>
-              <button className="btn primary" onClick={() => setFlash(true)}>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  if (plugin) setFlash({ build: shown, plugin });
+                }}
+              >
                 {tr("Flash firmware")}{" "}
               </button>
             </>
@@ -173,8 +178,8 @@ export function BuildPanel({
             tr("Waiting for compiler output…")}
         </pre>
       )}
-      {flash && shown && plugin && (
-        <FlashModal build={shown} plugin={plugin} onClose={() => setFlash(false)} />
+      {flash && (
+        <FlashModal build={flash.build} plugin={flash.plugin} onClose={() => setFlash(null)} />
       )}
     </section>
   );

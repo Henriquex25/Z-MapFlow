@@ -17,10 +17,24 @@ import {
   Usb,
 } from "lucide-react";
 import { localizeMessage, tr, useLocale } from "../i18n";
-import type { Build, Plugin, Volume } from "../types/keyboard";
+import type { Build, Plugin, Volume, FlashPlan } from "../types/keyboard";
+import { FlashTopology } from "./FlashTopology";
 import { api, type FlashProgress } from "../services/api";
 
 type Step = 0 | 1 | 2 | 3;
+const untrackedPlan: FlashPlan = {
+  supported: false,
+  needsSetup: false,
+  required: false,
+  canFlash: true,
+  needsRebuild: false,
+  from: "",
+  to: "",
+  options: [],
+  resetDevices: [],
+  resetDone: {},
+  firmwareDone: {},
+};
 
 export function FlashModal({
   build,
@@ -35,9 +49,15 @@ export function FlashModal({
   const variant = plugin.variants.find((v) => v.id === build.variantId)!;
   const available = variant.targets.filter((t) => build.artifacts.some((a) => a.targetId === t.id));
   const resetTarget = available.find((t) => t.kind === "settings-reset");
-  const targets = available.filter((t) => t.kind !== "settings-reset");
-  const hasDongle = targets.some((t) => t.kind === "dongle");
+  const firmwareTargets = available.filter((t) => t.kind !== "settings-reset");
   const [resetting, setResetting] = useState(false);
+  const tracking = variant.features?.includes("pairing-migration") ?? false;
+  const [plan, setPlan] = useState<FlashPlan | null>(tracking ? null : untrackedPlan);
+  const [planError, setPlanError] = useState("");
+  const [configuring, setConfiguring] = useState(false);
+  const [receipt, setReceipt] = useState("");
+  const targets = resetting && plan?.supported ? plan.resetDevices : firmwareTargets;
+  const hasDongle = targets.some((t) => t.kind === "dongle");
   const [step, setStep] = useState<Step>(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const [volumes, setVolumes] = useState<Volume[]>([]);
@@ -50,7 +70,11 @@ export function FlashModal({
   const [resetCompleted, setResetCompleted] = useState<Record<string, "sent" | "confirmed">>({});
   const completed = resetting ? resetCompleted : firmwareCompleted;
   const setCompleted = resetting ? setResetCompleted : setFirmwareCompleted;
-  const [notice, setNotice] = useState<{ target: string; confirmed: boolean } | null>(null);
+  const [notice, setNotice] = useState<{
+    target: string;
+    confirmed: boolean;
+    restartOnly?: boolean;
+  } | null>(null);
   const [unconfirmed, setUnconfirmed] = useState<{ target: string; detail: string } | null>(null);
   const [error, setError] = useState("");
   const [scanError, setScanError] = useState("");
@@ -59,11 +83,45 @@ export function FlashModal({
   const [now, setNow] = useState(Date.now());
   const [selecting, setSelecting] = useState(false);
   const [scanKey, setScanKey] = useState(0);
-  const locked = busy || selecting;
-  const targetName = (id: string) => tr(targets.find((t) => t.id === id)?.name ?? id);
+  const locked = busy || selecting || configuring || !plan;
+  const targetName = (id: string) =>
+    tr([...targets, ...(plan?.resetDevices ?? [])].find((t) => t.id === id)?.name ?? id);
   const resultKind = unconfirmed ? "unconfirmed" : notice ? "sent" : "error";
   const sendIssue = step === 3 ? (unconfirmed ? "unconfirmed" : error ? "failed" : "") : "";
   const allSent = targets.length > 0 && targets.every((t) => completed[t.id]);
+  const applyPlan = (next: FlashPlan) => {
+    setPlan(next);
+    if (next.supported) {
+      setResetCompleted(next.resetDone as Record<string, "sent" | "confirmed">);
+      setFirmwareCompleted(next.firmwareDone as Record<string, "sent" | "confirmed">);
+    }
+  };
+  useEffect(() => {
+    if (!tracking) return;
+    let alive = true;
+    api
+      .getFlashPlan(build.id)
+      .then((next) => {
+        if (!alive) return;
+        applyPlan(next);
+        setResetting(next.required && !next.canFlash);
+        if (next.pending) {
+          setResetting(next.pending.reset);
+          setTarget(next.pending.deviceId);
+          setReceipt(next.pending.receiptId);
+          if (next.pending.status === "unconfirmed")
+            setUnconfirmed({ target: next.pending.deviceId, detail: next.pending.detail });
+          else setNotice({ target: next.pending.deviceId, confirmed: false });
+          setStep(3);
+        }
+      })
+      .catch((e) => {
+        if (alive) setPlanError(String(e));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [build.id, tracking]);
   useEffect(() => {
     if (!busy) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -122,7 +180,7 @@ export function FlashModal({
   }, [step, volume, locked]);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !locked) onClose();
+      if (e.key === "Escape" && !busy && !selecting && !configuring) onClose();
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -153,6 +211,7 @@ export function FlashModal({
   };
   const send = async () => {
     if (step !== 2 || !target || !volume || locked) return;
+    if (plan?.supported && !resetting && !plan.canFlash) return;
     setBusy(true);
     const artifactTarget = resetting && resetTarget ? resetTarget.id : target;
     setNow(Date.now());
@@ -174,12 +233,16 @@ export function FlashModal({
         if (progress.buildId !== build.id || progress.targetId !== artifactTarget) return;
         setTransfer({ ...progress, changedAt: Date.now() });
       });
-      const result = await api.flash(build.id, artifactTarget, volume);
+      const result = plan?.supported
+        ? await api.flashDevice(build.id, target, volume, resetting)
+        : await api.flash(build.id, artifactTarget, volume);
+      setReceipt(result.receiptId ?? "");
       if (result.status === "unconfirmed") setUnconfirmed({ target, detail: result.detail });
       else if (result.status === "sent") {
-        setCompleted((old) => ({ ...old, [target]: "sent" }));
+        if (!plan?.supported || !resetting) setCompleted((old) => ({ ...old, [target]: "sent" }));
         setNotice({ target, confirmed: false });
       } else setError(tr("Unexpected transfer response. Check the keyboard before trying again."));
+      if (plan?.supported) applyPlan(await api.getFlashPlan(build.id));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -189,17 +252,30 @@ export function FlashModal({
       setBusy(false);
     }
   };
-  const confirm = () => {
-    if (!unconfirmed) return;
-    setCompleted((old) => ({ ...old, [unconfirmed.target]: "confirmed" }));
-    setNotice({ target: unconfirmed.target, confirmed: true });
-    setUnconfirmed(null);
+  const confirm = async () => {
+    const id = unconfirmed?.target ?? notice?.target;
+    if (!id || locked) return;
+    const restartOnly = resetting || !!(plan?.supported && plan.required);
+    setConfiguring(true);
+    try {
+      if (plan?.supported) {
+        await api.acknowledgeFlash(plan.pending?.buildId ?? build.id, receipt);
+        applyPlan(await api.getFlashPlan(build.id));
+      } else setCompleted((old) => ({ ...old, [id]: "confirmed" }));
+      setNotice({ target: id, confirmed: true, restartOnly });
+      setUnconfirmed(null);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setConfiguring(false);
+    }
   };
   const restart = (retry: boolean) => {
     clearVolume();
     setError("");
     setNotice(null);
     setUnconfirmed(null);
+    setReceipt("");
     if (!retry) setTarget("");
     setStep(retry ? 1 : 0);
   };
@@ -222,11 +298,44 @@ export function FlashModal({
               ? CircleX
               : CircleCheck;
   const selectedVolume = volumes.find((v) => v.path === volume);
+  const resetNeedsAcknowledgement = !!(plan?.supported && resetting && notice && !notice.confirmed);
+  const changePhase = (reset: boolean) => {
+    if (locked || (!reset && plan?.supported && !plan.canFlash)) return;
+    setResetting(reset);
+    if (reset && !plan?.required) setResetCompleted({});
+    restart(false);
+  };
+  const declareSetup = async (variantID: string) => {
+    setConfiguring(true);
+    setError("");
+    try {
+      const next = await api.setInstalledTopology(build.id, variantID);
+      applyPlan(next);
+      setResetting(next.required && !next.canFlash);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setConfiguring(false);
+    }
+  };
+  const reportExternal = async () => {
+    setConfiguring(true);
+    setError("");
+    try {
+      applyPlan(await api.reportExternalFlash(build.id));
+      setResetting(true);
+      restart(false);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setConfiguring(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop">
       <section
-        className="modal-card flash-modal"
+        className={`modal-card flash-modal ${plan?.supported ? "with-topology" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="flash-title"
@@ -245,455 +354,542 @@ export function FlashModal({
               )}
             </p>
           </div>
-          <button className="btn" disabled={locked} onClick={onClose}>
+          <button className="btn" disabled={busy || selecting || configuring} onClick={onClose}>
             {tr("Close")}
           </button>
         </div>
 
-        {step === 0 && resetTarget && (
-          <div className="flash-mode">
-            <div className="flex gap-3 flex-wrap">
-              <button
-                className={`btn ${!resetting ? "primary" : ""}`}
-                aria-pressed={!resetting}
-                onClick={() => {
-                  setResetting(false);
-                  restart(false);
-                }}
-              >
-                {tr("Keyboard firmware")}
-              </button>
-              <button
-                className={`btn ${resetting ? "primary" : ""}`}
-                aria-pressed={resetting}
-                onClick={() => {
-                  setResetting(true);
-                  restart(false);
-                }}
-              >
-                <RotateCcw size={18} />
-                {tr("Reset pairing first")}
-              </button>
-            </div>
-            <p className="hint mt-2">
-              {tr(
-                "First setup or changing topology: reset all three devices, then flash their keyboard firmware. For ordinary keymap updates, keep pairing and send keyboard firmware only.",
-              )}
-            </p>
+        {!plan && (
+          <div className="notice flash-transfer-status" role={planError ? "alert" : "status"}>
+            {planError ? localizeMessage(planError) : tr("Checking the required flashing steps…")}
           </div>
         )}
-        {resetting && (
-          <p className="notice" role="note">
-            {tr(
-              "Reset firmware clears Bluetooth bonds and stored ZMK settings, including Studio changes. Send it to each device, let it restart, then re-enter the bootloader and install its keyboard firmware. It does not erase the bootloader or your project in this app.",
-            )}
+        {plan?.supported && (
+          <FlashTopology
+            plan={plan}
+            busy={locked}
+            resetting={resetting}
+            onDeclare={declareSetup}
+            onExternal={reportExternal}
+            onPhase={changePhase}
+          />
+        )}
+        {plan?.needsSetup && error && (
+          <p className="notice error" role="alert">
+            {localizeMessage(error)}
           </p>
         )}
 
-        <ol className="flash-progress" aria-label={tr("Flashing steps")}>
-          {[hasDongle ? "Choose device" : "Choose half", "Connect", "Send", "Result"].map(
-            (label, index) => (
-              <li
-                key={label}
-                className={`${index === step ? "current" : ""} ${index === 2 && sendIssue ? sendIssue : index < step ? "complete" : ""}`}
-                aria-current={index === step ? "step" : undefined}
-              >
-                <span className="flash-progress-number" aria-hidden="true">
-                  {index === 2 && sendIssue ? (
-                    unconfirmed ? (
-                      <TriangleAlert size={18} />
-                    ) : (
-                      <CircleX size={18} />
-                    )
-                  ) : index < step ? (
-                    <Check size={18} />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <span>{tr(label)}</span>
-              </li>
-            ),
-          )}
-        </ol>
-
-        <section
-          className={`flash-wizard-panel ${step === 3 ? resultKind : ""}`}
-          aria-labelledby="flash-step-title"
-        >
-          <div className="flash-panel-heading">
-            <PanelIcon className="flash-panel-icon" size={48} aria-hidden="true" />
-            <div>
-              <p className="hint">{tr("Step {0} of {1}", step + 1, 4)}</p>
-              <h3 id="flash-step-title" tabIndex={-1} ref={heading}>
-                {titles[step]}
-              </h3>
-            </div>
-          </div>
-
-          {step === 0 && (
-            <>
-              <p>
-                {tr(
-                  hasDongle
-                    ? "Select the device you will connect. The app will choose its matching firmware."
-                    : "Select the half you will connect. The app will choose its matching firmware.",
-                )}
-              </p>
-              <div
-                className="flash-targets"
-                role="group"
-                aria-label={tr(hasDongle ? "Connected device" : "Connected half")}
-              >
-                {targets.map((t) => (
+        {plan && !plan.needsSetup && !plan.needsRebuild && (
+          <>
+            {step === 0 && resetTarget && !plan.required && (
+              <div className="flash-mode">
+                <div className="flex gap-3 flex-wrap">
                   <button
-                    key={t.id}
-                    className={`btn flash-target ${target === t.id ? "primary" : ""}`}
-                    aria-label={tr(t.name)}
-                    aria-pressed={target === t.id}
+                    className={`btn ${!resetting ? "primary" : ""}`}
+                    aria-pressed={!resetting}
                     onClick={() => {
-                      setTarget(t.id);
-                      clearVolume();
+                      changePhase(false);
                     }}
                   >
-                    {t.kind === "dongle" ? (
-                      <Usb size={28} aria-hidden="true" />
-                    ) : (
-                      <Keyboard size={28} aria-hidden="true" />
-                    )}
-                    <span>{tr(t.name)}</span>
-                    {completed[t.id] && (
-                      <small>
-                        <Check size={16} aria-hidden="true" />
-                        {completed[t.id] === "confirmed" ? tr("Confirmed by you") : tr("File sent")}
-                      </small>
-                    )}
+                    {tr("Keyboard firmware")}
                   </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {step === 1 && (
-            <>
-              <p>{tr(variant.instructions)}</p>
-              <div className="flash-volume-state" aria-live="polite">
-                {volume ? (
-                  <HardDrive size={24} aria-hidden="true" />
-                ) : (
-                  <LoaderCircle className="flash-spinner" size={24} aria-hidden="true" />
-                )}
-                <span>{volume ? tr("Bootloader detected") : tr("Waiting for bootloader…")}</span>
-              </div>
-              <label className="form-label" htmlFor="flash-volume">
-                {tr("Bootloader volume")}
-              </label>
-              <div className="flash-drive-controls">
-                <select
-                  id="flash-volume"
-                  className="field"
-                  disabled={locked}
-                  value={volume}
-                  onChange={(e) => setVolume(e.target.value)}
-                >
-                  <option value="">
-                    {volumes.length ? tr("Select a volume") : tr("Waiting for bootloader…")}
-                  </option>
-                  {volumes.map((v) => (
-                    <option key={v.path} value={v.path}>
-                      {v.name} — {v.path} — {v.board}
-                    </option>
-                  ))}
-                </select>
-                <button className="btn" disabled={locked} onClick={manual}>
-                  <FolderOpen size={18} aria-hidden="true" />
-                  {tr("Select volume manually")}
-                </button>
-              </div>
-              {volume && <p className="flash-volume-path">{volume}</p>}
-              {(error || scanError) && (
-                <p className="notice error" role="alert">
-                  {localizeMessage(error || scanError)}
+                  <button
+                    className={`btn ${resetting ? "primary" : ""}`}
+                    aria-pressed={resetting}
+                    onClick={() => {
+                      changePhase(true);
+                    }}
+                  >
+                    <RotateCcw size={18} />
+                    {tr("Reset pairing first")}
+                  </button>
+                </div>
+                <p className="hint mt-2">
+                  {tr(
+                    "For ordinary keymap updates, keep pairing. Starting a manual reset requires resetting all listed devices before their keyboard firmware.",
+                  )}
                 </p>
-              )}
-            </>
-          )}
+              </div>
+            )}
+            {resetting && !plan.required && (
+              <p className="notice" role="note">
+                {tr(
+                  "Reset firmware clears Bluetooth bonds and stored ZMK settings, including Studio changes. Send it to each device, let it restart, then re-enter the bootloader and install its keyboard firmware. It does not erase the bootloader or your project in this app.",
+                )}
+              </p>
+            )}
 
-          {step === 2 && (
-            <>
-              {busy && transfer && (
-                <div className="notice flash-transfer-status" aria-live="polite">
-                  <strong>{tr(phaseLabels[transfer.stage])}</strong>
-                  {transfer.total > 0 && (
-                    <p>
+            <ol className="flash-progress" aria-label={tr("Flashing steps")}>
+              {[hasDongle ? "Choose device" : "Choose half", "Connect", "Send", "Result"].map(
+                (label, index) => (
+                  <li
+                    key={label}
+                    className={`${index === step ? "current" : ""} ${index === 2 && sendIssue ? sendIssue : index < step ? "complete" : ""}`}
+                    aria-current={index === step ? "step" : undefined}
+                  >
+                    <span className="flash-progress-number" aria-hidden="true">
+                      {index === 2 && sendIssue ? (
+                        unconfirmed ? (
+                          <TriangleAlert size={18} />
+                        ) : (
+                          <CircleX size={18} />
+                        )
+                      ) : index < step ? (
+                        <Check size={18} />
+                      ) : (
+                        index + 1
+                      )}
+                    </span>
+                    <span>{tr(label)}</span>
+                  </li>
+                ),
+              )}
+            </ol>
+
+            <section
+              className={`flash-wizard-panel ${step === 3 ? resultKind : ""}`}
+              aria-labelledby="flash-step-title"
+            >
+              <div className="flash-panel-heading">
+                <PanelIcon className="flash-panel-icon" size={48} aria-hidden="true" />
+                <div>
+                  <p className="hint">{tr("Step {0} of {1}", step + 1, 4)}</p>
+                  <h3 id="flash-step-title" tabIndex={-1} ref={heading}>
+                    {titles[step]}
+                  </h3>
+                </div>
+              </div>
+
+              {step === 0 && (
+                <>
+                  <p>
+                    {tr(
+                      hasDongle
+                        ? "Select the device you will connect. The app will choose its matching firmware."
+                        : "Select the half you will connect. The app will choose its matching firmware.",
+                    )}
+                  </p>
+                  <div
+                    className="flash-targets"
+                    role="group"
+                    aria-label={tr(hasDongle ? "Connected device" : "Connected half")}
+                  >
+                    {targets.map((t) => (
+                      <button
+                        key={t.id}
+                        className={`btn flash-target ${target === t.id ? "primary" : ""}`}
+                        aria-label={tr(t.name)}
+                        aria-pressed={target === t.id}
+                        onClick={() => {
+                          setTarget(t.id);
+                          clearVolume();
+                        }}
+                      >
+                        {t.kind === "dongle" ? (
+                          <Usb size={28} aria-hidden="true" />
+                        ) : (
+                          <Keyboard size={28} aria-hidden="true" />
+                        )}
+                        <span>{tr(t.name)}</span>
+                        {completed[t.id] && (
+                          <small>
+                            <Check size={16} aria-hidden="true" />
+                            {completed[t.id] === "confirmed"
+                              ? tr("Confirmed by you")
+                              : tr("File sent")}
+                          </small>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {step === 1 && (
+                <>
+                  <p>
+                    {resetting &&
+                    targets.find((t) => t.id === target)?.kind === "dongle" &&
+                    !firmwareTargets.some((t) => t.kind === "dongle")
+                      ? tr(
+                          "Connect the retired USB dongle, enter its UF2 bootloader, reset it, then disconnect it. It does not receive the final keyboard firmware.",
+                        )
+                      : tr(variant.instructions)}
+                  </p>
+                  <div className="flash-volume-state" aria-live="polite">
+                    {volume ? (
+                      <HardDrive size={24} aria-hidden="true" />
+                    ) : (
+                      <LoaderCircle className="flash-spinner" size={24} aria-hidden="true" />
+                    )}
+                    <span>
+                      {volume ? tr("Bootloader detected") : tr("Waiting for bootloader…")}
+                    </span>
+                  </div>
+                  <label className="form-label" htmlFor="flash-volume">
+                    {tr("Bootloader volume")}
+                  </label>
+                  <div className="flash-drive-controls">
+                    <select
+                      id="flash-volume"
+                      className="field"
+                      disabled={locked}
+                      value={volume}
+                      onChange={(e) => setVolume(e.target.value)}
+                    >
+                      <option value="">
+                        {volumes.length ? tr("Select a volume") : tr("Waiting for bootloader…")}
+                      </option>
+                      {volumes.map((v) => (
+                        <option key={v.path} value={v.path}>
+                          {v.name} — {v.path} — {v.board}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="btn" disabled={locked} onClick={manual}>
+                      <FolderOpen size={18} aria-hidden="true" />
+                      {tr("Select volume manually")}
+                    </button>
+                  </div>
+                  {volume && <p className="flash-volume-path">{volume}</p>}
+                  {(error || scanError) && (
+                    <p className="notice error" role="alert">
+                      {localizeMessage(error || scanError)}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  {resetting && plan.supported && plan.required && !busy && (
+                    <p className="notice flash-transfer-status" role="note">
                       {tr(
-                        "{0} / {1} bytes accepted by the operating system",
-                        transfer.written,
-                        transfer.total,
+                        "Reset clears stored Bluetooth and Studio settings. Your saved project is kept.",
                       )}
                     </p>
                   )}
-                  <p>
-                    {tr("Copied bytes do not confirm that the controller has finished flashing.")}
-                  </p>
-                </div>
-              )}
-              {stalled && (
-                <div className="notice flash-transfer-status stalled" role="alert">
-                  <strong>{tr("The USB transfer is taking longer than expected.")}</strong>
+                  {busy && transfer && (
+                    <div className="notice flash-transfer-status" aria-live="polite">
+                      <strong>{tr(phaseLabels[transfer.stage])}</strong>
+                      {transfer.total > 0 && (
+                        <p>
+                          {tr(
+                            "{0} / {1} bytes accepted by the operating system",
+                            transfer.written,
+                            transfer.total,
+                          )}
+                        </p>
+                      )}
+                      <p>
+                        {tr(
+                          "Copied bytes do not confirm that the controller has finished flashing.",
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {stalled && (
+                    <div className="notice flash-transfer-status stalled" role="alert">
+                      <strong>{tr("The USB transfer is taking longer than expected.")}</strong>
+                      <p>
+                        {tr(
+                          "The operating system has not completed this step. If the device stays stuck, disconnect the selected controller, reconnect it in bootloader mode and wait for the pending transfer to return before retrying. Do not start another copy at the same time.",
+                        )}
+                      </p>
+                      <p>
+                        {tr("The app will not retry automatically or mark this device as flashed.")}
+                      </p>
+                    </div>
+                  )}
                   <p>
                     {tr(
-                      "The operating system has not completed this step. If the device stays stuck, disconnect the selected controller, reconnect it in bootloader mode and wait for the pending transfer to return before retrying. Do not start another copy at the same time.",
+                      hasDongle
+                        ? "Check the device and drive before sending the firmware."
+                        : "Check the half and drive before sending the firmware.",
                     )}
                   </p>
-                  <p>
-                    {tr("The app will not retry automatically or mark this device as flashed.")}
-                  </p>
-                </div>
-              )}
-              <p>
-                {tr(
-                  hasDongle
-                    ? "Check the device and drive before sending the firmware."
-                    : "Check the half and drive before sending the firmware.",
-                )}
-              </p>
-              {resetting && (
-                <strong>
-                  {tr("Reset pairing")} — {resetTarget?.artifact}
-                </strong>
-              )}
-              <dl className="flash-review">
-                <div>
-                  <dt>
-                    <Keyboard size={20} aria-hidden="true" />
-                    {tr(hasDongle ? "Connected device" : "Connected half")}
-                  </dt>
-                  <dd>{targetName(target)}</dd>
-                </div>
-                <div>
-                  <dt>
-                    <HardDrive size={20} aria-hidden="true" />
-                    {tr("Bootloader volume")}
-                  </dt>
-                  <dd>
-                    {selectedVolume?.name}
-                    <span className="flash-volume-path">{volume}</span>
-                  </dd>
-                </div>
-                <div>
-                  <dt>
-                    <ArrowDownToLine size={20} aria-hidden="true" />
-                    {tr("Firmware")}
-                  </dt>
-                  <dd>
-                    {
-                      build.artifacts.find(
-                        (a) => a.targetId === (resetting && resetTarget ? resetTarget.id : target),
-                      )?.name
-                    }
-                  </dd>
-                </div>
-              </dl>
-              <div className="flash-restart-note">
-                <Info size={18} aria-hidden="true" />
-                <p>
-                  {resetting
-                    ? tr(
-                        "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
-                      )
-                    : tr(
-                        "The bootloader drive may disappear when the controller restarts. A final write warning can occur even if flashing worked; check the keyboard before retrying.",
-                      )}
-                </p>
-              </div>
-              {scanError && (
-                <p className="notice error" role="alert">
-                  {localizeMessage(scanError)}
-                </p>
-              )}
-            </>
-          )}
-
-          {step === 3 && unconfirmed && (
-            <div className="flash-warning" role="alert">
-              <div>
-                <strong>
-                  {tr("Transfer not confirmed — {0}", targetName(unconfirmed.target))}
-                </strong>
-                <p>
-                  {tr(
-                    "The file copy finished, but the system could not confirm the final write. The controller may have restarted, or an I/O error may have occurred.",
+                  {resetting && (
+                    <strong>
+                      {tr("Reset pairing")} — {resetTarget?.artifact}
+                    </strong>
                   )}
-                </p>
-                <p>
-                  {resetting
-                    ? tr(
-                        "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
-                      )
-                    : tr(
-                        "Wait for the keyboard to restart and test the new layout. Confirm only if it works. Otherwise, reconnect in bootloader mode and retry.",
-                      )}
-                </p>
-                <details>
-                  <summary>{tr("Technical details")}</summary>
-                  <pre>{unconfirmed.detail}</pre>
-                </details>
-              </div>
-            </div>
-          )}
-          {step === 3 && error && (
-            <div className="flash-failure" role="alert">
-              <strong>{tr("Transfer failed — {0}", targetName(target))}</strong>
-              <p>{localizeMessage(error)}</p>
-              <p>{tr("Reconnect the selected half in bootloader mode to try again.")}</p>
-            </div>
-          )}
-          {step === 3 && notice && (
-            <div className="flash-success" role="status">
-              <div>
-                <strong>
-                  {resetting
-                    ? tr("Reset transfer acknowledged — {0}", targetName(notice.target))
-                    : notice.confirmed
-                      ? tr("Keyboard operation confirmed by you — {0}", targetName(notice.target))
-                      : tr("File sent — {0}", targetName(notice.target))}
-                </strong>
-                <p>
-                  {resetting
-                    ? tr(
-                        "Let the controller restart, then reset the next device. After resetting all devices, install their keyboard firmware before testing keys.",
-                      )
-                    : notice.confirmed
-                      ? tr(
-                          "You can now connect the next half in bootloader mode, or close this window.",
-                        )
-                      : tr(
-                          "Wait for the keyboard to restart and test the new layout. Then connect the next half in bootloader mode if needed.",
-                        )}
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {Object.keys(completed).length > 0 && (
-          <div className="flash-completed" aria-label={tr("Transfer progress")}>
-            {targets.map((t) => (
-              <span key={t.id} className={completed[t.id] ? "complete" : ""}>
-                {completed[t.id] ? (
-                  <CircleCheck size={16} aria-hidden="true" />
-                ) : (
-                  <Keyboard size={16} aria-hidden="true" />
-                )}
-                {tr(t.name)}
-                {completed[t.id] && (
-                  <small>
-                    {completed[t.id] === "confirmed" ? tr("Confirmed by you") : tr("File sent")}
-                  </small>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="flash-wizard-footer">
-          {step < 3 && (
-            <>
-              <button
-                className="btn"
-                disabled={step === 0 || locked}
-                onClick={() => {
-                  setError("");
-                  setStep(step === 2 ? 1 : 0);
-                }}
-              >
-                <ArrowLeft size={20} aria-hidden="true" />
-                {tr("Previous step")}
-              </button>
-              {step < 2 ? (
-                <button
-                  className="btn primary"
-                  disabled={locked || (step === 0 ? !target : !volume)}
-                  onClick={() => setStep(step === 0 ? 1 : 2)}
-                >
-                  {tr("Next step")}
-                  <ArrowRight size={20} aria-hidden="true" />
-                </button>
-              ) : (
-                <button
-                  className="btn primary flash-send-button"
-                  disabled={locked || !target || !volume}
-                  onClick={send}
-                >
-                  {busy ? (
-                    <LoaderCircle className="flash-spinner" size={22} aria-hidden="true" />
-                  ) : (
-                    <ArrowDownToLine size={22} aria-hidden="true" />
-                  )}
-                  {busy
-                    ? tr("Sending firmware…")
-                    : tr("Send firmware{0}", ` — ${targetName(target)}`)}
-                </button>
-              )}
-            </>
-          )}
-          {step === 3 && unconfirmed && (
-            <>
-              <button className="btn" onClick={() => restart(true)}>
-                <RotateCcw size={20} aria-hidden="true" />
-                {tr("Reconnect and retry")}
-              </button>
-              <button className="btn primary" onClick={confirm}>
-                <CircleCheck size={20} aria-hidden="true" />
-                {tr(resetting ? "Controller restarted — acknowledge" : "Keyboard works — confirm")}
-              </button>
-            </>
-          )}
-          {step === 3 && error && (
-            <>
-              <button className="btn" onClick={() => restart(false)}>
-                {tr("Choose another half")}
-              </button>
-              <button className="btn primary" onClick={() => restart(true)}>
-                <RotateCcw size={20} aria-hidden="true" />
-                {tr("Reconnect and retry")}
-              </button>
-            </>
-          )}
-          {step === 3 && notice && (
-            <>
-              <button className="btn" onClick={allSent ? () => restart(false) : onClose}>
-                {allSent ? tr("Flash again") : tr("Close")}
-              </button>
-              <button
-                className="btn primary"
-                onClick={
-                  allSent
-                    ? resetting
-                      ? () => {
-                          setResetting(false);
-                          restart(false);
+                  <dl className="flash-review">
+                    <div>
+                      <dt>
+                        <Keyboard size={20} aria-hidden="true" />
+                        {tr(hasDongle ? "Connected device" : "Connected half")}
+                      </dt>
+                      <dd>{targetName(target)}</dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <HardDrive size={20} aria-hidden="true" />
+                        {tr("Bootloader volume")}
+                      </dt>
+                      <dd>
+                        {selectedVolume?.name}
+                        <span className="flash-volume-path">{volume}</span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>
+                        <ArrowDownToLine size={20} aria-hidden="true" />
+                        {tr("Firmware")}
+                      </dt>
+                      <dd>
+                        {
+                          build.artifacts.find(
+                            (a) =>
+                              a.targetId === (resetting && resetTarget ? resetTarget.id : target),
+                          )?.name
                         }
-                      : onClose
-                    : () => restart(false)
-                }
-              >
-                {allSent ? (
-                  <Check size={20} aria-hidden="true" />
-                ) : (
-                  <ArrowRight size={20} aria-hidden="true" />
-                )}
-                {allSent
-                  ? tr(resetting ? "Continue with keyboard firmware" : "Finish")
-                  : tr(hasDongle ? "Flash next device" : "Flash next half")}
-              </button>
-            </>
-          )}
-        </div>
-        <p className="flash-revision hint">
-          {tr("Revision")} {build.revision.slice(0, 8)}
-        </p>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="flash-restart-note">
+                    <Info size={18} aria-hidden="true" />
+                    <p>
+                      {resetting
+                        ? tr(
+                            "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
+                          )
+                        : tr(
+                            "The bootloader drive may disappear when the controller restarts. A final write warning can occur even if flashing worked; check the keyboard before retrying.",
+                          )}
+                    </p>
+                  </div>
+                  {scanError && (
+                    <p className="notice error" role="alert">
+                      {localizeMessage(scanError)}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {step === 3 && unconfirmed && (
+                <div className="flash-warning" role="alert">
+                  <div>
+                    <strong>
+                      {tr("Transfer not confirmed — {0}", targetName(unconfirmed.target))}
+                    </strong>
+                    <p>
+                      {tr(
+                        "The file copy finished, but the system could not confirm the final write. The controller may have restarted, or an I/O error may have occurred.",
+                      )}
+                    </p>
+                    <p>
+                      {resetting
+                        ? tr(
+                            "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
+                          )
+                        : plan?.supported && plan.required
+                          ? tr(
+                              "During migration, acknowledge this controller's restart to continue with the other devices. Test keyboard operation after all matching firmwares are installed.",
+                            )
+                          : tr(
+                              "Wait for the keyboard to restart and test the new layout. Confirm only if it works. Otherwise, reconnect in bootloader mode and retry.",
+                            )}
+                    </p>
+                    <details>
+                      <summary>{tr("Technical details")}</summary>
+                      <pre>{unconfirmed.detail}</pre>
+                    </details>
+                  </div>
+                </div>
+              )}
+              {step === 3 && error && !notice && !unconfirmed && (
+                <div className="flash-failure" role="alert">
+                  <strong>{tr("Transfer failed — {0}", targetName(target))}</strong>
+                  <p>{localizeMessage(error)}</p>
+                  <p>{tr("Reconnect the selected half in bootloader mode to try again.")}</p>
+                </div>
+              )}
+              {step === 3 && notice && (
+                <div className="flash-success" role="status">
+                  <div>
+                    <strong>
+                      {resetting
+                        ? tr(
+                            resetNeedsAcknowledgement
+                              ? "Reset file sent — {0}"
+                              : "Reset transfer acknowledged — {0}",
+                            targetName(notice.target),
+                          )
+                        : notice.restartOnly
+                          ? tr("Firmware restart acknowledged — {0}", targetName(notice.target))
+                          : notice.confirmed
+                            ? tr(
+                                "Keyboard operation confirmed by you — {0}",
+                                targetName(notice.target),
+                              )
+                            : tr("File sent — {0}", targetName(notice.target))}
+                    </strong>
+                    <p>
+                      {resetting
+                        ? resetNeedsAcknowledgement
+                          ? tr(
+                              "Wait for this controller to restart, then acknowledge it below. This does not verify that stored settings were erased.",
+                            )
+                          : tr(
+                              "Let the controller restart, then reset the next device. After resetting all devices, install their keyboard firmware before testing keys.",
+                            )
+                        : notice.restartOnly
+                          ? tr(
+                              "Finish installing the matching firmware on all devices, then test the keyboard. A restart acknowledgement does not confirm keyboard operation.",
+                            )
+                          : notice.confirmed
+                            ? tr(
+                                "You can now connect the next half in bootloader mode, or close this window.",
+                              )
+                            : tr(
+                                "Wait for the keyboard to restart and test the new layout. Then connect the next half in bootloader mode if needed.",
+                              )}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </section>
+            {step === 3 && error && (notice || unconfirmed) && (
+              <p className="notice error" role="alert">
+                {localizeMessage(error)}
+              </p>
+            )}
+
+            {Object.keys(completed).length > 0 && (
+              <div className="flash-completed" aria-label={tr("Transfer progress")}>
+                {targets.map((t) => (
+                  <span key={t.id} className={completed[t.id] ? "complete" : ""}>
+                    {completed[t.id] ? (
+                      <CircleCheck size={16} aria-hidden="true" />
+                    ) : (
+                      <Keyboard size={16} aria-hidden="true" />
+                    )}
+                    {tr(t.name)}
+                    {completed[t.id] && (
+                      <small>
+                        {completed[t.id] === "confirmed" ? tr("Confirmed by you") : tr("File sent")}
+                      </small>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flash-wizard-footer">
+              {step < 3 && (
+                <>
+                  <button
+                    className="btn"
+                    disabled={step === 0 || locked}
+                    onClick={() => {
+                      setError("");
+                      setStep(step === 2 ? 1 : 0);
+                    }}
+                  >
+                    <ArrowLeft size={20} aria-hidden="true" />
+                    {tr("Previous step")}
+                  </button>
+                  {step < 2 ? (
+                    <button
+                      className="btn primary"
+                      disabled={locked || (step === 0 ? !target : !volume)}
+                      onClick={() => setStep(step === 0 ? 1 : 2)}
+                    >
+                      {tr("Next step")}
+                      <ArrowRight size={20} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <button
+                      className="btn primary flash-send-button"
+                      disabled={locked || !target || !volume}
+                      onClick={send}
+                    >
+                      {busy ? (
+                        <LoaderCircle className="flash-spinner" size={22} aria-hidden="true" />
+                      ) : (
+                        <ArrowDownToLine size={22} aria-hidden="true" />
+                      )}
+                      {busy
+                        ? tr("Sending firmware…")
+                        : tr("Send firmware{0}", ` — ${targetName(target)}`)}
+                    </button>
+                  )}
+                </>
+              )}
+              {step === 3 && unconfirmed && (
+                <>
+                  <button className="btn" disabled={locked} onClick={() => restart(true)}>
+                    <RotateCcw size={20} aria-hidden="true" />
+                    {tr("Reconnect and retry")}
+                  </button>
+                  <button className="btn primary" disabled={locked} onClick={confirm}>
+                    <CircleCheck size={20} aria-hidden="true" />
+                    {tr(
+                      resetting || (plan?.supported && plan.required)
+                        ? "Controller restarted — acknowledge"
+                        : "Keyboard works — confirm",
+                    )}
+                  </button>
+                </>
+              )}
+              {step === 3 && error && !notice && !unconfirmed && (
+                <>
+                  <button className="btn" onClick={() => restart(false)}>
+                    {tr("Choose another half")}
+                  </button>
+                  <button className="btn primary" onClick={() => restart(true)}>
+                    <RotateCcw size={20} aria-hidden="true" />
+                    {tr("Reconnect and retry")}
+                  </button>
+                </>
+              )}
+              {step === 3 && notice && !resetNeedsAcknowledgement && (
+                <>
+                  <button className="btn" onClick={allSent ? () => restart(false) : onClose}>
+                    {allSent ? tr("Flash again") : tr("Close")}
+                  </button>
+                  <button
+                    className="btn primary"
+                    onClick={
+                      allSent
+                        ? resetting
+                          ? () => {
+                              setResetting(false);
+                              restart(false);
+                            }
+                          : onClose
+                        : () => restart(false)
+                    }
+                  >
+                    {allSent ? (
+                      <Check size={20} aria-hidden="true" />
+                    ) : (
+                      <ArrowRight size={20} aria-hidden="true" />
+                    )}
+                    {allSent
+                      ? tr(resetting ? "Continue with keyboard firmware" : "Finish")
+                      : tr(hasDongle ? "Flash next device" : "Flash next half")}
+                  </button>
+                </>
+              )}
+              {step === 3 && resetNeedsAcknowledgement && (
+                <>
+                  <button className="btn" disabled={locked} onClick={() => restart(true)}>
+                    {tr("Reconnect and retry")}
+                  </button>
+                  <button className="btn primary" disabled={locked} onClick={confirm}>
+                    <Check size={20} />
+                    {tr("Controller restarted — acknowledge")}
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="flash-revision hint">
+              {tr("Revision")} {build.revision.slice(0, 8)}
+            </p>
+          </>
+        )}
       </section>
     </div>
   );

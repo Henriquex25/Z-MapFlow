@@ -82,6 +82,43 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 				targets[target.ID] = true
 				artifacts[target.Artifact] = true
 			}
+			for _, feature := range v.Features {
+				if feature != "pairing-migration" {
+					continue
+				}
+				resetCount, centralCount, peripheralCount := 0, 0, 0
+				resetBoard := ""
+				for _, target := range v.Targets {
+					if target.Kind == "settings-reset" {
+						resetCount++
+						resetBoard = target.Board
+						if target.Config["CONFIG_ZMK_SETTINGS_RESET_ON_START"] != "y" {
+							return nil, fmt.Errorf("pairing-migration requires a reset-on-start target")
+						}
+						continue
+					}
+					role := "n"
+					if target.Role == "central" {
+						centralCount++
+						role = "y"
+					} else if target.Role == "peripheral" {
+						peripheralCount++
+					} else {
+						return nil, fmt.Errorf("pairing-migration requires explicit central/peripheral roles")
+					}
+					if target.Config["CONFIG_ZMK_SPLIT"] != "y" || target.Config["CONFIG_ZMK_SPLIT_ROLE_CENTRAL"] != role {
+						return nil, fmt.Errorf("pairing-migration requires managed split-role flags")
+					}
+				}
+				if resetCount != 1 || centralCount != 1 || peripheralCount < 1 || v.UF2Family == 0 {
+					return nil, fmt.Errorf("pairing-migration requires one reset target, one central and compatible peripherals")
+				}
+				for _, target := range v.Targets {
+					if target.Kind != "settings-reset" && target.Board != resetBoard {
+						return nil, fmt.Errorf("a shared reset requires matching controller boards")
+					}
+				}
+			}
 		}
 		positionIDs := map[string]bool{}
 		sensors := map[string]models.SensorAction{}

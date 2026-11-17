@@ -21,6 +21,8 @@ Choose **Flash firmware** to open the step-by-step wizard. The progress bar show
 3. **Send.** Review the selected half, bootloader drive and firmware filename. Choose **Send firmware** to start the transfer. Navigation is disabled while it is sending; if a detected drive disappears before sending, the wizard returns to the connection step.
 4. **Result.** Wait for the keyboard to restart and test the new layout. The result distinguishes a completed file transfer, an unconfirmed final write and an interrupted copy. Use **Flash next half** to start the next half, or **Finish** after all targets have been sent.
 
+For Sofle profiles, the app first checks the installed topology. Changing between a half central and a USB dongle central adds a required **Reset every device → Install keyboard firmware** sequence. Keyboard firmware stays locked until every reset transfer and restart acknowledgement is recorded. See the [migration and resume guide](./dongle#required-migration-steps-and-resuming). Ordinary updates on the recorded topology skip mandatory cleanup.
+
 Each screen shows only the controls for its current step. Advancing requires a selected half or drive, as appropriate. Nothing is sent until you explicitly choose **Send firmware** on the review screen.
 The app selects the artifact associated with the target. A completed copy confirms transfer, but you must verify the firmware’s behavior on the keyboard. Bootloader entry is manual.
 

@@ -28,6 +28,8 @@ O aplicativo escolhe o artefato do alvo informado. Uma cópia concluída confirm
 
 *Exemplo da etapa 3: confira o alvo, o firmware e a revisão da compilação antes de usar Enviar firmware. A captura mostra a interface padrão em inglês.*
 
+Nos perfis Sofle, o app verifica primeiro a organização instalada. Trocar entre central em uma metade e dongle USB acrescenta a sequência obrigatória **Limpar todos os dispositivos → Instalar firmware do teclado**. O firmware final fica bloqueado até registrar cada envio de reset e confirmação de reinício. Consulte o [guia de migração e retomada](./dongle#migracao-obrigatoria-e-retomada). Atualizações comuns na organização registrada não exigem limpeza.
+
 ## Reinicialização e avisos de gravação final
 
 Bootloaders UF2 podem reiniciar automaticamente após receber o firmware, removendo o volume USB antes de o sistema operacional terminar a confirmação final de gravação. Na SuperMini nRF52840, o autor do projeto confirmou que o teclado funcionou após o app informar:

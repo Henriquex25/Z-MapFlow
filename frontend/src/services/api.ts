@@ -1,7 +1,7 @@
 import { useAppPreferences } from "../i18n/preferences";
 import * as go from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
-import type { Project, Build, Session, Plugin } from "../types/keyboard";
+import type { Project, Build, Session, Plugin, FlashPlan } from "../types/keyboard";
 import { BrowserOpenURL, EventsOn } from "../../wailsjs/runtime/runtime";
 export type FlashProgress = {
   buildId: string;
@@ -52,6 +52,13 @@ export const api = {
   volumes: go.FindBootloaders,
   selectVolume: (id: string) => native(() => go.SelectBootloader(id)),
   flash: go.FlashFirmware,
+  flashDevice: go.FlashDevice,
+  getFlashPlan: (buildId: string): Promise<FlashPlan> => go.GetFlashPlan(buildId),
+  setInstalledTopology: (buildId: string, variantId: string): Promise<FlashPlan> =>
+    go.SetInstalledTopology(buildId, variantId),
+  reportExternalFlash: (buildId: string): Promise<FlashPlan> => go.ReportExternalFlash(buildId),
+  acknowledgeFlash: (buildId: string, receiptId: string): Promise<FlashPlan> =>
+    go.AcknowledgeFlash(buildId, receiptId),
   onFlashProgress: (callback: (progress: FlashProgress) => void) =>
     EventsOn("firmware:flash", callback),
 };

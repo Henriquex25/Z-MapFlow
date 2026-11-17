@@ -21,6 +21,7 @@ export type Combo = Data<models.Combo>;
 export type Behavior = Data<models.Behavior>;
 export type Build = Data<firmware.Build>;
 export type Volume = Data<flash.Volume>;
+export type FlashPlan = Data<flash.FlashPlan>;
 export const uid = (prefix = "zm") => `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
 export const action = (code: string): IKeyAction => ({
   keymapIndex: -1,
