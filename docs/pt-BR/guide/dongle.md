@@ -1,0 +1,42 @@
+# Sofle v2 com dongle USB
+
+O perfil experimental **nice!nano v2 / SuperMini — dongle USB central** usa três controladoras nRF52840 compatíveis. As duas metades mantêm sua matriz e encoders; a terceira controladora, avulsa, funciona como receptor USB. A validação física ainda está pendente. Compilar não comprova a compatibilidade da controladora, bootloader ou comunicação sem fio.
+
+| Dispositivo | Papel | Firmware |
+| --- | --- | --- |
+| Dongle USB | Central: keymap, comportamentos e saída USB | `sofle-dongle.uf2` |
+| Metade esquerda | Periférico Bluetooth | `sofle-dongle-left.uf2` |
+| Metade direita | Periférico Bluetooth | `sofle-dongle-right.uf2` |
+| Os três, apenas na migração | Limpar pareamento e configurações ZMK armazenadas | `sofle-settings-reset.uf2` |
+
+É um receptor BLE do ZMK. Não adiciona compatibilidade com dongles proprietários de 2,4 GHz. A pinagem e o bootloader precisam ser compatíveis com nice!nano v2/SuperMini; o nome “Pro Micro” sozinho não garante isso. O receptor usa alimentação USB e não precisa de teclas, encoders, OLED ou fiação de matriz.
+
+![Assistente de flash com Dongle USB, Esquerda e Direita e modo separado para limpar pareamentos](/images/z-mapflow-dongle-flash.png)
+
+Exemplo de seleção de dispositivo na interface real. Nenhum firmware foi enviado a um teclado físico para essa imagem.
+
+O ZMK padrão não repassa o estado da camada ativa/saída do host do central aos OLEDs periféricos. Este perfil desativa esses dois indicadores nas metades para evitar informações locais desatualizadas; os indicadores de bateria local e status periférico continuam disponíveis. Sincronizar o estado do central nas telas exige suporte adicional no firmware.
+
+## Primeira configuração
+
+1. Exporte seu projeto como backup. Em **Configurações → Teclado e firmware → Variante de hardware**, escolha o perfil com dongle USB. Camadas, bindings, macros, combos e comportamentos permanecem no projeto. Se o preset Studio USB estava ativado, ele é movido ao novo central. Ajustes de alvos ausentes no perfil selecionado são removidos; os demais são preservados.
+2. Ative ou desative **Display** conforme os OLEDs das metades. Os controles de display e repouso automático se aplicam às metades; o receptor não tem OLED/encoder local e permanece acordado. Os perfis Bluetooth reservam duas conexões/pareamentos adicionais para os periféricos.
+3. Use **Salvar e compilar**. O app gera três firmwares de dispositivo e um de reset. Os papéis e os ajustes específicos do receptor são gerenciados pelo perfil; flags contraditórias por alvo são rejeitadas antes de salvar/compilar. O preset Studio USB se aplica ao dongle.
+4. Abra **Gravar firmware → Limpar pareamento primeiro**. Para **cada** dispositivo — Dongle USB, Esquerda e Direita — conecte-o, pressione RESET duas vezes, selecione o volume UF2, revise e envie o firmware de reset. Aguarde o reinício e desconecte a controladora ou desligue a metade. O reset apaga os vínculos Bluetooth e as configurações ZMK armazenadas, incluindo alterações do Studio; mantém o bootloader e o projeto salvo no Z-MapFlow. Confirmar envio/reinício não comprova que as configurações foram apagadas.
+5. Selecione **Continuar com firmware do teclado**. Entre novamente no bootloader de cada dispositivo e grave o firmware correspondente: dongle, esquerda, direita. Mantenha o receptor conectado por USB, ligue ambas as metades e teste teclas, rotação e clique dos encoders. O volume UF2 não identifica a metade: selecione o dispositivo realmente conectado.
+
+O arquivo de reset é compartilhado porque esse perfil usa a mesma controladora/família UF2 nos três dispositivos. O assistente acompanha separadamente o progresso de reset e firmware. O envio sempre exige sua revisão e o botão **Enviar firmware**.
+
+A controladora pode reiniciar antes de o sistema confirmar a última escrita. No reset, o assistente permite reconhecer o reinício sem declarar o teclado funcional. Entre novamente no bootloader e instale o firmware do teclado antes de testar teclas. Consulte [avisos na última escrita](./firmware#reinicializacao-e-avisos-de-gravacao-final).
+
+## Uso diário e retorno ao perfil anterior
+
+Para alterações comuns no keymap, escolha **Firmware do teclado**, mantendo os pareamentos. Bindings, camadas e a maioria dos comportamentos são processados pelo central; depois da configuração inicial, normalmente basta gravar o receptor e fechar o assistente. Mudanças em hardware, energia, encoders ou compatibilidade de firmware exigem atualizar as metades afetadas. O app continua compilando todos os alvos declarados.
+
+As duas metades periféricas não digitam diretamente no computador sem o dongle. Para voltar à configuração comum, selecione o perfil nice!nano/SuperMini original, limpe o pareamento dos dispositivos com o UF2 de reset e grave os firmwares normais esquerdo/direito. O perfil original continua sendo o padrão; o uso do dongle é explícito. Se o preset Studio USB estava ativado, ele volta ao central esquerdo. Refaça os pareamentos Bluetooth com o computador se necessário.
+
+## Referências técnicas
+
+Os arquivos ficam em `internal/devices/soflev2/dongle/`. O receptor utiliza varredura simulada e o mesmo transform/layout físico Sofle da revisão ZMK fixada, com dois sensores locais desativados que preservam os índices dos sensores periféricos. Cada metade ativa apenas seu encoder definido pelo upstream. Papéis, reset e flags por alvo pertencem ao plugin, sem condições específicas do Sofle no core.
+
+Consulte o [guia oficial de dongle ZMK](https://zmk.dev/docs/hardware-integration/dongle) e os [papéis em teclados split](https://zmk.dev/docs/features/split-keyboards). Outras combinações de teclado/controladora precisam de perfis verificados.

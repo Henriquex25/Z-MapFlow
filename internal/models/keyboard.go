@@ -151,23 +151,27 @@ type Position struct {
 	SensorID    string  `json:"sensorId"`
 }
 type Target struct {
-	Role     string `json:"role,omitempty"` // central, peripheral, or standalone
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Board    string `json:"board"`
-	Shield   string `json:"shield"`
-	Artifact string `json:"artifact"`
+	Kind     string            `json:"kind,omitempty"`   // keyboard (default), dongle, settings-reset
+	Config   map[string]string `json:"config,omitempty"` // Required, plugin-owned Kconfig values.
+	Role     string            `json:"role,omitempty"`   // central, peripheral, or standalone
+	ID       string            `json:"id"`
+	Name     string            `json:"name"`
+	Board    string            `json:"board"`
+	Shield   string            `json:"shield"`
+	Artifact string            `json:"artifact"`
 }
 type Variant struct {
-	Features         []string `json:"features,omitempty"`
-	ZMKRevision      string   `json:"zmkRevision"`
-	BuildImage       string   `json:"buildImage"`
-	ID               string   `json:"id"`
-	Name             string   `json:"name"`
-	Targets          []Target `json:"targets"`
-	BootloaderBoards []string `json:"bootloaderBoards"`
-	UF2Family        uint32   `json:"uf2Family"`
-	Instructions     string   `json:"instructions"`
+	Files            map[string]string `json:"files,omitempty"`
+	Overlay          *string           `json:"overlay,omitempty"` // nil inherits; empty replaces plugin overlay.
+	Features         []string          `json:"features,omitempty"`
+	ZMKRevision      string            `json:"zmkRevision"`
+	BuildImage       string            `json:"buildImage"`
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	Targets          []Target          `json:"targets"`
+	BootloaderBoards []string          `json:"bootloaderBoards"`
+	UF2Family        uint32            `json:"uf2Family"`
+	Instructions     string            `json:"instructions"`
 }
 type Module struct {
 	Name     string `json:"name"`

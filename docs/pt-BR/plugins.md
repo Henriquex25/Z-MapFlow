@@ -80,3 +80,11 @@ O [guia completo em inglês](../plugins) mostra como coletar os dados de hardwar
 Um encoder somente de rotação pode ter uma posição adicional com `keymapIndex: -1`, `sensorId` e um sensor com `clickKeymapIndex: -1` e `codeClick` vazio. Esse controle não aumenta `keyCount` e não aparece nos seletores de posições físicas. Não presumir onde está o clique: se estiver ligado à matriz, continua sendo uma tecla comum. Consulte o plugin Lily58.
 
 `Plugin.disableSleep: true` declara que a controladora não oferece repouso profundo. Projetos novos iniciam com sleep desativado, o controle fica oculto, a validação rejeita ativá-lo e o gerador omite o timeout incompatível. Plugins anteriores mantêm seus padrões.
+
+## Dongles e ajustes por alvo
+
+Uma variante pode declarar um dongle central, vários periféricos e um alvo de reset compartilhado. `Target.kind` aceita vazio/`keyboard`, `dongle` e `settings-reset`; `role` continua indicando o papel no transporte. O assistente genérico lista os dispositivos operacionais e oferece o artefato de reset em modo separado, acompanhando os progressos independentemente. Compartilhe esse arquivo apenas entre dispositivos da mesma controladora/família UF2 da variante.
+
+`Target.config` mapeia nomes `CONFIG_` obrigatórios para seus valores. O gerador aplica essas flags aos comandos locais e ao `build.yaml` exportado, elimina argumentos idênticos e rejeita valores contraditórios por alvo. A interface mostra esses ajustes apenas para leitura. Não inclua nesse mapa opções que o usuário deva poder alterar. O gerador Bluetooth reserva conexões/pareamentos para os periféricos declarados além dos perfis de host selecionados.
+
+`Variant.files` fornece arquivos relativos seguros somente à variante ativa, combinados sobre `Plugin.files`. Caminhos externos e nomes de arquivos gerados são rejeitados. `Variant.overlay` é opcional: ausente herda o overlay do plugin; uma string vazia o remove. Isso preserva transforms/índices de sensores sem ativar GPIOs de encoders no dongle. Os campos são aditivos, sem alterar o schema de projetos ou os IDs antigos. Consulte o [guia do dongle Sofle](./guide/dongle).

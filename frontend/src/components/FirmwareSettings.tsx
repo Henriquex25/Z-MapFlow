@@ -1,6 +1,7 @@
 import { tr, useLocale } from "../i18n";
 import { useEffect, useState } from "react";
 import { useImportLanguageHeaders } from "../hooks/useImportLanguageHeaders";
+import { hardwareConfigError } from "../utils/hardwareVariant";
 import { setKeyboardLanguage } from "../utils/keyboardLanguage";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import {
@@ -159,58 +160,86 @@ export function FirmwareSettings() {
             "Settings saved by Studio override the .keymap until you use “Restore Stock Settings” in Studio.",
           )}{" "}
         </p>
-        {variant.targets.map((target) => {
-          const settings = p.buildTargets?.find((s) => s.targetId === target.id);
-          const args = settings?.cmakeArgs ?? [];
-          const config = args
-            .filter((arg) => /^-DCONFIG_/.test(arg))
-            .map((arg) => arg.slice(2).replace(/:[A-Za-z]+=/, "="))
-            .join("\n");
-          return (
-            <div className="mt-4" key={target.id}>
-              <h4>
-                {tr(target.name)}
-                {target.role === "central"
-                  ? tr("· Central")
-                  : target.role === "peripheral"
-                    ? tr("· Peripheral")
-                    : ""}
-              </h4>
-              <label className="form-label mt-2">
-                {tr("Snippets (space-separated)")}{" "}
-                <DraftField
-                  className="field"
-                  value={(settings?.snippets ?? []).join(" ")}
-                  placeholder="studio-rpc-usb-uart"
-                  normalize={(value) => snippetTokens(value).join(" ")}
-                  onChange={(value) => updateTarget(target.id, { snippets: snippetTokens(value) })}
+        {variant.targets
+          .filter((t) => t.kind !== "settings-reset")
+          .map((target) => {
+            const settings = p.buildTargets?.find((s) => s.targetId === target.id);
+            const args = settings?.cmakeArgs ?? [];
+            const config = args
+              .filter((arg) => /^-DCONFIG_/.test(arg))
+              .map((arg) => arg.slice(2).replace(/:[A-Za-z]+=/, "="))
+              .join("\n");
+            return (
+              <div className="mt-4" key={target.id}>
+                <h4>
+                  {tr(target.name)}
+                  {target.role === "central"
+                    ? tr("· Central")
+                    : target.role === "peripheral"
+                      ? tr("· Peripheral")
+                      : ""}
+                </h4>
+                {Object.keys(target.config ?? {}).length > 0 && (
+                  <details className="mt-2">
+                    <summary>{tr("Settings managed by this hardware profile")}</summary>
+                    <pre className="overflow-auto text-xs">
+                      {Object.entries(target.config ?? {})
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join("\n")}
+                    </pre>
+                  </details>
+                )}
+                {hardwareConfigError(
+                  { ...p, buildTargets: settings ? [settings] : [] },
+                  plugin,
+                ) && (
+                  <p className="notice error" role="alert">
+                    {tr(
+                      "Required hardware setting: {0}",
+                      hardwareConfigError(
+                        { ...p, buildTargets: settings ? [settings] : [] },
+                        plugin,
+                      ),
+                    )}
+                  </p>
+                )}
+                <label className="form-label mt-2">
+                  {tr("Snippets (space-separated)")}{" "}
+                  <DraftField
+                    className="field"
+                    value={(settings?.snippets ?? []).join(" ")}
+                    placeholder="studio-rpc-usb-uart"
+                    normalize={(value) => snippetTokens(value).join(" ")}
+                    onChange={(value) =>
+                      updateTarget(target.id, { snippets: snippetTokens(value) })
+                    }
+                  />
+                </label>
+                <ConfigFlags
+                  source={config}
+                  onChange={(value) =>
+                    updateTarget(target.id, {
+                      cmakeArgs: [
+                        ...args.filter((a) => !/^-DCONFIG_/.test(a)),
+                        ...configEntries(value).map((flag) => `-D${flag.name}=${flag.value}`),
+                      ],
+                    })
+                  }
                 />
-              </label>
-              <ConfigFlags
-                source={config}
-                onChange={(value) =>
-                  updateTarget(target.id, {
-                    cmakeArgs: [
-                      ...args.filter((a) => !/^-DCONFIG_/.test(a)),
-                      ...configEntries(value).map((flag) => `-D${flag.name}=${flag.value}`),
-                    ],
-                  })
-                }
-              />
-              <label className="form-label mt-2">
-                {tr("CMake arguments (one per line)")}{" "}
-                <DraftField
-                  multiline
-                  className="field source-editor"
-                  value={args.join("\n")}
-                  placeholder="-DCONFIG_ZMK_STUDIO=y"
-                  normalize={(value) => cmakeLines(value).join("\n")}
-                  onChange={(value) => updateTarget(target.id, { cmakeArgs: cmakeLines(value) })}
-                />
-              </label>
-            </div>
-          );
-        })}
+                <label className="form-label mt-2">
+                  {tr("CMake arguments (one per line)")}{" "}
+                  <DraftField
+                    multiline
+                    className="field source-editor"
+                    value={args.join("\n")}
+                    placeholder="-DCONFIG_ZMK_STUDIO=y"
+                    normalize={(value) => cmakeLines(value).join("\n")}
+                    onChange={(value) => updateTarget(target.id, { cmakeArgs: cmakeLines(value) })}
+                  />
+                </label>
+              </div>
+            );
+          })}
         <p className="hint mt-3">
           {tr(
             "These options apply to local builds and the exported build.yaml. Put build.yaml at the root of the zmk-config repository; put the .keymap, .conf and headers in config/.",

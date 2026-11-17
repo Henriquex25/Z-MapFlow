@@ -167,6 +167,10 @@ After updating `VERSION`, commit and push to `main`, then wait for CI to pass. I
 
 Place the square PNG app logo in [`build/appicon.png`](build/appicon.png), preferably at 1024×1024. See [branding](https://henriquex25.github.io/Z-MapFlow/community/branding) for platform-specific derivatives.
 
+### Sofle USB dongle (experimental)
+
+A third nice!nano v2-compatible nRF52840 controller can act as a USB central for both Sofle v2 halves. The app preserves your layout, builds the receiver/peripheral firmwares and includes a separate pairing-reset mode in the flash wizard. Physical validation is pending. Read the [setup and migration guide](https://henriquex25.github.io/Z-MapFlow/guide/dongle) before switching; the ordinary two-part profile remains available.
+
 ## Current limits
 
 Hardware validation currently covers Linux and Sofle v2. Windows x64 build, installer, updater and CI support are implemented, with native Windows CI and physical build/flash validation pending. macOS packages and Windows ARM64 remain outside the current scope. UF2 transfer requires manual bootloader entry and selection of the connected half. A successful build or file copy does not prove the firmware works on your hardware.

@@ -559,6 +559,8 @@ export namespace models {
 		}
 	}
 	export class Target {
+	    kind?: string;
+	    config?: Record<string, string>;
 	    role?: string;
 	    id: string;
 	    name: string;
@@ -572,6 +574,8 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.config = source["config"];
 	        this.role = source["role"];
 	        this.id = source["id"];
 	        this.name = source["name"];
@@ -581,6 +585,8 @@ export namespace models {
 	    }
 	}
 	export class Variant {
+	    files?: Record<string, string>;
+	    overlay?: string;
 	    features?: string[];
 	    zmkRevision: string;
 	    buildImage: string;
@@ -597,6 +603,8 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.files = source["files"];
+	        this.overlay = source["overlay"];
 	        this.features = source["features"];
 	        this.zmkRevision = source["zmkRevision"];
 	        this.buildImage = source["buildImage"];

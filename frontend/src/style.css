@@ -1915,3 +1915,34 @@ h3 {
   color: #a899ff;
   font-size: 12px;
 }
+
+.connection-topology {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.topology-diagram {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+.topology-peripherals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.topology-peripherals > span,
+.topology-central {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-raised);
+  border-radius: 8px;
+}
+.topology-central {
+  flex-direction: column;
+}

@@ -1,5 +1,7 @@
 import { BehaviorCard } from "./BehaviorCard";
 import { SleepTimeoutField } from "./SleepTimeoutField";
+import { changeHardwareVariant } from "../utils/hardwareVariant";
+import { ConnectionTopology } from "./ConnectionTopology";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { AppSettings } from "./AppSettings";
 import { tr, useLocale } from "../i18n";
@@ -847,7 +849,7 @@ export function SettingsEditor() {
             value={p.variantId}
             onChange={(e) =>
               edit((p) => {
-                p.variantId = e.target.value;
+                changeHardwareVariant(p, plugin, e.target.value);
               })
             }
           >
@@ -866,6 +868,7 @@ export function SettingsEditor() {
           {tr("positions, including encoder clicks")}{" "}
         </p>
         <p className="hint mt-2">{tr(variant.instructions)}</p>
+        <ConnectionTopology variant={variant} />
       </div>
       <div className="resource-card">
         <h3>{tr("System layout and features")}</h3>

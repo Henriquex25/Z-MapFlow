@@ -11,6 +11,8 @@ Select the keyboard in the header, then its controller in **Settings**. Match th
 
 The new Lily58 and Silakka54 profiles require validation on the corresponding physical keyboards. Successful compilation verifies the firmware configuration, not the PCB wiring or key operation. Other controllers and revisions require their own verified profiles; AVR Pro Micro, RP2040 Lily58 conversions and arbitrary Silakka54 clones are not covered by these targets.
 
+The Sofle v2 also offers an experimental [USB dongle central profile](./dongle) for three nice!nano v2-compatible nRF52840 controllers. The regular two-part profile remains the default.
+
 ## Lily58
 
 The drawing follows the [official ZMK Lily58 physical layout](https://github.com/zmkfirmware/zmk/blob/4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85/app/dts/layouts/kata0510/lily58.dtsi), including the two inner keys and rotated 1.5u thumb keys. Binding indices follow the [upstream shield's matrix transform](https://github.com/zmkfirmware/zmk/blob/4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85/app/boards/shields/lily58/lily58.dtsi).

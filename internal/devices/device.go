@@ -60,9 +60,22 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 				return nil, fmt.Errorf("variante inválida no plugin %s", d.ID)
 			}
 			seenVariants[v.ID] = true
+			for name := range v.Files {
+				if !storage.SafeRelative(name) || name == "west.yml" || name == d.KeymapName+".keymap" || name == d.KeymapName+".conf" || name == "build.yaml" || name == "keys_pt_abnt2.h" {
+					return nil, fmt.Errorf("arquivo inválido na variante %s: %s", v.ID, name)
+				}
+			}
 			targets := map[string]bool{}
 			artifacts := map[string]bool{}
 			for _, target := range v.Targets {
+				if target.Kind != "" && target.Kind != "keyboard" && target.Kind != "dongle" && target.Kind != "settings-reset" {
+					return nil, fmt.Errorf("tipo de alvo inválido: %s", target.Kind)
+				}
+				for name, value := range target.Config {
+					if !regexp.MustCompile(`^CONFIG_[A-Za-z0-9_]+$`).MatchString(name) || strings.ContainsAny(value, "\x00\r\n'") || value == "" {
+						return nil, fmt.Errorf("configuração de alvo inválida: %s", name)
+					}
+				}
 				if !identifier.MatchString(target.ID) || targets[target.ID] || !storage.SafeRelative(target.Artifact) || strings.Contains(target.Artifact, "/") || !strings.HasSuffix(target.Artifact, ".uf2") || artifacts[target.Artifact] || target.Board == "" {
 					return nil, fmt.Errorf("alvo inválido no plugin %s", d.ID)
 				}

@@ -166,6 +166,18 @@ func TestDockerIntegration(t *testing.T) {
 	if variant := os.Getenv("ZMAPFLOW_DOCKER_VARIANT"); variant != "" {
 		p.VariantID = variant
 	}
+	if os.Getenv("ZMAPFLOW_DOCKER_STUDIO") == "1" {
+		d, _ := r.Get(p.PluginID)
+		v, err := project.Variant(p, d.Descriptor())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, target := range v.Targets {
+			if target.Role == "central" || target.Role == "standalone" {
+				p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: target.ID, Snippets: []string{"studio-rpc-usb-uart"}, CMakeArgs: []string{"-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"}})
+			}
+		}
+	}
 	if path := os.Getenv("ZMAPFLOW_DOCKER_KEYMAP"); path != "" {
 		var err error
 		p, err = keymap.ImportFile(path, p, r)

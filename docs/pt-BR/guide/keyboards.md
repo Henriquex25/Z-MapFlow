@@ -11,6 +11,8 @@ Selecione o teclado no cabeçalho e a controladora em **Configurações**. Confi
 
 Os novos perfis Lily58 e Silakka54 precisam ser validados nos respectivos teclados físicos. Compilar verifica a configuração do firmware, sem comprovar a fiação ou o funcionamento das teclas. AVR Pro Micro, conversões Lily58 com RP2040 e clones arbitrários do Silakka54 não estão cobertos por esses alvos.
 
+O Sofle v2 também oferece um [perfil experimental com dongle USB central](./dongle) para três controladoras nRF52840 compatíveis com nice!nano v2. O perfil comum de duas metades continua sendo o padrão.
+
 ## Lily58
 
 O desenho segue o [layout físico oficial do ZMK](https://github.com/zmkfirmware/zmk/blob/4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85/app/dts/layouts/kata0510/lily58.dtsi), incluindo as duas teclas internas e os polegares de 1,5u inclinados. Os índices seguem o [matrix transform do shield](https://github.com/zmkfirmware/zmk/blob/4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85/app/boards/shields/lily58/lily58.dtsi).

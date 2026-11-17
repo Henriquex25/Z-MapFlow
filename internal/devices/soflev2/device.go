@@ -70,7 +70,7 @@ func (d *Device) Descriptor() models.Plugin {
 	for i := range modern.Targets {
 		modern.Targets[i].Board = "nice_nano@2.0.0//zmk"
 	}
-	p.Variants = []models.Variant{modern, legacy}
+	p.Variants = []models.Variant{modern, legacy, dongleVariant(modern)}
 	for i := range p.Positions {
 		if p.Positions[i].SensorID != "" {
 			p.Positions[i].Width = 1.6

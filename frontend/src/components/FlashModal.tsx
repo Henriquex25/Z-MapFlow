@@ -14,6 +14,7 @@ import {
   LoaderCircle,
   RotateCcw,
   TriangleAlert,
+  Usb,
 } from "lucide-react";
 import { localizeMessage, tr, useLocale } from "../i18n";
 import type { Build, Plugin, Volume } from "../types/keyboard";
@@ -32,14 +33,23 @@ export function FlashModal({
 }) {
   useLocale();
   const variant = plugin.variants.find((v) => v.id === build.variantId)!;
-  const targets = variant.targets.filter((t) => build.artifacts.some((a) => a.targetId === t.id));
+  const available = variant.targets.filter((t) => build.artifacts.some((a) => a.targetId === t.id));
+  const resetTarget = available.find((t) => t.kind === "settings-reset");
+  const targets = available.filter((t) => t.kind !== "settings-reset");
+  const hasDongle = targets.some((t) => t.kind === "dongle");
+  const [resetting, setResetting] = useState(false);
   const [step, setStep] = useState<Step>(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [volume, setVolume] = useState("");
   const [manualVolume, setManualVolume] = useState<Volume | null>(null);
   const [target, setTarget] = useState("");
-  const [completed, setCompleted] = useState<Record<string, "sent" | "confirmed">>({});
+  const [firmwareCompleted, setFirmwareCompleted] = useState<Record<string, "sent" | "confirmed">>(
+    {},
+  );
+  const [resetCompleted, setResetCompleted] = useState<Record<string, "sent" | "confirmed">>({});
+  const completed = resetting ? resetCompleted : firmwareCompleted;
+  const setCompleted = resetting ? setResetCompleted : setFirmwareCompleted;
   const [notice, setNotice] = useState<{ target: string; confirmed: boolean } | null>(null);
   const [unconfirmed, setUnconfirmed] = useState<{ target: string; detail: string } | null>(null);
   const [error, setError] = useState("");
@@ -134,7 +144,11 @@ export function FlashModal({
     setUnconfirmed(null);
     setCompleted((old) => Object.fromEntries(Object.entries(old).filter(([id]) => id !== target)));
     try {
-      const result = await api.flash(build.id, target, volume);
+      const result = await api.flash(
+        build.id,
+        resetting && resetTarget ? resetTarget.id : target,
+        volume,
+      );
       if (result.status === "unconfirmed") setUnconfirmed({ target, detail: result.detail });
       else if (result.status === "sent") {
         setCompleted((old) => ({ ...old, [target]: "sent" }));
@@ -163,7 +177,7 @@ export function FlashModal({
     setStep(retry ? 1 : 0);
   };
   const titles = [
-    tr("Which half are you flashing?"),
+    hasDongle ? tr("Which device are you flashing?") : tr("Which half are you flashing?"),
     tr("Connect {0} by USB", targetName(target)),
     tr("Review and send"),
     tr("Check the result"),
@@ -193,37 +207,87 @@ export function FlashModal({
       >
         <div className="section-toolbar">
           <div>
-            <h2 id="flash-title">{tr("Flash firmware to keyboard")}</h2>
-            <p className="hint">{tr("One half at a time. Follow the steps below.")}</p>
+            <h2 id="flash-title">
+              {resetting ? tr("Reset keyboard pairing") : tr("Flash firmware to keyboard")}
+            </h2>
+            <p className="hint">
+              {tr(
+                hasDongle
+                  ? "One device at a time. Follow the steps below."
+                  : "One half at a time. Follow the steps below.",
+              )}
+            </p>
           </div>
           <button className="btn" disabled={locked} onClick={onClose}>
             {tr("Close")}
           </button>
         </div>
 
+        {step === 0 && resetTarget && (
+          <div className="flash-mode">
+            <div className="flex gap-3 flex-wrap">
+              <button
+                className={`btn ${!resetting ? "primary" : ""}`}
+                aria-pressed={!resetting}
+                onClick={() => {
+                  setResetting(false);
+                  restart(false);
+                }}
+              >
+                {tr("Keyboard firmware")}
+              </button>
+              <button
+                className={`btn ${resetting ? "primary" : ""}`}
+                aria-pressed={resetting}
+                onClick={() => {
+                  setResetting(true);
+                  restart(false);
+                }}
+              >
+                <RotateCcw size={18} />
+                {tr("Reset pairing first")}
+              </button>
+            </div>
+            <p className="hint mt-2">
+              {tr(
+                "First setup or changing topology: reset all three devices, then flash their keyboard firmware. For ordinary keymap updates, keep pairing and send keyboard firmware only.",
+              )}
+            </p>
+          </div>
+        )}
+        {resetting && (
+          <p className="notice" role="note">
+            {tr(
+              "Reset firmware clears Bluetooth bonds and stored ZMK settings, including Studio changes. Send it to each device, let it restart, then re-enter the bootloader and install its keyboard firmware. It does not erase the bootloader or your project in this app.",
+            )}
+          </p>
+        )}
+
         <ol className="flash-progress" aria-label={tr("Flashing steps")}>
-          {["Choose half", "Connect", "Send", "Result"].map((label, index) => (
-            <li
-              key={label}
-              className={`${index === step ? "current" : ""} ${index === 2 && sendIssue ? sendIssue : index < step ? "complete" : ""}`}
-              aria-current={index === step ? "step" : undefined}
-            >
-              <span className="flash-progress-number" aria-hidden="true">
-                {index === 2 && sendIssue ? (
-                  unconfirmed ? (
-                    <TriangleAlert size={18} />
+          {[hasDongle ? "Choose device" : "Choose half", "Connect", "Send", "Result"].map(
+            (label, index) => (
+              <li
+                key={label}
+                className={`${index === step ? "current" : ""} ${index === 2 && sendIssue ? sendIssue : index < step ? "complete" : ""}`}
+                aria-current={index === step ? "step" : undefined}
+              >
+                <span className="flash-progress-number" aria-hidden="true">
+                  {index === 2 && sendIssue ? (
+                    unconfirmed ? (
+                      <TriangleAlert size={18} />
+                    ) : (
+                      <CircleX size={18} />
+                    )
+                  ) : index < step ? (
+                    <Check size={18} />
                   ) : (
-                    <CircleX size={18} />
-                  )
-                ) : index < step ? (
-                  <Check size={18} />
-                ) : (
-                  index + 1
-                )}
-              </span>
-              <span>{tr(label)}</span>
-            </li>
-          ))}
+                    index + 1
+                  )}
+                </span>
+                <span>{tr(label)}</span>
+              </li>
+            ),
+          )}
         </ol>
 
         <section
@@ -243,9 +307,17 @@ export function FlashModal({
           {step === 0 && (
             <>
               <p>
-                {tr("Select the half you will connect. The app will choose its matching firmware.")}
+                {tr(
+                  hasDongle
+                    ? "Select the device you will connect. The app will choose its matching firmware."
+                    : "Select the half you will connect. The app will choose its matching firmware.",
+                )}
               </p>
-              <div className="flash-targets" role="group" aria-label={tr("Connected half")}>
+              <div
+                className="flash-targets"
+                role="group"
+                aria-label={tr(hasDongle ? "Connected device" : "Connected half")}
+              >
                 {targets.map((t) => (
                   <button
                     key={t.id}
@@ -257,7 +329,11 @@ export function FlashModal({
                       clearVolume();
                     }}
                   >
-                    <Keyboard size={28} aria-hidden="true" />
+                    {t.kind === "dongle" ? (
+                      <Usb size={28} aria-hidden="true" />
+                    ) : (
+                      <Keyboard size={28} aria-hidden="true" />
+                    )}
                     <span>{tr(t.name)}</span>
                     {completed[t.id] && (
                       <small>
@@ -318,12 +394,23 @@ export function FlashModal({
 
           {step === 2 && (
             <>
-              <p>{tr("Check the half and drive before sending the firmware.")}</p>
+              <p>
+                {tr(
+                  hasDongle
+                    ? "Check the device and drive before sending the firmware."
+                    : "Check the half and drive before sending the firmware.",
+                )}
+              </p>
+              {resetting && (
+                <strong>
+                  {tr("Reset pairing")} — {resetTarget?.artifact}
+                </strong>
+              )}
               <dl className="flash-review">
                 <div>
                   <dt>
                     <Keyboard size={20} aria-hidden="true" />
-                    {tr("Connected half")}
+                    {tr(hasDongle ? "Connected device" : "Connected half")}
                   </dt>
                   <dd>{targetName(target)}</dd>
                 </div>
@@ -342,15 +429,25 @@ export function FlashModal({
                     <ArrowDownToLine size={20} aria-hidden="true" />
                     {tr("Firmware")}
                   </dt>
-                  <dd>{build.artifacts.find((a) => a.targetId === target)?.name}</dd>
+                  <dd>
+                    {
+                      build.artifacts.find(
+                        (a) => a.targetId === (resetting && resetTarget ? resetTarget.id : target),
+                      )?.name
+                    }
+                  </dd>
                 </div>
               </dl>
               <div className="flash-restart-note">
                 <Info size={18} aria-hidden="true" />
                 <p>
-                  {tr(
-                    "The bootloader drive may disappear when the controller restarts. A final write warning can occur even if flashing worked; check the keyboard before retrying.",
-                  )}
+                  {resetting
+                    ? tr(
+                        "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
+                      )
+                    : tr(
+                        "The bootloader drive may disappear when the controller restarts. A final write warning can occur even if flashing worked; check the keyboard before retrying.",
+                      )}
                 </p>
               </div>
               {scanError && (
@@ -373,9 +470,13 @@ export function FlashModal({
                   )}
                 </p>
                 <p>
-                  {tr(
-                    "Wait for the keyboard to restart and test the new layout. Confirm only if it works. Otherwise, reconnect in bootloader mode and retry.",
-                  )}
+                  {resetting
+                    ? tr(
+                        "Wait for the controller to restart. Confirming a restart does not verify that settings were cleared. Re-enter the bootloader and install the keyboard firmware before testing keys.",
+                      )
+                    : tr(
+                        "Wait for the keyboard to restart and test the new layout. Confirm only if it works. Otherwise, reconnect in bootloader mode and retry.",
+                      )}
                 </p>
                 <details>
                   <summary>{tr("Technical details")}</summary>
@@ -395,18 +496,24 @@ export function FlashModal({
             <div className="flash-success" role="status">
               <div>
                 <strong>
-                  {notice.confirmed
-                    ? tr("Keyboard operation confirmed by you — {0}", targetName(notice.target))
-                    : tr("File sent — {0}", targetName(notice.target))}
+                  {resetting
+                    ? tr("Reset transfer acknowledged — {0}", targetName(notice.target))
+                    : notice.confirmed
+                      ? tr("Keyboard operation confirmed by you — {0}", targetName(notice.target))
+                      : tr("File sent — {0}", targetName(notice.target))}
                 </strong>
                 <p>
-                  {notice.confirmed
+                  {resetting
                     ? tr(
-                        "You can now connect the next half in bootloader mode, or close this window.",
+                        "Let the controller restart, then reset the next device. After resetting all devices, install their keyboard firmware before testing keys.",
                       )
-                    : tr(
-                        "Wait for the keyboard to restart and test the new layout. Then connect the next half in bootloader mode if needed.",
-                      )}
+                    : notice.confirmed
+                      ? tr(
+                          "You can now connect the next half in bootloader mode, or close this window.",
+                        )
+                      : tr(
+                          "Wait for the keyboard to restart and test the new layout. Then connect the next half in bootloader mode if needed.",
+                        )}
                 </p>
               </div>
             </div>
@@ -482,7 +589,7 @@ export function FlashModal({
               </button>
               <button className="btn primary" onClick={confirm}>
                 <CircleCheck size={20} aria-hidden="true" />
-                {tr("Keyboard works — confirm")}
+                {tr(resetting ? "Controller restarted — acknowledge" : "Keyboard works — confirm")}
               </button>
             </>
           )}
@@ -502,13 +609,27 @@ export function FlashModal({
               <button className="btn" onClick={allSent ? () => restart(false) : onClose}>
                 {allSent ? tr("Flash again") : tr("Close")}
               </button>
-              <button className="btn primary" onClick={allSent ? onClose : () => restart(false)}>
+              <button
+                className="btn primary"
+                onClick={
+                  allSent
+                    ? resetting
+                      ? () => {
+                          setResetting(false);
+                          restart(false);
+                        }
+                      : onClose
+                    : () => restart(false)
+                }
+              >
                 {allSent ? (
                   <Check size={20} aria-hidden="true" />
                 ) : (
                   <ArrowRight size={20} aria-hidden="true" />
                 )}
-                {allSent ? tr("Finish") : tr("Flash next half")}
+                {allSent
+                  ? tr(resetting ? "Continue with keyboard firmware" : "Finish")
+                  : tr(hasDongle ? "Flash next device" : "Flash next half")}
               </button>
             </>
           )}

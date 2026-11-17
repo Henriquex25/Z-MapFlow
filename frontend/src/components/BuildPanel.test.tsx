@@ -1,3 +1,4 @@
+import { dongleFixture } from "../test/dongleFixture";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { BuildPanel } from "./BuildPanel";
@@ -113,3 +114,14 @@ it.each(["/tmp/firmwares", ""])(
     }
   },
 );
+
+it("uses plugin target names for additional firmware build stages", async () => {
+  const s = dongleFixture();
+  const target = s.plugin.variants[1].targets[0];
+  target.id = "receiver_custom";
+  const build = { ...s.build, status: "running", stage: "receiver_custom" };
+  render(
+    <BuildPanel build={build} plugins={[s.plugin]} currentRevision="saved" onError={vi.fn()} />,
+  );
+  expect(screen.getByText("Building USB dongle")).toBeInTheDocument();
+});

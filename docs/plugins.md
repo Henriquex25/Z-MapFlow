@@ -164,3 +164,11 @@ The plugin contract is version 1 and persisted projects use schema 2. Projects r
 Macros and custom behaviors use `zm_` IDs; `zm_sensor_` is reserved for generated sensor behaviors. Hold-taps forward one argument to each zero/one-parameter child. Macros can have up to two parameters. Unsupported or invalid references and cycles are rejected; compiler validation still determines which hardware/module features exist in the selected revision.
 
 Encoder order is hardware metadata. Layers may omit rotation overrides and inherit from lower layers. Clicks remain independent physical bindings, and hardware `TriggersPerRotation` must agree across layers.
+
+## Dongles and managed target settings
+
+A variant may declare a receiver central, multiple peripheral targets and an optional shared reset target. `Target.Kind` is empty/`keyboard`, `dongle` or `settings-reset`; `Target.Role` still describes the transport role. The generic flash wizard lists operational devices and offers the reset artifact in a separate mode, tracking reset/firmware progress independently. Share a reset artifact only when all devices use that variant’s controller/UF2 family.
+
+`Target.Config` is a map of required `CONFIG_` names to Kconfig values. Generation adds those flags to local build commands and exported `build.yaml`, deduplicating identical user arguments and rejecting contradictory target values. Settings displays managed values read-only; keep user-adjustable options out of this map. Bluetooth generation reserves connection/pairing slots for the declared peripherals in addition to the selected host profiles.
+
+`Variant.Files` supplies safe configuration-relative files for that variant, merged over `Plugin.Files`. Generated filenames and out-of-tree paths are rejected. `Variant.Overlay` is optional: nil inherits the plugin overlay; a non-nil empty string removes it. This lets a dongle retain transform/sensor indices without enabling local GPIO encoders. Neither extension changes existing project schema or historical variant IDs. See the [Sofle dongle guide](./guide/dongle) and `internal/firmware/dongle_test.go` for a working example.

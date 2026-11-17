@@ -17,6 +17,8 @@ Vulnerabilidades devem seguir [SECURITY.md no repositório](https://github.com/H
 
 Para mudanças maiores, proponha a ideia numa issue antes de investir na implementação. Comentários de revisão devem ser respeitosos, concretos e centrados no código. Não são aceitos ataques pessoais, assédio ou discriminação.
 
+Mantenedores também usam branches `feat/`, `fix/` ou `docs/` e PRs para a `main`, sem commits de features diretamente nela. Mantenha o PR como rascunho enquanto faltar implementação ou validação física. O CI de PR já verifica Linux, Windows e documentação. Revisão e merge são ações explícitas do mantenedor; releases continuam manuais. Recomenda-se proteger a `main`, exigindo os checks e impedindo pushes diretos.
+
 ## Novos teclados
 
 Use o [contrato de plugins](../plugins). Geometria, matriz, controladoras e alvos pertencem ao plugin; o core deve continuar independente de qualquer teclado específico. Informe quais builds e quais testes físicos foram realizados.

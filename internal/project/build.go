@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"z-mapflow/internal/models"
 	"z-mapflow/internal/storage"
@@ -21,6 +22,32 @@ func TargetSettings(p models.Project, id string) models.BuildTarget {
 	return models.BuildTarget{TargetID: id}
 }
 
+// EffectiveTargetSettings composes fixed hardware requirements with user flags.
+// Managed values are emitted last and validated before a build is accepted.
+func EffectiveTargetSettings(p models.Project, target models.Target) models.BuildTarget {
+	settings := TargetSettings(p, target.ID)
+	args := []string{}
+	for _, arg := range settings.CMakeArgs {
+		parts := cmakeArg.FindStringSubmatch(arg)
+		if len(parts) > 0 {
+			if _, managed := target.Config[parts[1]]; managed {
+				continue
+			}
+		}
+		args = append(args, arg)
+	}
+	names := make([]string, 0, len(target.Config))
+	for name := range target.Config {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		args = append(args, "-D"+name+"="+target.Config[name])
+	}
+	settings.CMakeArgs = args
+	return settings
+}
+
 func ValidateBuild(p models.Project, plugin models.Plugin) error {
 	variant, err := Variant(p, plugin)
 	if err != nil {
@@ -29,8 +56,12 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 	seen := map[string]bool{}
 	for _, settings := range p.BuildTargets {
 		found := false
+		var definition models.Target
 		for _, target := range variant.Targets {
-			found = found || target.ID == settings.TargetID
+			if target.ID == settings.TargetID {
+				found = true
+				definition = target
+			}
 		}
 		if !found || seen[settings.TargetID] {
 			return fmt.Errorf("alvo de compilação inválido ou duplicado: %s", settings.TargetID)
@@ -50,6 +81,9 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 				return fmt.Errorf("argumento CMake inválido: use -DNOME=valor")
 			}
 			name := parts[1]
+			if value, managed := definition.Config[name]; managed && value != parts[2] {
+				return fmt.Errorf("%s: %s=%s é obrigatório para este perfil de hardware", definition.Name, name, value)
+			}
 			if used[name] {
 				return fmt.Errorf("argumento CMake duplicado: %s", name)
 			}
@@ -68,6 +102,9 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 		}
 		if _, exists := plugin.Files[name]; exists {
 			return fmt.Errorf("header conflita com arquivo do plugin: %s", name)
+		}
+		if _, exists := variant.Files[name]; exists {
+			return fmt.Errorf("header conflita com arquivo da variante: %s", name)
 		}
 		total += len(content)
 		if total > 4*1024*1024 {

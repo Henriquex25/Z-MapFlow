@@ -55,6 +55,9 @@ export function BuildPanel({
   }, [build?.id]);
   const shown = selected || build;
   const plugin = plugins.find((p) => p.id === shown?.pluginId);
+  const buildingTarget = plugin?.variants
+    .find((v) => v.id === shown?.variantId)
+    ?.targets.find((t) => t.id === shown?.stage);
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [shown?.logs?.length, expanded]);
@@ -93,7 +96,13 @@ export function BuildPanel({
         )}
         {shown && (
           <>
-            <span className="hint">{tr(stageLabels[shown.stage] || shown.stage)}</span>
+            <span className="hint">
+              {stageLabels[shown.stage]
+                ? tr(stageLabels[shown.stage])
+                : buildingTarget
+                  ? tr("Building {0}", tr(buildingTarget.name))
+                  : tr(shown.stage)}
+            </span>
             <span className="badge">
               {tr("Revision")} {shown.revision.slice(0, 8)}
             </span>

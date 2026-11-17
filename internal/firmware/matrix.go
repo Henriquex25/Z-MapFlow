@@ -13,7 +13,7 @@ import (
 func shellQuote(value string) string { return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'" }
 
 func TargetBuildCommand(p models.Project, variant models.Variant, target models.Target) string {
-	settings := project.TargetSettings(p, target.ID)
+	settings := project.EffectiveTargetSettings(p, target)
 	args := []string{"west", "build", "-p", "always", "-s", "zmk/app", "-d", "build/" + variant.ID + "/" + target.ID, "-b", target.Board}
 	for _, snippet := range settings.Snippets {
 		args = append(args, "-S", snippet)
@@ -41,7 +41,7 @@ func GenerateBuildMatrix(p models.Project, plugin models.Plugin) (string, error)
 		Include []entry `yaml:"include"`
 	}{}
 	for _, target := range variant.Targets {
-		settings := project.TargetSettings(p, target.ID)
+		settings := project.EffectiveTargetSettings(p, target)
 		args := make([]string, len(settings.CMakeArgs))
 		for i, a := range settings.CMakeArgs {
 			args[i] = shellQuote(a)

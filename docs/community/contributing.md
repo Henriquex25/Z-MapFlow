@@ -17,6 +17,8 @@ Report exploitable vulnerabilities according to [SECURITY.md](https://github.com
 
 Discuss larger changes in an issue first. Be respectful and focus reviews on the code. Harassment, discrimination and personal attacks are not accepted.
 
+Maintainers also use focused `feat/`, `fix/` or `docs/` branches and PRs targeting `main`, rather than committing feature work directly to `main`. Keep the PR in draft while implementation or hardware validation is incomplete. Existing PR CI covers Linux, Windows and documentation. Review and merge are explicit maintainer actions; releases remain manual. Repository owners should enable branch protection requiring these checks and prohibiting direct pushes.
+
 ## New keyboards
 
 Follow the [step-by-step plugin guide](../plugins). Hardware geometry, matrix order, controllers and build targets belong in a plugin, while shared functionality belongs in the core. State which builds and physical tests you performed. A working build does not prove successful flashing or correct hardware operation.

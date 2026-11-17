@@ -1,3 +1,4 @@
+import { dongleFixture } from "../test/dongleFixture";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FlashModal } from "./FlashModal";
@@ -200,4 +201,76 @@ it("prevents closing or starting another transfer while sending", async () => {
   }
   fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
   expect(close).toHaveBeenCalledOnce();
+});
+
+it("flashes all three dongle-profile devices through the shared wizard", async () => {
+  const { plugin, build } = dongleFixture();
+  render(<FlashModal build={build} plugin={plugin} onClose={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Keyboard firmware" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(
+    screen.getByRole("heading", { name: "Which device are you flashing?" }),
+  ).toBeInTheDocument();
+  for (const name of ["USB dongle", "Left", "Right"])
+    expect(screen.getByRole("button", { name })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "USB dongle" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — USB dongle" }));
+  await screen.findByText("File sent — USB dongle");
+  expect(api.flash).toHaveBeenCalledWith("build", "dongle", drive.path);
+});
+
+it("keeps reset progress separate and sends the reset artifact to each selected device", async () => {
+  const { plugin, build } = dongleFixture();
+  render(<FlashModal build={build} plugin={plugin} onClose={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Reset pairing first" }));
+  expect(screen.getByRole("note")).toHaveTextContent("clears Bluetooth bonds");
+  for (const name of ["USB dongle", "Left", "Right"]) {
+    fireEvent.click(screen.getByRole("button", { name }));
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    expect(screen.getByText(/Reset pairing — reset.uf2/)).toBeInTheDocument();
+    expect(screen.getByText("reset.uf2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: `Send firmware — ${name}` }));
+    await screen.findByText(`Reset transfer acknowledged — ${name}`);
+    if (name !== "Right")
+      fireEvent.click(screen.getByRole("button", { name: "Flash next device" }));
+  }
+  expect(api.flash).toHaveBeenCalledTimes(3);
+  for (const call of vi.mocked(api.flash).mock.calls)
+    expect(call).toEqual(["build", "settings_reset", drive.path]);
+  fireEvent.click(screen.getByRole("button", { name: "Continue with keyboard firmware" }));
+  expect(screen.getByRole("button", { name: "Keyboard firmware" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(screen.queryByText("File sent")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
+});
+
+it("acknowledges an uncertain reset reboot without claiming keyboard operation or resending", async () => {
+  const { plugin, build } = dongleFixture();
+  vi.mocked(api.flash).mockResolvedValueOnce({ status: "unconfirmed", detail: "sync: I/O error" });
+  render(<FlashModal build={build} plugin={plugin} onClose={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Reset pairing first" }));
+  fireEvent.click(screen.getByRole("button", { name: "Left" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Send firmware — Left" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "does not verify that settings were cleared",
+  );
+  expect(
+    screen.queryByRole("button", { name: "Keyboard works — confirm" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Controller restarted — acknowledge" }));
+  expect(screen.getByRole("status")).toHaveTextContent("Reset transfer acknowledged — Left");
+  expect(screen.getByRole("status")).not.toHaveTextContent("Keyboard operation confirmed");
+  expect(api.flash).toHaveBeenCalledTimes(1);
 });
