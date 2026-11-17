@@ -3,6 +3,7 @@ package firmware
 import (
 	_ "embed"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,6 +14,9 @@ import (
 
 //go:embed keys_pt_abnt2.h
 var abnt2Header string
+
+var configAssignment = regexp.MustCompile(`^\s*(CONFIG_[A-Za-z0-9_]+)\s*=`)
+var configUnset = regexp.MustCompile(`^\s*#\s*(CONFIG_[A-Za-z0-9_]+) is not set\s*$`)
 
 type SourceFile struct {
 	Name    string `json:"name"`
@@ -271,7 +275,11 @@ sensorsDone:
 	if p.Options.Sleep && !plugin.DisableSleep {
 		config += fmt.Sprintf("CONFIG_ZMK_IDLE_SLEEP_TIMEOUT=%d\n", p.Options.SleepTimeoutMs)
 	}
-	config += fmt.Sprintf("CONFIG_ZMK_DISPLAY=%s\nCONFIG_ZMK_POINTING=%s\n", yesno(p.Options.Display), yesno(p.Options.Pointing))
+	config += fmt.Sprintf("CONFIG_ZMK_POINTING=%s\n", yesno(p.Options.Pointing))
+	syncDisplay := project.StatusSyncDisplayConfig(p)
+	if syncDisplay == nil {
+		config += fmt.Sprintf("CONFIG_ZMK_DISPLAY=%s\n", yesno(p.Options.Display))
+	}
 	v, _ := project.Variant(p, plugin)
 	for _, feature := range v.Features {
 		if feature == "peripheral-status-sync" {
@@ -293,12 +301,8 @@ sensorsDone:
 			config += fmt.Sprintf("CONFIG_BT_MAX_PAIRED=%d\nCONFIG_BT_MAX_CONN=%d\n", p.Options.BluetoothProfiles+peripherals, p.Options.BluetoothProfiles+peripherals)
 		}
 	}
-	if p.Options.Display {
-		if p.Options.PeripheralStatusSync {
-			config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
-		} else {
-			config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE=y\nCONFIG_ZMK_WIDGET_OUTPUT_STATUS=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
-		}
+	if p.Options.Display && syncDisplay == nil {
+		config += "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE=y\nCONFIG_ZMK_WIDGET_OUTPUT_STATUS=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\n"
 	}
 
 	if p.Options.RGBUnderglow {
@@ -311,7 +315,26 @@ sensorsDone:
 		config += "CONFIG_ZMK_PM_SOFT_OFF=y\n"
 	}
 	config += fmt.Sprintf("CONFIG_ZMK_BEHAVIORS_QUEUE_SIZE=%d\n", project.MacroQueueSize(p))
-	config += "\n" + p.ExtraConfig + "\n"
+	for _, line := range strings.Split(p.ExtraConfig, "\n") {
+		match := configAssignment.FindStringSubmatch(line)
+		if match == nil {
+			match = configUnset.FindStringSubmatch(line)
+		}
+		if len(match) > 1 {
+			if _, managed := syncDisplay[match[1]]; managed {
+				continue
+			}
+		}
+		config += line + "\n"
+	}
+	names := make([]string, 0, len(syncDisplay))
+	for name := range syncDisplay {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		config += name + "=" + syncDisplay[name] + "\n"
+	}
 	manifest := fmt.Sprintf("manifest:\n  projects:\n    - name: zmk\n      url: https://github.com/zmkfirmware/zmk\n      revision: %s\n      import: app/west.yml\n", strconv.Quote(plugin.ZMKRevision))
 	for _, module := range plugin.Modules {
 		manifest += fmt.Sprintf("    - name: %s\n      url: %s\n      revision: %s\n      import: %t\n", strconv.Quote(module.Name), strconv.Quote(module.URL), strconv.Quote(module.Revision), module.Import)
@@ -335,7 +358,7 @@ sensorsDone:
 		return nil, err
 	}
 	files = append(files, SourceFile{Name: "build.yaml", Content: matrix})
-	names := make([]string, 0, len(plugin.Files))
+	names = make([]string, 0, len(plugin.Files))
 	for name := range plugin.Files {
 		names = append(names, name)
 	}

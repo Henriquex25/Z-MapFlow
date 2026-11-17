@@ -3,6 +3,7 @@ package firmware
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,6 +193,18 @@ func TestDockerIntegration(t *testing.T) {
 		p.BuildTargets = []models.BuildTarget{{TargetID: "left", Snippets: []string{"studio-rpc-usb-uart"}, CMakeArgs: []string{"-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"}}}
 		// Exercise an inherited sensor before a configured sensor as well.
 		p.Layout.Layers[1].Sensors[0].Inherited = true
+	}
+	if path := os.Getenv("ZMAPFLOW_DOCKER_PROJECT"); path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, &p); err != nil {
+			t.Fatal(err)
+		}
+		if os.Getenv("ZMAPFLOW_DOCKER_DISPLAY") == "0" {
+			p.Options.Display = false
+		}
 	}
 	service := project.Service{Root: t.TempDir(), Registry: r}
 	var saveErr error

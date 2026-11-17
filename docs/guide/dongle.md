@@ -44,6 +44,8 @@ State is sent on changes, after connection/encryption/discovery and in a small 2
 
 The receiver clears the displayed state on a recognized disconnection or after 15 seconds without a valid snapshot. `Waiting for dongle` / `No sync` indicates unavailable state; reconnecting requests an initial snapshot even if the layer has not changed. This avoids treating a cached layer or connection as current. Reconnection, sleep/wake and the actual OLED appearance still need physical validation.
 
+While synchronization is enabled, **Display** and the synchronization option also manage screen selection and built-in widget flags in generated firmware. Legacy flags retained in an imported JSON/`.conf` are normalized during generation, without deleting the original advanced settings. Conflicting per-target overrides are rejected before building; the same screen selection applies to exported sources.
+
 The switch owns `CONFIG_ZMAPFLOW_STATUS_SYNC`; edit it through this control rather than contradictory `.conf` or per-target overrides. Initial topology migration still uses the pairing-reset workflow above. If previously paired firmware cannot reconnect after all three devices are updated, use the documented reset/reflash procedure.
 
 ## Daily use and reverting

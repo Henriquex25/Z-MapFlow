@@ -1,7 +1,7 @@
 import { tr, useLocale } from "../i18n";
 import { useEffect, useState } from "react";
 import { useImportLanguageHeaders } from "../hooks/useImportLanguageHeaders";
-import { hardwareConfigError } from "../utils/hardwareVariant";
+import { hardwareConfigError, managedTargetConfig } from "../utils/hardwareVariant";
 import { setKeyboardLanguage } from "../utils/keyboardLanguage";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import {
@@ -163,6 +163,7 @@ export function FirmwareSettings() {
         {variant.targets
           .filter((t) => t.kind !== "settings-reset")
           .map((target) => {
+            const managed = managedTargetConfig(p, target);
             const settings = p.buildTargets?.find((s) => s.targetId === target.id);
             const args = settings?.cmakeArgs ?? [];
             const config = args
@@ -179,11 +180,11 @@ export function FirmwareSettings() {
                       ? tr("· Peripheral")
                       : ""}
                 </h4>
-                {Object.keys(target.config ?? {}).length > 0 && (
+                {Object.keys(managed).length > 0 && (
                   <details className="mt-2">
                     <summary>{tr("Settings managed by this hardware profile")}</summary>
                     <pre className="overflow-auto text-xs">
-                      {Object.entries(target.config ?? {})
+                      {Object.entries(managed)
                         .map(([k, v]) => `${k}=${v}`)
                         .join("\n")}
                     </pre>

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { dongleFixture } from "../test/dongleFixture";
-import { changeHardwareVariant, hardwareConfigError } from "./hardwareVariant";
+import { changeHardwareVariant, hardwareConfigError, managedTargetConfig } from "./hardwareVariant";
 import { enableStudioUSB } from "./firmwareSettings";
 
 it("preserves keymap data and moves the Studio USB preset to the new central", () => {
@@ -59,4 +59,29 @@ it("rejects status-sync Kconfig overrides that could desynchronize devices", () 
   p.extraConfig = "";
   p.buildTargets = [{ targetId: "left", cmakeArgs: ["-DCONFIG_ZMAPFLOW_STATUS_SYNC=y"] }];
   expect(hardwareConfigError(p, plugin)).toContain("use the synchronization option");
+});
+
+it("requires the synchronized screen on peripheral targets and respects the display toggle", () => {
+  const { project: p, plugin } = dongleFixture();
+  p.variantId = "dongle";
+  p.options.peripheralStatusSync = true;
+  p.options.display = true;
+  p.extraConfig = "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y";
+  // Legacy global flags are normalized by generation; CMake overrides cannot bypass it.
+  expect(hardwareConfigError(p, plugin)).toBe("");
+  p.buildTargets = [
+    { targetId: "left", cmakeArgs: ["-DCONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=y"] },
+  ];
+  expect(hardwareConfigError(p, plugin)).toContain("CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN=n");
+  p.buildTargets[0].cmakeArgs = ["-DCONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM:BOOL=n"];
+  expect(hardwareConfigError(p, plugin)).toContain("CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM=y");
+  const target = plugin.variants[1].targets.find((t) => t.id === "left")!;
+  expect(managedTargetConfig(p, target).CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM).toBe("y");
+  p.options.display = false;
+  expect(hardwareConfigError(p, plugin)).toBe("");
+  expect(managedTargetConfig(p, target).CONFIG_ZMK_DISPLAY).toBe("n");
+  p.buildTargets[0].cmakeArgs = ["-DCONFIG_ZMK_DISPLAY=y"];
+  expect(hardwareConfigError(p, plugin)).toContain("CONFIG_ZMK_DISPLAY=n");
+  p.options.peripheralStatusSync = false;
+  expect(hardwareConfigError(p, plugin)).toBe("");
 });

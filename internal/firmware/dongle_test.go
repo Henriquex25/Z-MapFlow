@@ -157,3 +157,57 @@ func TestOptionalStatusSyncPersistsAndRoundTrips(t *testing.T) {
 		}
 	}
 }
+
+func TestStatusSyncMigratesImportedDisplayFlagsWithoutMutatingProject(t *testing.T) {
+	r, p := fixture(t)
+	p.VariantID = "nice_nano_v2_dongle"
+	p.Options.PeripheralStatusSync = true
+	// Reproduce legacy JSON/.conf imports: these flags are retained in ExtraConfig.
+	p.ExtraConfig = "# imported display settings\nCONFIG_ZMK_DISPLAY=y\n CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN = y\n# CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM is not set\nCONFIG_ZMK_WIDGET_LAYER_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS=y\nCONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE=y\nCONFIG_ZMK_WIDGET_OUTPUT_STATUS=y\nCONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED=y\nCONFIG_ZMK_USB_LOGGING=n"
+	original := p.ExtraConfig
+	for _, display := range []bool{true, false} {
+		p.Options.Display = display
+		files, err := Generate(p, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, f := range files {
+			if f.Name != "sofle.conf" {
+				continue
+			}
+			for key, value := range project.StatusSyncDisplayConfig(p) {
+				if strings.Count(f.Content, key+"=") != 1 || !strings.Contains(f.Content, key+"="+value+"\n") {
+					t.Fatalf("conflicting or missing %s with display=%v:\n%s", key, display, f.Content)
+				}
+			}
+			if !strings.Contains(f.Content, "CONFIG_ZMK_USB_LOGGING=n") || !strings.Contains(f.Content, "# imported display settings") {
+				t.Fatal("unrelated imported config was lost")
+			}
+		}
+		if p.ExtraConfig != original {
+			t.Fatal("generation modified the saved source settings")
+		}
+		for _, flag := range []string{"CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN", "CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM", "CONFIG_ZMK_DISPLAY"} {
+			value := "y"
+			if project.StatusSyncDisplayConfig(p)[flag] == "y" {
+				value = "n"
+			}
+			p.BuildTargets = []models.BuildTarget{{TargetID: "left", CMakeArgs: []string{"-D" + flag + ":BOOL=" + value}}}
+			if err := project.Validate(p, r); err == nil || !strings.Contains(err.Error(), flag) {
+				t.Fatalf("incompatible target screen override accepted: %s", flag)
+			}
+		}
+		p.BuildTargets = nil
+	}
+	p.Options.PeripheralStatusSync = false
+	p.Options.Display = true
+	files, err := Generate(p, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if f.Name == "sofle.conf" && !strings.Contains(f.Content, original) {
+			t.Fatal("normal profile lost its original advanced settings")
+		}
+	}
+}

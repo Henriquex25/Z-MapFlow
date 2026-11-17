@@ -2,6 +2,27 @@ import type { Plugin, Project } from "../types/keyboard";
 import { tr } from "../i18n";
 import { configEntries, enableStudioUSB } from "./firmwareSettings";
 
+export function managedTargetConfig(
+  p: Project,
+  target: Plugin["variants"][number]["targets"][number],
+) {
+  const config = { ...target.config };
+  if (p.options.peripheralStatusSync && target.role === "peripheral") {
+    const display = p.options.display ? "y" : "n";
+    Object.assign(config, {
+      CONFIG_ZMK_DISPLAY: display,
+      CONFIG_ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN: "n",
+      CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM: display,
+      CONFIG_ZMK_DISPLAY_WORK_QUEUE_DEDICATED: display,
+      CONFIG_ZMK_WIDGET_LAYER_STATUS: "n",
+      CONFIG_ZMK_WIDGET_BATTERY_STATUS: "n",
+      CONFIG_ZMK_WIDGET_BATTERY_STATUS_SHOW_PERCENTAGE: "n",
+      CONFIG_ZMK_WIDGET_OUTPUT_STATUS: "n",
+    });
+  }
+  return config;
+}
+
 export function changeHardwareVariant(p: Project, plugin: Plugin, id: string) {
   const previous = plugin.variants.find((v) => v.id === p.variantId);
   const next = plugin.variants.find((v) => v.id === id);
@@ -51,7 +72,7 @@ export function hardwareConfigError(p: Project, plugin: Plugin | null) {
       const parts = /^-D(CONFIG_[A-Za-z0-9_]+)(?::[^=]+)?=(.*)$/.exec(arg);
       if (parts?.[1] === "CONFIG_ZMAPFLOW_STATUS_SYNC")
         return tr("CONFIG_ZMAPFLOW_STATUS_SYNC: use the synchronization option.");
-      const expected = parts ? target?.config?.[parts[1]] : undefined;
+      const expected = parts && target ? managedTargetConfig(p, target)[parts[1]] : undefined;
       if (parts && expected !== undefined && expected !== parts[2])
         return `${target!.name}: ${parts![1]}=${expected}`;
     }

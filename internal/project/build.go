@@ -84,6 +84,11 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 			if name == "CONFIG_ZMAPFLOW_STATUS_SYNC" {
 				return fmt.Errorf("use a opção de sincronização de estado em Configurações")
 			}
+			if definition.Role == "peripheral" {
+				if value, managed := StatusSyncDisplayConfig(p)[name]; managed && value != parts[2] {
+					return fmt.Errorf("%s: %s=%s é obrigatório para este perfil de hardware", definition.Name, name, value)
+				}
+			}
 			if value, managed := definition.Config[name]; managed && value != parts[2] {
 				return fmt.Errorf("%s: %s=%s é obrigatório para este perfil de hardware", definition.Name, name, value)
 			}
