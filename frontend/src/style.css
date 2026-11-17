@@ -1288,6 +1288,17 @@ h3 {
 .flash-progress,
 .flash-wizard-footer,
 .flash-completed,
+.flash-transfer-status {
+  display: block;
+  line-height: 1.5;
+}
+.flash-transfer-status p {
+  margin-top: 7px;
+}
+.flash-transfer-status.stalled {
+  border-color: #d7b26666;
+  color: var(--warning);
+}
 .flash-revision {
   flex-shrink: 0;
 }

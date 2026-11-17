@@ -864,5 +864,16 @@
   "This profile does not support peripheral status synchronization.": "esta variante não oferece sincronização de estado dos periféricos",
   "Use the status synchronization option in Settings.": "use a opção de sincronização de estado em Configurações",
   "Peripheral status synchronization is not supported by this profile.": "Este perfil não oferece sincronização de estado dos periféricos.",
-  "CONFIG_ZMAPFLOW_STATUS_SYNC: use the synchronization option.": "CONFIG_ZMAPFLOW_STATUS_SYNC: use o controle de sincronização."
+  "CONFIG_ZMAPFLOW_STATUS_SYNC: use the synchronization option.": "CONFIG_ZMAPFLOW_STATUS_SYNC: use o controle de sincronização.",
+  "Checking the bootloader drive…": "Verificando o volume do bootloader…",
+  "Opening the firmware file on the drive…": "Abrindo o arquivo de firmware no volume…",
+  "Copying firmware to the operating system…": "Copiando firmware para o sistema operacional…",
+  "Waiting for the final USB write…": "Aguardando a gravação USB final…",
+  "Closing the firmware file…": "Fechando o arquivo de firmware…",
+  "{0} / {1} bytes accepted by the operating system": "{0} / {1} bytes recebidos pelo sistema operacional",
+  "Copied bytes do not confirm that the controller has finished flashing.": "Os bytes copiados não confirmam que a controladora concluiu a gravação.",
+  "The USB transfer is taking longer than expected.": "O envio USB está demorando mais que o esperado.",
+  "The operating system has not completed this step. If the device stays stuck, disconnect the selected controller, reconnect it in bootloader mode and wait for the pending transfer to return before retrying. Do not start another copy at the same time.": "O sistema operacional ainda não concluiu esta etapa. Se o dispositivo continuar travado, desconecte a controladora selecionada, reconecte-a em bootloader e aguarde o envio pendente retornar antes de tentar novamente. Não inicie outra cópia ao mesmo tempo.",
+  "The app will not retry automatically or mark this device as flashed.": "O app não repetirá o envio automaticamente nem marcará este dispositivo como gravado.",
+  "Wait for the current firmware transfer to finish.": "aguarde a conclusão do envio de firmware em andamento"
 }

@@ -47,6 +47,14 @@ Quando a cópia completa retorna sem erro, mas a sincronização ou o fechamento
 O app não repete o envio nem declara o teclado funcional apenas porque o volume desapareceu.
 
 
+## Envio que permanece pendente
+
+Durante o envio, o assistente separa as etapas de verificar o volume, abrir o arquivo, copiar, confirmar a gravação USB final e fechar. Os bytes indicam dados recebidos pelo sistema operacional; **não confirmam** que a controladora programou a memória. Após 30 segundos sem progresso de etapa/bytes, aparece um aviso de que o sistema continua aguardando. O app mantém o envio pendente, não tenta novamente sozinho e rejeita outro envio simultâneo.
+
+Se continuar travado, desconecte a controladora selecionada, cancele cópias pendentes no gerenciador de arquivos, reconecte em bootloader e aguarde a operação anterior retornar antes de tentar novamente. Uma escrita USB bloqueada também pode bloquear uma segunda cópia manual. Repita apenas o firmware correspondente; limpar pareamento é necessário na migração inicial, não a cada tentativa de envio.
+
+O app registra as etapas e o resultado do último envio em `flash/latest.json`, na pasta de configuração (`~/.config/z-mapflow/flash/latest.json` no Linux com o caminho XDG padrão). O arquivo inclui compilação/alvo, volume, bytes recebidos pelo sistema, horários e o erro retornado para diagnóstico. Um registro pendente não comprova sucesso nem falha de programação. Timeouts USB do Linux e volume inacessível precisam ser investigados além da interface do app.
+
 ## Unidades USB no Windows
 
 Coloque a metade conectada em bootloader e aguarde sua unidade UF2 aparecer no Explorador. O app descobre unidades locais pela API Win32 e confere `INFO_UF2.TXT` com a controladora selecionada. Se não aparecer, selecione manualmente a raiz da unidade, como `E:\`. Informe explicitamente a metade conectada: a unidade não identifica sozinha esquerda ou direita. A cópia é feita diretamente pelo aplicativo Windows, sem encaminhar USB para o Docker. A validação com teclado físico no Windows ainda está pendente.

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"z-mapflow/internal/community"
 	"z-mapflow/internal/devices"
 	"z-mapflow/internal/devices/lily58"
@@ -361,7 +362,9 @@ func (a *App) SelectBootloader(buildID string) (flash.Volume, error) {
 	return flash.Inspect(path, v)
 }
 func (a *App) FlashFirmware(buildID, targetID, volumePath string) (flash.Result, error) {
-	a.operation.Lock()
+	if !a.operation.TryLock() {
+		return flash.Result{}, fmt.Errorf("aguarde a conclusão do envio de firmware em andamento")
+	}
 	defer a.operation.Unlock()
 	if err := a.ready(); err != nil {
 		return flash.Result{}, err
@@ -381,7 +384,33 @@ func (a *App) FlashFirmware(buildID, targetID, volumePath string) (flash.Result,
 	if err = firmware.ValidateUF2(source, variant.UF2Family); err != nil {
 		return flash.Result{}, err
 	}
-	return flash.Copy(source, volumePath, artifact.Name, variant)
+	trace := map[string]interface{}{"buildId": buildID, "targetId": targetID, "volume": volumePath, "startedAt": time.Now().UTC().Format(time.RFC3339Nano)}
+	tracePath := filepath.Join(a.projects.Root, "flash", "latest.json")
+	lastStage := ""
+	writeTrace := func() {
+		trace["updatedAt"] = time.Now().UTC().Format(time.RFC3339Nano)
+		if err := storage.AtomicJSON(tracePath, trace); err != nil {
+			runtime.LogWarning(a.ctx, "Could not save flash diagnostics: "+err.Error())
+		}
+	}
+	result, err := flash.Copy(source, volumePath, artifact.Name, variant, func(progress flash.Progress) {
+		trace["progress"] = progress
+		if progress.Stage != lastStage {
+			writeTrace()
+			lastStage = progress.Stage
+		}
+		runtime.EventsEmit(a.ctx, "firmware:flash", map[string]interface{}{
+			"buildId": buildID, "targetId": targetID, "stage": progress.Stage,
+			"written": progress.Written, "total": progress.Total,
+		})
+	})
+	trace["status"], trace["detail"] = result.Status, result.Detail
+	if err != nil {
+		trace["status"], trace["detail"] = "failed", err.Error()
+	}
+	trace["finishedAt"] = time.Now().UTC().Format(time.RFC3339Nano)
+	writeTrace()
+	return result, err
 }
 
 func (a *App) ListBuilds() ([]firmware.Build, error) {

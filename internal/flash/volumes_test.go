@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 	"z-mapflow/internal/models"
 )
 
@@ -37,6 +38,62 @@ func TestInspectAndCopyOnSimulatedVolume(t *testing.T) {
 	}
 	if _, err := Inspect(volume, models.Variant{BootloaderBoards: []string{"other"}}); err == nil {
 		t.Fatal("incompatible bootloader accepted")
+	}
+}
+
+type waitingSyncWriter struct {
+	simulatedWriter
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (w *waitingSyncWriter) Sync() error {
+	close(w.entered)
+	<-w.release
+	return w.simulatedWriter.Sync()
+}
+
+func TestProgressDoesNotConfirmBlockedFinalWrite(t *testing.T) {
+	w := &waitingSyncWriter{entered: make(chan struct{}), release: make(chan struct{})}
+	released := false
+	defer func() {
+		if !released {
+			close(w.release)
+		}
+	}()
+	payload := bytes.Repeat([]byte("UF2-block"), 8192)
+	events := make(chan Progress, 100)
+	done := make(chan Result, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		r, err := copyWithProgress(w, bytes.NewReader(payload), int64(len(payload)), func(p Progress) { events <- p })
+		done <- r
+		errCh <- err
+	}()
+	select {
+	case <-w.entered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("sync was not reached")
+	}
+	var progress Progress
+	for len(events) > 0 {
+		progress = <-events
+	}
+	if progress.Stage != "syncing" || progress.Written != int64(len(payload)) || progress.Total != int64(len(payload)) {
+		t.Fatalf("wrong progress before blocked flush: %+v", progress)
+	}
+	select {
+	case <-done:
+		t.Fatal("blocked USB write was marked complete")
+	default:
+	}
+	close(w.release)
+	released = true
+	if r := <-done; r.Status != "sent" {
+		t.Fatal(r)
+	}
+	if err := <-errCh; err != nil {
+		t.Fatal(err)
 	}
 }
 

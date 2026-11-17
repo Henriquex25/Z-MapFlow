@@ -46,6 +46,8 @@ The receiver clears the displayed state on a recognized disconnection or after 1
 
 While synchronization is enabled, **Display** and the synchronization option also manage screen selection and built-in widget flags in generated firmware. Legacy flags retained in an imported JSON/`.conf` are normalized during generation, without deleting the original advanced settings. Conflicting per-target overrides are rejected before building; the same screen selection applies to exported sources.
 
+The synchronized screen reserves an 8192-byte LVGL heap on the halves. The 2048-byte default inherited by a custom screen is insufficient for initialization; explicitly smaller heaps are rejected by the module build. This changes display memory only, not the pairing protocol or bootloader.
+
 The switch owns `CONFIG_ZMAPFLOW_STATUS_SYNC`; edit it through this control rather than contradictory `.conf` or per-target overrides. Initial topology migration still uses the pairing-reset workflow above. If previously paired firmware cannot reconnect after all three devices are updated, use the documented reset/reflash procedure.
 
 ## Daily use and reverting

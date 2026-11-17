@@ -5,3 +5,7 @@ config ZMAPFLOW_STATUS_SYNC
     depends on ZMK_SPLIT && ZMK_BLE
     select BT_GATT_CLIENT if ZMK_SPLIT_ROLE_CENTRAL
     select LV_USE_LABEL if ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL
+
+# The custom screen does not inherit the built-in screen's LVGL heap defaults.
+config LV_Z_MEM_POOL_SIZE
+    default 8192 if ZMAPFLOW_STATUS_SYNC && ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL

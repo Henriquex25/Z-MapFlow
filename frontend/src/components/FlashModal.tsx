@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { localizeMessage, tr, useLocale } from "../i18n";
 import type { Build, Plugin, Volume } from "../types/keyboard";
-import { api } from "../services/api";
+import { api, type FlashProgress } from "../services/api";
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -55,6 +55,8 @@ export function FlashModal({
   const [error, setError] = useState("");
   const [scanError, setScanError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [transfer, setTransfer] = useState<(FlashProgress & { changedAt: number }) | null>(null);
+  const [now, setNow] = useState(Date.now());
   const [selecting, setSelecting] = useState(false);
   const [scanKey, setScanKey] = useState(0);
   const locked = busy || selecting;
@@ -62,6 +64,19 @@ export function FlashModal({
   const resultKind = unconfirmed ? "unconfirmed" : notice ? "sent" : "error";
   const sendIssue = step === 3 ? (unconfirmed ? "unconfirmed" : error ? "failed" : "") : "";
   const allSent = targets.length > 0 && targets.every((t) => completed[t.id]);
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [busy]);
+  const stalled = busy && transfer && now - transfer.changedAt >= 30000;
+  const phaseLabels = {
+    checking: "Checking the bootloader drive…",
+    opening: "Opening the firmware file on the drive…",
+    copying: "Copying firmware to the operating system…",
+    syncing: "Waiting for the final USB write…",
+    closing: "Closing the firmware file…",
+  };
 
   useEffect(() => {
     heading.current?.focus({ preventScroll: true });
@@ -139,16 +154,27 @@ export function FlashModal({
   const send = async () => {
     if (step !== 2 || !target || !volume || locked) return;
     setBusy(true);
+    const artifactTarget = resetting && resetTarget ? resetTarget.id : target;
+    setNow(Date.now());
+    setTransfer({
+      buildId: build.id,
+      targetId: artifactTarget,
+      stage: "checking",
+      written: 0,
+      total: 0,
+      changedAt: Date.now(),
+    });
+    let unsubscribe = () => {};
     setError("");
     setNotice(null);
     setUnconfirmed(null);
     setCompleted((old) => Object.fromEntries(Object.entries(old).filter(([id]) => id !== target)));
     try {
-      const result = await api.flash(
-        build.id,
-        resetting && resetTarget ? resetTarget.id : target,
-        volume,
-      );
+      unsubscribe = api.onFlashProgress((progress) => {
+        if (progress.buildId !== build.id || progress.targetId !== artifactTarget) return;
+        setTransfer({ ...progress, changedAt: Date.now() });
+      });
+      const result = await api.flash(build.id, artifactTarget, volume);
       if (result.status === "unconfirmed") setUnconfirmed({ target, detail: result.detail });
       else if (result.status === "sent") {
         setCompleted((old) => ({ ...old, [target]: "sent" }));
@@ -157,6 +183,7 @@ export function FlashModal({
     } catch (e) {
       setError(String(e));
     } finally {
+      unsubscribe();
       clearVolume();
       setStep(3);
       setBusy(false);
@@ -394,6 +421,36 @@ export function FlashModal({
 
           {step === 2 && (
             <>
+              {busy && transfer && (
+                <div className="notice flash-transfer-status" aria-live="polite">
+                  <strong>{tr(phaseLabels[transfer.stage])}</strong>
+                  {transfer.total > 0 && (
+                    <p>
+                      {tr(
+                        "{0} / {1} bytes accepted by the operating system",
+                        transfer.written,
+                        transfer.total,
+                      )}
+                    </p>
+                  )}
+                  <p>
+                    {tr("Copied bytes do not confirm that the controller has finished flashing.")}
+                  </p>
+                </div>
+              )}
+              {stalled && (
+                <div className="notice flash-transfer-status stalled" role="alert">
+                  <strong>{tr("The USB transfer is taking longer than expected.")}</strong>
+                  <p>
+                    {tr(
+                      "The operating system has not completed this step. If the device stays stuck, disconnect the selected controller, reconnect it in bootloader mode and wait for the pending transfer to return before retrying. Do not start another copy at the same time.",
+                    )}
+                  </p>
+                  <p>
+                    {tr("The app will not retry automatically or mark this device as flashed.")}
+                  </p>
+                </div>
+              )}
               <p>
                 {tr(
                   hasDongle

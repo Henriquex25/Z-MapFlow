@@ -10,6 +10,7 @@ vi.mock("../services/api", () => ({
     listBuilds: vi.fn(),
     volumes: vi.fn(),
     flash: vi.fn(),
+    onFlashProgress: vi.fn(() => () => {}),
     selectVolume: vi.fn(),
     exportFirmware: vi.fn(),
   },

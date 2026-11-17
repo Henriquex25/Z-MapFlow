@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+mainmenu "Synchronized display smoke test"
+config ZMK_SPLIT
+    bool
+    default y
+config ZMK_BLE
+    bool
+    default y
+config ZMK_SPLIT_ROLE_CENTRAL
+    bool
+    default n
+config ZMK_DISPLAY
+    bool
+    default y
+config ZMK_BATTERY_REPORTING
+    bool
+    default y
+rsource "../../module/Kconfig"
+source "Kconfig.zephyr"

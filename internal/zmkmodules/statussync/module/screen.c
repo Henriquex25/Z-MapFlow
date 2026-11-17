@@ -19,7 +19,7 @@ static struct screen_state get_state(const zmk_event_t *eh) {
     return state;
 }
 static void render(struct screen_state state) {
-    if (!layer_label || !output_label) return;
+    if (!layer_label || !output_label || !battery_label) return;
     char layer[40], battery[8], route[20];
     const struct zms_packet *p = &state.remote.packet;
     if (!state.remote.valid) {
@@ -45,6 +45,7 @@ ZMK_SUBSCRIPTION(zms_screen, zmk_battery_state_changed);
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *root = lv_obj_create(NULL);
+    if (!root) return NULL;
     lv_obj_set_style_pad_all(root,0,0);
     lv_obj_set_style_bg_color(root,lv_color_black(),0);
     lv_obj_set_style_bg_opa(root,LV_OPA_COVER,0);
@@ -53,6 +54,11 @@ lv_obj_t *zmk_display_status_screen(void) {
     layer_label = lv_label_create(root);
     output_label = lv_label_create(root);
     battery_label = lv_label_create(root);
+    if (!layer_label || !output_label || !battery_label) {
+        lv_obj_delete(root);
+        layer_label = output_label = battery_label = NULL;
+        return NULL;
+    }
     lv_obj_set_width(layer_label,lv_pct(100));
     lv_obj_set_width(output_label,lv_pct(75));
     lv_label_set_long_mode(layer_label,LV_LABEL_LONG_MODE_CLIP);

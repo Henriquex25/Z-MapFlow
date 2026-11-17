@@ -47,6 +47,14 @@ When the full file copy returns successfully but the final sync or close fails, 
 The app does not retry or declare the keyboard functional based only on the drive disappearing.
 
 
+## A transfer that stays pending
+
+During sending, the wizard shows separate drive-check, opening, copy, final USB write and close phases. The byte count reports data accepted by the operating system; it is **not** confirmation that the controller has programmed flash. After 30 seconds without phase/byte progress, a warning explains that the system is still waiting. The app keeps the transfer pending, does not retry automatically and rejects another simultaneous transfer.
+
+If it remains stuck, disconnect the selected controller, cancel any queued file-manager copy, reconnect in bootloader mode and wait for the previous operation to return before retrying. A blocked USB filesystem write can also block a second manual copy. Repeat only the matching keyboard firmware; pairing reset is needed for initial topology migration, not every failed transfer.
+
+The app saves the latest transfer's stages and outcome in `flash/latest.json` under its configuration directory (`~/.config/z-mapflow/flash/latest.json` on Linux with the default XDG location). This records the build/target, volume, OS byte count, timestamps and any returned error for diagnosis. A pending record alone does not prove successful or failed programming. Linux USB timeouts and an inaccessible volume need investigation independently of the desktop UI.
+
 ## Windows USB drives
 
 On Windows, put the connected half into bootloader mode and wait for its UF2 drive to appear in Explorer. The app discovers local drives through Win32 and checks `INFO_UF2.TXT` against the selected controller. If discovery misses it, select the drive root manually, such as `E:\`. Choose the connected half explicitly; the drive alone cannot identify left versus right. Flashing copies directly from the Windows app to the drive, without Docker USB passthrough. Physical Windows keyboard validation is still pending.

@@ -46,6 +46,8 @@ O receptor invalida o estado exibido quando reconhece a desconexão ou passa 15 
 
 Com a sincronização ativada, **Display** e a opção de sincronização também gerenciam a seleção de tela e os widgets padrão no firmware gerado. Flags antigas preservadas em um JSON/`.conf` importado são normalizadas durante a geração, sem apagar os ajustes avançados originais. Overrides conflitantes por alvo são rejeitados antes da compilação; a mesma seleção de tela vale para os arquivos exportados.
 
+A tela sincronizada reserva 8192 bytes de memória LVGL nas metades. O padrão de 2048 bytes herdado por uma tela personalizada é insuficiente para inicializar; valores explicitamente menores são rejeitados na compilação do módulo. Essa correção altera a memória da tela, sem mudar o protocolo de pareamento ou o bootloader.
+
 O controle gerencia `CONFIG_ZMAPFLOW_STATUS_SYNC`; use essa opção em vez de overrides contraditórios no `.conf` ou por alvo. A primeira mudança de topologia continua usando o reset descrito acima. Se firmwares anteriormente pareados não reconectarem depois de atualizar os três dispositivos, utilize o procedimento de reset/regravação.
 
 ## Uso diário e retorno ao perfil anterior

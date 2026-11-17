@@ -2,7 +2,14 @@ import { useAppPreferences } from "../i18n/preferences";
 import * as go from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
 import type { Project, Build, Session, Plugin } from "../types/keyboard";
-import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
+import { BrowserOpenURL, EventsOn } from "../../wailsjs/runtime/runtime";
+export type FlashProgress = {
+  buildId: string;
+  targetId: string;
+  stage: "checking" | "opening" | "copying" | "syncing" | "closing";
+  written: number;
+  total: number;
+};
 const model = (p: Project) => models.Project.createFrom(p);
 export type CommunityKind = "star" | "donation";
 export const communityLinks = {
@@ -45,4 +52,6 @@ export const api = {
   volumes: go.FindBootloaders,
   selectVolume: (id: string) => native(() => go.SelectBootloader(id)),
   flash: go.FlashFirmware,
+  onFlashProgress: (callback: (progress: FlashProgress) => void) =>
+    EventsOn("firmware:flash", callback),
 };

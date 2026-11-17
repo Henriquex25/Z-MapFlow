@@ -84,10 +84,22 @@ type Result struct {
 	Detail string `json:"detail"`
 }
 
+// Progress counts bytes accepted by the OS, not bytes confirmed in device flash.
+type Progress struct {
+	Stage   string `json:"stage"`
+	Written int64  `json:"written"`
+	Total   int64  `json:"total"`
+}
+
 // Copy sends a verified artifact. Final sync/close failures remain unconfirmed:
 // UF2 bootloaders can reboot before the host finishes, but real I/O failures can
 // produce the same error. Interrupted copies always return an error.
-func Copy(source, destination, name string, variant models.Variant) (Result, error) {
+func Copy(source, destination, name string, variant models.Variant, progress ...func(Progress)) (Result, error) {
+	emit := func(Progress) {}
+	if len(progress) > 0 && progress[0] != nil {
+		emit = progress[0]
+	}
+	emit(Progress{Stage: "checking"})
 	volume, err := Inspect(destination, variant)
 	if err != nil {
 		return Result{}, err
@@ -104,11 +116,16 @@ func Copy(source, destination, name string, variant models.Variant) (Result, err
 		return Result{}, err
 	}
 	defer in.Close()
+	info, err := in.Stat()
+	if err != nil {
+		return Result{}, err
+	}
+	emit(Progress{Stage: "opening", Total: info.Size()})
 	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return Result{}, err
 	}
-	return copyToVolume(out, in)
+	return copyWithProgress(out, in, info.Size(), emit)
 }
 
 type volumeWriter interface {
@@ -118,15 +135,38 @@ type volumeWriter interface {
 }
 
 func copyToVolume(out volumeWriter, in io.Reader) (Result, error) {
+	return copyWithProgress(out, in, 0, func(Progress) {})
+}
+
+type progressWriter struct {
+	out            io.Writer
+	written, total int64
+	emit           func(Progress)
+}
+
+func (w *progressWriter) Write(p []byte) (int, error) {
+	n, err := w.out.Write(p)
+	w.written += int64(n)
+	w.emit(Progress{Stage: "copying", Written: w.written, Total: w.total})
+	return n, err
+}
+
+func copyWithProgress(out volumeWriter, in io.Reader, total int64, emit func(Progress)) (Result, error) {
+	w := &progressWriter{out: out, total: total, emit: emit}
+	emit(Progress{Stage: "copying", Total: total})
 	var err error
-	if _, err = io.Copy(out, in); err != nil {
+	if _, err = io.Copy(w, in); err != nil {
+		emit(Progress{Stage: "closing", Written: w.written, Total: total})
 		out.Close()
 		return Result{}, fmt.Errorf("envio interrompido; reconecte em bootloader e tente novamente: %w", err)
 	}
+	emit(Progress{Stage: "syncing", Written: w.written, Total: total})
 	if err = out.Sync(); err != nil {
+		emit(Progress{Stage: "closing", Written: w.written, Total: total})
 		out.Close()
 		return Result{Status: "unconfirmed", Detail: err.Error()}, nil
 	}
+	emit(Progress{Stage: "closing", Written: w.written, Total: total})
 	if err = out.Close(); err != nil {
 		return Result{Status: "unconfirmed", Detail: err.Error()}, nil
 	}
