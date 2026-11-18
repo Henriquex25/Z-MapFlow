@@ -10,6 +10,18 @@ On Windows, use the x64 setup package, ensure Microsoft WebView2 is installed an
 
 On Linux, check the architecture and GTK/WebKit libraries in the [installation guide](./install). Run the executable from a terminal to inspect the system error. Official Linux packages use WebKitGTK 4.1.
 
+## Scrolling or animations feel slow on Linux
+
+Running `./build/bin/z-mapflow` uses the normal desktop renderer. Rebuild after source changes; restarting an older binary does not load them. The app allows WebKit hardware acceleration when available and avoids re-rendering editors for unchanged build status.
+
+If a graphics driver causes a blank window or rendering problems, close the app and try the software fallback from a terminal:
+
+```sh
+ZMAPFLOW_DISABLE_GPU=1 ./build/bin/z-mapflow
+```
+
+For an installed release, replace the path with its executable. The variable affects that launch only. Include the app version, Linux distribution, GPU/driver and whether the fallback changes the behavior in a bug report. Rendering speed still depends on the system’s WebKit and graphics stack.
+
 ## Docker is not available
 
 Start Docker Desktop or the Docker service. Check `docker info` and `docker context show` in your terminal. The app needs access to the same context and socket. Do not run the entire app as root.

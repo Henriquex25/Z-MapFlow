@@ -49,6 +49,8 @@ export function changeHardwareVariant(p: Project, plugin: Plugin, id: string) {
   if (p.buildTargets)
     p.buildTargets = p.buildTargets.filter((s) => next.targets.some((t) => t.id === s.targetId));
   for (const settings of p.buildTargets ?? []) {
+    if (!next.features?.includes("oled-rotate-180"))
+      settings.snippets = settings.snippets?.filter((s) => s !== "zmapflow-oled-flip-180");
     const managed = previous?.targets.find((t) => t.id === settings.targetId)?.config ?? {};
     settings.cmakeArgs = settings.cmakeArgs?.filter((arg) => {
       const parts = /^-D(CONFIG_[A-Za-z0-9_]+)(?::[^=]+)?=(.*)$/.exec(arg);
@@ -68,6 +70,11 @@ export function hardwareConfigError(p: Project, plugin: Plugin | null) {
     return tr("CONFIG_ZMAPFLOW_STATUS_SYNC: use the synchronization option.");
   for (const settings of p.buildTargets ?? []) {
     const target = variant?.targets.find((t) => t.id === settings.targetId);
+    if (
+      settings.snippets?.includes("zmapflow-oled-flip-180") &&
+      (!variant?.features?.includes("oled-rotate-180") || target?.role !== "peripheral")
+    )
+      return tr("OLED rotation requires a supported peripheral display profile.");
     for (const arg of settings.cmakeArgs ?? []) {
       const parts = /^-D(CONFIG_[A-Za-z0-9_]+)(?::[^=]+)?=(.*)$/.exec(arg);
       if (parts?.[1] === "CONFIG_ZMAPFLOW_STATUS_SYNC")

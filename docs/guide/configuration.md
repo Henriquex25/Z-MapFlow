@@ -48,6 +48,8 @@ For a combo, expand its card and select at least two trigger positions in the ke
 - **Macros / Behaviors:** choose a macro or custom behavior created in the project. Its invocation parameters appear when required.
 - **Enter bootloader (&bootloader):** no parameter is needed, so no key field appears.
 
+The behavior and parameter selectors include search: click a selector and type a name, keycode or group, such as `bootloader`, `F13` or `Macros`. Use the arrow keys and Enter, or click a result. Escape cancels the search; typing a query alone does not change the binding. Long lists render only their visible options. Key/shortcut fields below the selector continue to accept validated shortcuts such as `LC(A)`.
+
 Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. The visual selectors also appear in macro steps and behavior child actions, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
 
 For a dongle's bootloader, see [the combo shortcut](./dongle#enter-the-dongle-bootloader-with-a-combo).

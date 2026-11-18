@@ -17,6 +17,49 @@ export function DongleSettings({ variant }: { variant: Plugin["variants"][number
   return (
     <div className="dongle-settings">
       <h4>{tr("Dongle options")}</h4>
+      {variant.features?.includes("oled-rotate-180") && (
+        <div className="mt-3">
+          <h4>{tr("OLED orientation")}</h4>
+          <div className="flex flex-wrap gap-4 mt-2">
+            {variant.targets
+              .filter((t) => t.role === "peripheral")
+              .map((target) => (
+                <label key={target.id}>
+                  <input
+                    type="checkbox"
+                    disabled={!project.options.display}
+                    checked={
+                      !!project.buildTargets
+                        ?.find((t) => t.targetId === target.id)
+                        ?.snippets?.includes("zmapflow-oled-flip-180")
+                    }
+                    onChange={(event) =>
+                      edit((p) => {
+                        p.buildTargets ??= [];
+                        let settings = p.buildTargets.find((t) => t.targetId === target.id);
+                        if (!settings) {
+                          settings = { targetId: target.id };
+                          p.buildTargets.push(settings);
+                        }
+                        settings.snippets = (settings.snippets ?? []).filter(
+                          (s) => s !== "zmapflow-oled-flip-180",
+                        );
+                        if (event.target.checked) settings.snippets.push("zmapflow-oled-flip-180");
+                      })
+                    }
+                  />
+                  {tr("Rotate {0} OLED 180°", tr(target.name))}
+                </label>
+              ))}
+          </div>
+          <p className="hint mt-2">
+            {tr(
+              "Keeps the horizontal status layout and flips only the selected half. Save, rebuild and flash that half; no pairing reset is needed for orientation alone.",
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-4 mt-3">
         <label>
           <input

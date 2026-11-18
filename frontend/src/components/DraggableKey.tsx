@@ -1,6 +1,6 @@
 import { ResourceVisibility } from "../utils/resourceVisibility";
 import { tr, useLocale } from "../i18n";
-import { useId, useContext } from "react";
+import { useId, useContext, useMemo } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { IKeyAction } from "../types/keyboard";
 import { Key } from "./Key";
@@ -15,11 +15,15 @@ export function DraggableKey({
   className?: string;
   validationContext?: BindingContext;
 }) {
-  useLocale();
+  const locale = useLocale();
   const visible = useContext(ResourceVisibility);
   const id = useId();
-  const { project, plugin } = useKeyboardStore();
-  const error = project ? validateBinding(action.code, project, plugin, validationContext) : "";
+  const project = useKeyboardStore((s) => s.project);
+  const plugin = useKeyboardStore((s) => s.plugin);
+  const error = useMemo(
+    () => (project ? validateBinding(action.code, project, plugin, validationContext) : ""),
+    [action.code, project, plugin, validationContext, locale],
+  );
   const selectAction = useKeyboardStore((s) => s.selectAction);
   const selected = useKeyboardStore((s) => s.selectedAction?.code === action.code);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({

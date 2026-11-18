@@ -51,3 +51,7 @@ Para um combo, expanda o cartão e selecione pelo menos duas posições no desen
 Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. Os seletores também aparecem nas etapas de macros e nas ações internas de comportamentos, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
 
 Para o bootloader do dongle, veja [o atalho por combo](./dongle#entrar-no-bootloader-do-dongle-com-um-combo).
+
+### Buscar comportamentos e parâmetros
+
+Clique em um seletor de comportamento ou parâmetro e digite um nome, código de tecla ou grupo, como `bootloader`, `F13` ou `Macros`. Use as setas e Enter, ou clique em um resultado. Escape cancela a busca; apenas digitar não altera o binding. Listas longas exibem somente as opções visíveis. O campo de tecla/atalho abaixo do seletor continua aceitando atalhos validados, como `LC(A)`.

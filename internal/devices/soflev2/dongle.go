@@ -15,9 +15,11 @@ func dongleVariant(base models.Variant) models.Variant {
 	v.ID = "nice_nano_v2_dongle"
 	v.Name = "nice!nano v2 / SuperMini — USB dongle central (experimental)"
 	empty := ""
-	v.Overlay = &empty // Upstream shields enable only each half's actual encoder.
-	v.Features = append(append([]string{}, base.Features...), "peripheral-status-sync")
+	v.Overlay = &empty // Upstream shields enable each half's own encoder.
+	v.Features = append(append([]string{}, base.Features...), "peripheral-status-sync", "oled-rotate-180")
 	v.Files = statussync.Files()
+	v.Files["snippets/zmapflow-oled-flip-180/snippet.yml"] = "name: zmapflow-oled-flip-180\nappend:\n  EXTRA_DTC_OVERLAY_FILE: flip.overlay\n"
+	v.Files["snippets/zmapflow-oled-flip-180/flip.overlay"] = "/* SPDX-License-Identifier: MIT */\n&oled {\n    /delete-property/ segment-remap;\n    /delete-property/ com-invdir;\n};\n"
 	entries, _ := fs.ReadDir(dongleFiles, "dongle")
 	for _, entry := range entries {
 		data, _ := dongleFiles.ReadFile("dongle/" + entry.Name())

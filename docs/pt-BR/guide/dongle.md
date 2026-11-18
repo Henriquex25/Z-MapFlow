@@ -55,6 +55,14 @@ O reset nice!nano é compartilhado apenas entre controladoras nice!nano/SuperMin
 
 A controladora pode reiniciar antes de o sistema confirmar a última escrita. No reset, o assistente permite reconhecer o reinício sem declarar o teclado funcional. Entre novamente no bootloader e instale o firmware do teclado antes de testar teclas. Consulte [avisos na última escrita](./firmware#reinicializacao-e-avisos-de-gravacao-final).
 
+## Girar o OLED de uma metade em 180°
+
+Com um perfil de dongle USB selecionado, abra **Configurações → Teclado e firmware → Opções do dongle → Orientação do OLED**. Ative **Girar OLED Direita em 180°** para virar a tela direita na sua direção. Esquerda e direita são independentes e começam desativadas. **Display** deve estar habilitado para alterar esses controles.
+
+Salve, recompile e grave a metade escolhida. Alterar somente a orientação **não** exige limpar o pareamento nem gravar o dongle. A opção é salva no projeto e na configuração de build exportada, e funciona com a sincronização ligada ou desligada. O layout horizontal, as cores, os tamanhos das fontes e as informações são preservados. Este perfil oferece 0° e 180°; não há layout vertical de 90°/270° nesta implementação.
+
+O overlay SSD1306 do Sofle inverte as duas direções de varredura do hardware somente no alvo escolhido, pelas propriedades de segment-remap e direção COM. Veja o [binding SSD1306 da versão Zephyr usada](https://github.com/zephyrproject-rtos/zephyr/blob/v4.1.0/dts/bindings/display/solomon,ssd1306fb.yaml). Não há rotação dos pixels por software.
+
 ## Sincronização opcional de camada e conexão
 
 Em **Configurações → Teclado e firmware**, ative **Sincronizar camada e conexão com as metades**. A opção inicia **desativada**, é salva no projeto e aparece apenas nos perfis compatíveis. Alterá-la preserva o keymap. Selecionar um perfil incompatível a desativa. A importação/exportação da configuração Z-MapFlow preserva esse ajuste.

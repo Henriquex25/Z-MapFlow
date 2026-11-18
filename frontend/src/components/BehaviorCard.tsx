@@ -1,5 +1,5 @@
 import { ResourceVisibility } from "../utils/resourceVisibility";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { tr, useLocale } from "../i18n";
 
@@ -15,14 +15,37 @@ export function BehaviorCard({
   useLocale();
   const [expanded, setExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (expanded) return;
-    const duration = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 240;
-    const timer = setTimeout(() => setMounted(false), duration);
-    return () => clearTimeout(timer);
-  }, [expanded]);
   const id = useId();
   const body = useRef<HTMLDivElement>(null);
+  const clip = useRef<HTMLDivElement>(null);
+  const startHeight = useRef(0);
+  useLayoutEffect(() => {
+    const element = body.current;
+    if (!element || !mounted) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || !element.animate) {
+      if (!expanded) setMounted(false);
+      return;
+    }
+    // Fix the content outside normal flow while the small outer wrapper changes
+    // height, so every frame does not recalculate the form/keyboard grid inside.
+    element.dataset.animating = "true";
+    const target = expanded ? (clip.current?.getBoundingClientRect().height ?? 0) : 0;
+    const animation = element.animate(
+      [{ height: `${startHeight.current}px` }, { height: `${target}px` }],
+      { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)", fill: "both" },
+    );
+    animation.onfinish = () => {
+      delete element.dataset.animating;
+      animation.cancel();
+      if (!expanded) setMounted(false);
+    };
+    return () => {
+      animation.onfinish = null;
+      animation.cancel();
+      delete element.dataset.animating;
+    };
+  }, [expanded, mounted]);
   return (
     <article className={`resource-card behavior-card${expanded ? " expanded" : ""}`}>
       <div className="behavior-toolbar">
@@ -41,6 +64,7 @@ export function BehaviorCard({
               invalid.focus();
               return;
             }
+            startHeight.current = body.current?.getBoundingClientRect().height ?? 0;
             setMounted(true);
             setExpanded(!expanded);
           }}
@@ -49,8 +73,15 @@ export function BehaviorCard({
         </button>
         {toolbar}
       </div>
-      <div id={id} ref={body} aria-hidden={!expanded} inert={!expanded} className="behavior-body">
-        <div className="behavior-body-clip">
+      <div
+        id={id}
+        ref={body}
+        aria-hidden={!expanded}
+        inert={!expanded}
+        className="behavior-body"
+        style={{ height: expanded ? "auto" : 0, visibility: mounted ? "visible" : "hidden" }}
+      >
+        <div ref={clip} className="behavior-body-clip">
           <div className="behavior-body-content">
             <ResourceVisibility.Provider value={expanded}>
               {mounted ? children : null}

@@ -1,8 +1,9 @@
+import { sameBuild } from "./utils/buildStatus";
 import appIcon from "../../build/appicon.png";
 import { AppVersion } from "./components/AppVersion";
 import { CommunitySupport } from "./components/CommunitySupport";
 import { localizeMessage, tr, useLocale } from "./i18n";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -63,7 +64,7 @@ const tabIcons = {
 };
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export default function App() {
-  useLocale();
+  const locale = useLocale();
   const store = useKeyboardStore();
   const { project, savedProject, initialProject, plugin, activeLayerId } = store;
   const [keyboardZoom, setKeyboardZoom] = useState(1);
@@ -90,9 +91,15 @@ export default function App() {
     }),
   );
   const pendingErrors = Object.values(store.draftErrors);
-  const projectError = project ? projectBindingError(project, plugin) : "";
+  const projectError = useMemo(
+    () => (project ? projectBindingError(project, plugin) : ""),
+    [project, plugin, locale],
+  );
   const cannotSave = pendingErrors.length > 0 || !!projectError;
-  const dirty = isDirty(project, savedProject ?? initialProject);
+  const dirty = useMemo(
+    () => isDirty(project, savedProject ?? initialProject),
+    [project, savedProject, initialProject],
+  );
   const report = useCallback((e: unknown) => setError(message(e)), []);
   const initialize = async (session: Session) => {
     store.initialize(session);
@@ -126,7 +133,7 @@ export default function App() {
       pending = true;
       try {
         const b = await api.status();
-        if (alive) setBuild(b);
+        if (alive) setBuild((previous) => (sameBuild(previous, b) ? previous : b));
       } catch (e) {
         if (alive) report(e);
       } finally {
@@ -229,11 +236,11 @@ export default function App() {
     if (dirty) setConfirm(() => fn);
     else fn();
   };
-  const assignResource = (action: IKeyAction) => {
-    store.selectAction(action);
+  const assignResource = useCallback((action: IKeyAction) => {
+    useKeyboardStore.getState().selectAction(action);
     setTab("Layout");
     setNotice("");
-  };
+  }, []);
   useEffect(() => {
     const cancelSelection = (event: KeyboardEvent) => {
       if (event.key === "Escape") useKeyboardStore.getState().selectAction(null);

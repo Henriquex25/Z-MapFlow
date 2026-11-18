@@ -1874,20 +1874,17 @@ h3 {
   padding: 12px 16px;
 }
 .behavior-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition:
-    grid-template-rows 220ms ease,
-    visibility 220ms;
-  visibility: hidden;
-}
-.behavior-card.expanded > .behavior-body {
-  grid-template-rows: 1fr;
-  visibility: visible;
+  position: relative;
+  overflow: hidden;
+  contain: layout paint;
 }
 .behavior-body-clip {
-  min-height: 0;
-  overflow: hidden;
+  display: flow-root;
+}
+.behavior-body[data-animating] > .behavior-body-clip {
+  position: absolute;
+  inset: 0 0 auto;
+  will-change: transform;
 }
 .behavior-body-content {
   padding-top: 12px;
@@ -2107,4 +2104,89 @@ input[type="checkbox"]:focus-visible {
 }
 .dongle-settings {
   margin-top: 16px;
+}
+
+.search-select {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+.search-select.behavior-type-select {
+  width: min(100%, 230px);
+}
+.search-select-input {
+  width: 100%;
+  padding-right: 32px;
+  text-overflow: ellipsis;
+}
+.search-select-input[readonly] {
+  cursor: pointer;
+}
+.search-select-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.search-select-menu {
+  position: fixed;
+  z-index: 400;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #0006;
+  overflow: hidden;
+}
+.search-select-menu [role="listbox"] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.search-select-items {
+  position: relative;
+}
+.search-select-option {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+.search-select-option.active {
+  background: var(--surface-hover);
+}
+.search-select-option[aria-selected="true"] {
+  color: var(--accent);
+}
+.search-select-option[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.search-select-option-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.search-select-option-copy > span,
+.search-select-option-copy > small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.search-select-option-copy > small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.search-select-empty {
+  padding: 12px;
 }

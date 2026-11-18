@@ -959,5 +959,13 @@
   "Reset XIAO pairing": "Limpar pareamento do XIAO",
   "XIAO nRF52840 dongle + nice!nano v2 / SuperMini halves (experimental)": "Dongle XIAO nRF52840 + metades nice!nano v2 / SuperMini (experimental)",
   "Mixed-controller setup: use a Seeed Studio XIAO nRF52840 as USB dongle and nice!nano v2-compatible controllers in both halves. Double-press RESET on the connected controller to open its UF2 bootloader. Select the actual device; the app selects its matching reset firmware. Return to a current ZMK half-central profile before using a legacy profile. Physical validation of this combination is pending.": "Use um Seeed Studio XIAO nRF52840 como dongle USB e controladoras compatíveis com nice!nano v2 nas metades. Pressione RESET duas vezes na controladora conectada para abrir o bootloader UF2. Selecione o dispositivo real; o app escolhe seu firmware de limpeza. Para voltar sem dongle, use primeiro o perfil atual antes de usar o legado. Esta combinação ainda precisa de validação física.",
-  "Enable this feature in Settings before choosing its action.": "Ative este recurso nas Configurações antes de escolher sua ação."
+  "Enable this feature in Settings before choosing its action.": "Ative este recurso nas Configurações antes de escolher sua ação.",
+  "Search options…": "Buscar opções…",
+  "Choose an option": "Escolha uma opção",
+  "No matching options": "Nenhuma opção encontrada",
+  "Show options for {0}": "Mostrar opções de {0}",
+  "OLED orientation": "Orientação do OLED",
+  "Rotate {0} OLED 180°": "Girar OLED {0} em 180°",
+  "Keeps the horizontal status layout and flips only the selected half. Save, rebuild and flash that half; no pairing reset is needed for orientation alone.": "Mantém o layout horizontal e gira somente a metade escolhida. Salve, recompile e grave essa metade; alterar apenas a orientação não exige limpar o pareamento.",
+  "OLED rotation requires a supported peripheral display profile.": "A rotação do OLED exige um perfil de display periférico compatível."
 }

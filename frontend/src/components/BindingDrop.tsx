@@ -1,3 +1,4 @@
+import { SearchableSelect } from "./SearchableSelect";
 import { ResourceVisibility } from "../utils/resourceVisibility";
 import { bindingChoices } from "../utils/bindingChoices";
 import { bindingParts } from "../utils/bindingParameters";
@@ -27,16 +28,18 @@ export function BindingDrop({
   context?: BindingContext;
   owner?: string;
 }) {
-  useLocale();
+  const locale = useLocale();
   const visible = useContext(ResourceVisibility);
   const id = useId(),
     [raw, setRaw] = useState(code),
     { active } = useDndContext();
   useEffect(() => setRaw(code), [code]);
-  const { project: p, plugin, selectedAction } = useKeyboardStore();
+  const p = useKeyboardStore((s) => s.project);
+  const plugin = useKeyboardStore((s) => s.plugin);
+  const selectedAction = useKeyboardStore((s) => s.selectedAction);
   const choices = useMemo(
     () => (p ? bindingChoices(p, plugin, context, owner) : []),
-    [p, plugin, context, owner],
+    [p, plugin, context, owner, locale],
   );
   const errorFor = (value: string) =>
     p ? validateBinding(value, p, plugin, context, new Set(owner ? [owner] : [])) : "";
@@ -97,45 +100,30 @@ export function BindingDrop({
         />
       )}
       {p && !compact && (
-        <label className="form-label binding-behavior-select">
-          {tr("Behavior")}
-          <select
-            className="field"
-            aria-label={tr("{0} — behavior", label)}
+        <div className="form-label binding-behavior-select">
+          <span>{tr("Behavior")}</span>
+          <SearchableSelect
+            label={tr("{0} — behavior", label)}
             value={
               choices.find((a) => bindingParts(a.code)[0] === bindingParts(code)[0])?.code ??
               bindingParts(code)[0] ??
               ""
             }
-            onChange={(e) => {
-              const choice = choices.find((a) => a.code === e.target.value);
+            placeholder={tr("Choose an action")}
+            options={choices.map((a) => ({
+              value: a.code,
+              label: a.label,
+              group: tr(a.group),
+              disabled: !!a.error,
+              description: a.error || undefined,
+              searchText: a.code,
+            }))}
+            onChange={(value) => {
+              const choice = choices.find((a) => a.code === value);
               if (choice && !choice.error) assign(choice.code);
             }}
-          >
-            {!code && <option value="">{tr("Choose an action")}</option>}
-            {code && !choices.some((a) => bindingParts(a.code)[0] === bindingParts(code)[0]) && (
-              <option value={bindingParts(code)[0]} disabled>
-                {displayCode(code, p)}
-              </option>
-            )}
-            {["Built-in actions", "Macros", "Behaviors", "Keyboard actions"].map((group) => (
-              <optgroup key={group} label={tr(group)}>
-                {choices
-                  .filter((a) => a.group === group)
-                  .map((a) => (
-                    <option
-                      key={a.code}
-                      value={a.code}
-                      disabled={!!a.error}
-                      title={a.error || undefined}
-                    >
-                      {a.label}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
       )}
       {p && code && !compact && (
         <BindingArguments

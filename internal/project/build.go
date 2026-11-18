@@ -69,6 +69,15 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 		seen[settings.TargetID] = true
 		used := map[string]bool{}
 		for _, snippet := range settings.Snippets {
+			if snippet == "zmapflow-oled-flip-180" {
+				supported := false
+				for _, feature := range variant.Features {
+					supported = supported || feature == "oled-rotate-180"
+				}
+				if !supported || definition.Role != "peripheral" {
+					return fmt.Errorf("OLED rotation requires a supported peripheral display profile.")
+				}
+			}
 			if !snippetName.MatchString(snippet) || used[snippet] {
 				return fmt.Errorf("snippet inválido ou duplicado: %s", snippet)
 			}

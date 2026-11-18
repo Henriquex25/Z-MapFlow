@@ -1,3 +1,4 @@
+import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
 import { SleepTimeoutField } from "./SleepTimeoutField";
 import { changeHardwareVariant } from "../utils/hardwareVariant";
@@ -5,7 +6,8 @@ import { ConnectionTopology } from "./ConnectionTopology";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { AppSettings } from "./AppSettings";
 import { tr, useLocale } from "../i18n";
-import { useState } from "react";
+import { memo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import { action, uid, type IKeyAction } from "../types/keyboard";
 import {
@@ -24,9 +26,15 @@ import { DraggableKey } from "./DraggableKey";
 import { KeyboardLayout } from "./KeyboardLayout";
 
 type AssignProps = { onAssign: (action: IKeyAction) => void };
-export function MacroEditor({ onAssign }: AssignProps) {
+export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) {
   useLocale();
-  const { project: p, edit, removeResource } = useKeyboardStore();
+  const {
+    project: p,
+    edit,
+    removeResource,
+  } = useKeyboardStore(
+    useShallow((s) => ({ project: s.project, edit: s.edit, removeResource: s.removeResource })),
+  );
   if (!p) return null;
   return (
     <div className="resource-editor">
@@ -257,10 +265,24 @@ export function MacroEditor({ onAssign }: AssignProps) {
       ))}
     </div>
   );
-}
-export function BehaviorEditor({ onAssign }: AssignProps) {
+});
+export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignProps) {
   useLocale();
-  const { project: p, plugin, activeLayerId, edit, removeResource } = useKeyboardStore();
+  const {
+    project: p,
+    plugin,
+    activeLayerId,
+    edit,
+    removeResource,
+  } = useKeyboardStore(
+    useShallow((s) => ({
+      project: s.project,
+      plugin: s.plugin,
+      activeLayerId: s.activeLayerId,
+      edit: s.edit,
+      removeResource: s.removeResource,
+    })),
+  );
   const [triggerEditor, setTriggerEditor] = useState("");
   if (!p || !plugin) return null;
   const add = (kind: string) => edit((p) => p.layout.behaviors.push(newBehavior(kind)));
@@ -280,23 +302,18 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
           <button className="btn primary" onClick={() => add("tap-dance")}>
             {tr("+ Tap sequence")}{" "}
           </button>
-          <select
-            className="field"
-            aria-label={tr("Add behavior type")}
+          <SearchableSelect
+            className="behavior-type-select"
+            label={tr("Add behavior type")}
             value=""
-            onChange={(e) => {
-              if (e.target.value) add(e.target.value);
-            }}
-          >
-            <option value="">{tr("+ Other behaviors")}</option>
-            {Object.entries(behaviorKinds)
+            placeholder={tr("+ Other behaviors")}
+            options={Object.entries(behaviorKinds)
               .filter(([kind]) => kind !== "hold-tap" && kind !== "tap-dance")
-              .map(([kind, label]) => (
-                <option key={kind} value={kind}>
-                  {tr(label)}
-                </option>
-              ))}
-          </select>
+              .map(([value, label]) => ({ value, label: tr(label), searchText: value }))}
+            onChange={(value) => {
+              if (value) add(value);
+            }}
+          />
         </div>
       </div>
       {!p.layout.behaviors.length && (
@@ -653,8 +670,8 @@ export function BehaviorEditor({ onAssign }: AssignProps) {
       ))}
     </div>
   );
-}
-export function ComboEditor() {
+});
+export const ComboEditor = memo(function ComboEditor() {
   useLocale();
   const {
     project: p,
@@ -663,7 +680,16 @@ export function ComboEditor() {
     edit,
     removeResource,
     setActiveLayer,
-  } = useKeyboardStore();
+  } = useKeyboardStore(
+    useShallow((s) => ({
+      project: s.project,
+      plugin: s.plugin,
+      activeLayerId: s.activeLayerId,
+      edit: s.edit,
+      removeResource: s.removeResource,
+      setActiveLayer: s.setActiveLayer,
+    })),
+  );
   if (!p || !plugin) return null;
   return (
     <div className="resource-editor">
@@ -826,7 +852,7 @@ export function ComboEditor() {
       ))}
     </div>
   );
-}
+});
 export function SettingsEditor() {
   useLocale();
   const { project: p, plugin, edit } = useKeyboardStore();

@@ -56,7 +56,7 @@ func main() {
 		Title:  "Z-MapFlow",
 		Width:  1440,
 		Height: 900,
-		Linux:  &linux.Options{Icon: appIcon, ProgramName: "z-mapflow", WebviewGpuPolicy: linux.WebviewGpuPolicyNever},
+		Linux:  &linux.Options{Icon: appIcon, ProgramName: "z-mapflow", WebviewGpuPolicy: webviewGpuPolicy()},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -77,4 +77,16 @@ func main() {
 	if err != nil {
 		println("Error:", err.Error())
 	}
+}
+
+// Let WebKit accelerate compositing when available. Keep an explicit recovery
+// switch for graphics drivers that cannot run the accelerated webview.
+func webviewGpuPolicy() linux.WebviewGpuPolicy {
+	if os.Getenv("ZMAPFLOW_DISABLE_GPU") == "1" {
+		return linux.WebviewGpuPolicyNever
+	}
+	// Wails v2.15.0's Go and C enum order differ: native window.c maps 1
+	// to ON_DEMAND, although the public Go constant at 1 is named Always.
+	// Keep native ON_DEMAND rather than forcing acceleration (native 0).
+	return linux.WebviewGpuPolicyAlways
 }

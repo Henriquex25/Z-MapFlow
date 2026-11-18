@@ -56,6 +56,14 @@ The nice!nano reset file is shared by compatible nice!nano/SuperMini controllers
 
 A controller can restart before the operating system confirms its last write. For reset firmware, the wizard lets you acknowledge a restart without claiming the keyboard works. Re-enter the bootloader and install keyboard firmware before testing keys. See [UF2 transfer warnings](./firmware#restart-and-final-write-warnings).
 
+## Rotate a half’s OLED 180°
+
+With a USB dongle profile selected, open **Settings → Keyboard and firmware → Dongle options → OLED orientation**. Enable **Rotate Right OLED 180°** to turn the right display toward you. Left and right can be selected independently; both start disabled. **Display** must be enabled to change these controls.
+
+Save, rebuild and flash the selected half. Changing orientation alone does **not** require clearing pairing or flashing the dongle. The setting is saved with the project and exported build configuration, and works with synchronization on or off. It preserves the horizontal status layout, colors, font sizes and displayed information. This profile currently offers 0° and 180°; a portrait layout (90°/270°) is not provided.
+
+The Sofle SSD1306 overlay reverses both hardware scan directions on the selected target, using the display’s segment-remap and COM-direction properties. See the [pinned Zephyr SSD1306 binding](https://github.com/zephyrproject-rtos/zephyr/blob/v4.1.0/dts/bindings/display/solomon,ssd1306fb.yaml). No software pixel rotation is added.
+
 ## Optional layer and connection synchronization
 
 In **Settings → Keyboard and firmware**, enable **Synchronize layer and connection with the halves**. It is **off by default**, saved in the project, and offered only by compatible hardware profiles. Changing it preserves the keymap. Selecting an unsupported profile turns it off. Imported/exported Z-MapFlow configuration preserves the setting.

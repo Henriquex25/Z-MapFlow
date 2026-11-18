@@ -1,6 +1,8 @@
+import { visualSummary } from "../utils/keyPresentation";
+import { SearchableSelect, type SelectOption } from "./SearchableSelect";
 import { formatKeyVisuals } from "../utils/keyFormatter";
 import { localizeMessage, tr, useLocale } from "../i18n";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { Project } from "../types/keyboard";
 import { useKeyboardStore } from "../store/useKeyboardStore";
 import { bindingParts, normalizeBinding } from "../utils/bindingParameters";
@@ -12,6 +14,24 @@ import {
   type BindingContext,
 } from "../utils/bindingValidation";
 import { useDraftError } from "../utils/useDraftError";
+
+// Project snapshots are immutable. Share the formatted catalog between fields
+// instead of formatting hundreds of identical key labels for every parameter.
+const keyCatalogs = new WeakMap<Project, Map<string, SelectOption[]>>();
+function keyOptions(project: Project, locale: string) {
+  let catalogs = keyCatalogs.get(project);
+  if (!catalogs) keyCatalogs.set(project, (catalogs = new Map()));
+  let options = catalogs.get(locale);
+  if (!options) {
+    options = keycodeChoices(project).map((key) => ({
+      value: key,
+      label: visualSummary(formatKeyVisuals(`&kp ${key}`)) || key,
+      description: key,
+    }));
+    catalogs.set(locale, options);
+  }
+  return options;
+}
 
 export function BindingArguments({
   code,
@@ -26,11 +46,10 @@ export function BindingArguments({
   onChange: (code: string) => void;
   context?: BindingContext;
 }) {
-  useLocale();
+  const locale = useLocale();
   const plugin = useKeyboardStore((s) => s.plugin),
     id = useId();
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [keyPicker, setKeyPicker] = useState<number | null>(null);
+  const keys = useMemo(() => () => keyOptions(project, locale), [project, locale]);
   const [draft, setDraft] = useState(bindingParts(code).slice(1));
   useEffect(() => setDraft(bindingParts(code).slice(1)), [code]);
   const parts = bindingParts(code),
@@ -63,65 +82,42 @@ export function BindingArguments({
             {specs.length > 1 ? ` ${i + 1}` : ""}
           </span>
           {spec.kind === "layer" ? (
-            <select
-              className="field"
-              aria-label={tr("{0} — layer {1}", label, i + 1)}
+            <SearchableSelect
+              label={tr("{0} — layer {1}", label, i + 1)}
               value={normalizeBinding(candidate, project).split(/\s+/)[i + 1]}
-              onChange={(e) => apply(i, e.target.value)}
-            >
-              {project.layout.layers.map((l) => (
-                <option key={l.id} value={`@{${l.id}}`}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+              options={project.layout.layers.map((l) => ({ value: `@{${l.id}}`, label: l.name }))}
+              onChange={(value) => apply(i, value)}
+            />
           ) : spec.kind === "profile" ? (
-            <select
-              className="field"
-              aria-label={tr("{0} — argument {1}", label, i + 1)}
+            <SearchableSelect
+              label={tr("{0} — argument {1}", label, i + 1)}
               value={draft[i] ?? "0"}
-              onChange={(e) => apply(i, e.target.value)}
-            >
-              {Array.from({ length: project.options.bluetoothProfiles }, (_, n) => (
-                <option key={n} value={n}>
-                  {tr("Profile")} {n + 1}
-                </option>
-              ))}
-            </select>
+              options={Array.from({ length: project.options.bluetoothProfiles }, (_, n) => ({
+                value: String(n),
+                label: `${tr("Profile")} ${n + 1}`,
+              }))}
+              onChange={(value) => apply(i, value)}
+            />
           ) : spec.choices ? (
-            <select
-              className="field"
-              aria-label={tr("{0} — argument {1}", label, i + 1)}
+            <SearchableSelect
+              label={tr("{0} — argument {1}", label, i + 1)}
               value={draft[i] ?? ""}
-              onChange={(e) => apply(i, e.target.value)}
-            >
-              {spec.choices.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              options={spec.choices.map((c) => ({ value: c, label: c }))}
+              onChange={(value) => apply(i, value)}
+            />
           ) : (
             <>
               {spec.kind === "keycode" && (
-                <select
-                  className="field"
-                  aria-label={tr("{0} — choose key {1}", label, i + 1)}
-                  value={keycodeChoices(project).includes(draft[i]) ? draft[i] : ""}
-                  onFocus={() => setKeyPicker(i)}
-                  onChange={(e) => apply(i, e.target.value)}
-                >
-                  <option value="" disabled>
-                    {tr("Choose a key or enter a shortcut below")}
-                  </option>
-                  {(keyPicker === i ? keycodeChoices(project) : [draft[i]].filter(Boolean)).map(
-                    (key) => (
-                      <option key={key} value={key}>
-                        {formatKeyVisuals(`&kp ${key}`)?.main || key} · {key}
-                      </option>
-                    ),
-                  )}
-                </select>
+                <SearchableSelect
+                  label={tr("{0} — choose key {1}", label, i + 1)}
+                  value={draft[i] ?? ""}
+                  selectedLabel={
+                    visualSummary(formatKeyVisuals(`&kp ${draft[i] ?? ""}`)) || draft[i]
+                  }
+                  placeholder={tr("Choose a key or enter a shortcut below")}
+                  options={keys}
+                  onChange={(value) => apply(i, value)}
+                />
               )}
               <input
                 type={["integer", "percent"].includes(spec.kind) ? "number" : "text"}
@@ -132,9 +128,6 @@ export function BindingArguments({
                 aria-describedby={error ? `${id}-error` : undefined}
                 aria-label={tr("{0} — argument {1}", label, i + 1)}
                 value={draft[i] ?? ""}
-                list={spec.kind === "keycode" ? `${id}-keys` : undefined}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setShowSuggestions(false)}
                 spellCheck={false}
                 placeholder={
                   spec.kind === "keycode" ? "A, LCTRL, LC(A)…" : tr("Number or ZMK expression")
@@ -145,13 +138,6 @@ export function BindingArguments({
           )}
         </div>
       ))}
-      {showSuggestions && (
-        <datalist id={`${id}-keys`}>
-          {keycodeChoices(project).map((k) => (
-            <option value={k} key={k} />
-          ))}
-        </datalist>
-      )}
       {error && (
         <p className="binding-error" id={`${id}-error`} role="alert">
           {localizeMessage(error)}

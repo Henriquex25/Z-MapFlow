@@ -1,3 +1,4 @@
+import { selectOption } from "../test/selectOption";
 import { DndContext, useDndContext } from "@dnd-kit/core";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it } from "vitest";
@@ -62,21 +63,21 @@ it("collapses combos independently and lets a combo choose any key, macro, custo
   const behavior = screen.getByRole("combobox", { name: "Combo action — behavior" });
   const key = screen.getByRole("combobox", { name: "Combo action — choose key 1" });
   fireEvent.focus(key);
-  fireEvent.change(key, { target: { value: "C" } });
+  selectOption("Combo action — choose key 1", "C");
   expect(useKeyboardStore.getState().project!.layout.combos[0].binding).toBe("&kp C");
-  fireEvent.change(behavior, { target: { value: "&kp F13" } });
+  selectOption("Combo action — behavior", "&kp F13");
   expect(useKeyboardStore.getState().project!.layout.combos[0].binding).toBe("&kp F13");
-  fireEvent.change(behavior, { target: { value: "&copy" } });
+  selectOption("Combo action — behavior", "&copy");
   expect(useKeyboardStore.getState().project!.layout.combos[0].binding).toBe("&copy");
   expect(
     screen.queryByRole("textbox", { name: "Combo action — argument 1" }),
   ).not.toBeInTheDocument();
-  fireEvent.change(behavior, { target: { value: "&dance" } });
+  selectOption("Combo action — behavior", "&dance");
   expect(useKeyboardStore.getState().project!.layout.combos[0].binding).toBe("&dance");
-  fireEvent.change(behavior, { target: { value: "&bootloader" } });
+  selectOption("Combo action — behavior", "&bootloader");
   expect(useKeyboardStore.getState().project!.layout.combos[0].binding).toBe("&bootloader");
   expect(screen.queryByRole("combobox", { name: /choose key/ })).not.toBeInTheDocument();
-  fireEvent.change(behavior, { target: { value: "&lt @{base} A" } });
+  selectOption("Combo action — behavior", "&lt @{base} A");
   expect(screen.getByRole("combobox", { name: "Combo action — layer 1" })).toBeVisible();
   expect(screen.getByRole("combobox", { name: "Combo action — choose key 2" })).toBeVisible();
   fireEvent.click(screen.getByRole("checkbox", { name: "Navigation" }));
@@ -94,7 +95,7 @@ it("collapses combos independently and lets a combo choose any key, macro, custo
 it("keeps invalid combo drafts open and never replaces the last valid binding", () => {
   combo();
   fireEvent.click(screen.getByRole("button", { name: "Show settings for First" }));
-  const input = screen.getByRole("combobox", { name: "Combo action — argument 1" });
+  const input = screen.getByRole("textbox", { name: "Combo action — argument 1" });
   fireEvent.change(input, { target: { value: "fdsfsd" } });
   fireEvent.click(screen.getByRole("button", { name: "Hide settings for First" }));
   expect(input).toHaveFocus();

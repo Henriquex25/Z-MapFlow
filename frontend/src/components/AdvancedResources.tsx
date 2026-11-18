@@ -1,3 +1,4 @@
+import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
 import { tr, useLocale } from "../i18n";
 import { NumberField } from "./NumberField";
@@ -99,18 +100,17 @@ export function MacroControl({
   const timed = name === "&macro_tap_time" || name === "&macro_wait_time";
   return (
     <div className="flex flex-col gap-2">
-      <select
-        className="field"
-        aria-label={tr("Macro control")}
+      <SearchableSelect
+        label={tr("Macro control")}
         value={name in controls ? name : "&macro_pause_for_release"}
-        onChange={(e) => onChange(e.target.value + (e.target.value.endsWith("_time") ? " 20" : ""))}
-      >
-        {Object.entries(controls).map(([v, label]) => (
-          <option key={v} value={v}>
-            {tr(label)}
-          </option>
-        ))}
-      </select>
+        options={Object.entries(controls).map(([value, label]) => ({
+          value,
+          label: tr(label),
+          searchText: value,
+        }))}
+        onChange={(value) => onChange(value + (value.endsWith("_time") ? " 20" : ""))}
+      />
+
       {timed && (
         <NumberField
           label={tr("Control duration (ms)")}

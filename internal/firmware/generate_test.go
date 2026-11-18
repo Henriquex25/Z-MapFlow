@@ -170,6 +170,9 @@ func TestDockerIntegration(t *testing.T) {
 		p.VariantID = variant
 	}
 	p.Options.PeripheralStatusSync = os.Getenv("ZMAPFLOW_DOCKER_STATUS_SYNC") == "1"
+	if os.Getenv("ZMAPFLOW_DOCKER_ROTATE_RIGHT") == "1" {
+		p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: "right", Snippets: []string{"zmapflow-oled-flip-180"}})
+	}
 	if os.Getenv("ZMAPFLOW_DOCKER_DONGLE_OPTIONS") == "1" {
 		p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: "dongle", CMakeArgs: []string{"-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING=y", "-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY=y", "-DCONFIG_ZMK_SPLIT_BLE_PREF_INT=12"}})
 	}
