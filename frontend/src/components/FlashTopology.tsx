@@ -34,10 +34,19 @@ export function FlashTopology({
               key={option.variantId}
               disabled={busy}
               title={option.name}
+              aria-label={
+                tr(option.dongle ? "USB dongle is central" : "A keyboard half is central") +
+                (plan.options.filter((o) => o.dongle === option.dongle).length > 1
+                  ? ` — ${tr(option.name)}`
+                  : "")
+              }
               onClick={() => onDeclare(option.variantId)}
             >
               {option.dongle ? <Usb size={28} /> : <Keyboard size={28} />}
-              {tr(option.dongle ? "USB dongle is central" : "A keyboard half is central")}
+              <span>
+                {tr(option.dongle ? "USB dongle is central" : "A keyboard half is central")}
+              </span>
+              <small>{tr(option.name)}</small>
             </button>
           ))}
         </div>
@@ -72,7 +81,7 @@ export function FlashTopology({
       {plan.needsRebuild && (
         <p className="notice error" role="alert">
           {tr(
-            "This build does not include reset firmware. Rebuild this profile before changing the topology.",
+            "This build lacks reset firmware for an affected controller. Select a compatible current profile and rebuild before changing the topology.",
           )}
         </p>
       )}

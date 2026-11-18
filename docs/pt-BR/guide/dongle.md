@@ -17,15 +17,41 @@ Exemplo da limpeza obrigatória ao mudar o central. A imagem usa a interface rea
 
 Por padrão, as metades mostram bateria/status periférico local. A opção abaixo adiciona um módulo de firmware para transmitir o estado do central às duas metades; os widgets padrão do ZMK, sozinhos, não fazem esse envio.
 
+## Outra controladora no dongle
+
+Em Configurações, escolha **Dongle XIAO nRF52840 + metades nice!nano v2 / SuperMini** para usar um **Seeed Studio XIAO nRF52840** como receptor, mantendo as controladoras atuais das metades. O perfil atende ao XIAO nRF52840 original; não inclui XIAO RP2040, ESP32, variantes Plus ou placas arbitrárias de nome semelhante. O dongle não precisa de matriz ou OLED. A compilação foi validada; pareamento e flash dessa combinação ainda precisam de teste físico.
+
+O receptor é compilado para `xiao_ble//zmk` e as metades para `nice_nano@2.0.0//zmk`. Cada dispositivo precisa do firmware e bootloader adequados. A mesma família UF2 não torna as placas intercambiáveis. O assistente seleciona `sofle-xiao-settings-reset.uf2` para limpar o XIAO e `sofle-settings-reset.uf2` para nice!nano/SuperMini; não envie todos os arquivos para todos os dispositivos.
+
+Se a configuração instalada for desconhecida e houver um dongle retirado, informe sua controladora real na etapa de conexão do reset. O envio fica bloqueado até a identificação; selecionar a controladora não confirma nenhuma gravação. Informe substituições de controladora e gravações externas pela ação correspondente do assistente.
+
+O [guia oficial do ZMK](https://zmk.dev/docs/hardware-integration/dongle) admite placas BLE suportadas. O XIAO é uma alternativa compacta com suporte no ZMK. Outros dongles precisam de perfis e protocolos de gravação verificados; o dongle USB nRF52840 da Nordic com bootloader de fábrica não é um volume UF2 genérico.
+
+## Opções nativas do dongle
+
+Em **Configurações → Teclado e firmware → Opções do dongle**:
+
+- **Ler bateria das duas metades** ativa a leitura das baterias dos periféricos pelo central.
+- **Informar baterias dos periféricos a hosts Bluetooth** ativa o serviço Bluetooth adicional e a leitura das baterias. Desativar a leitura também desativa o envio. Isso não adiciona bateria ao USB HID; o suporte a múltiplas baterias depende do host.
+- **Intervalo da conexão Bluetooth entre as partes** oferece 7,5 ms (padrão), 15 ms e 30 ms. Intervalos maiores reduzem a frequência de eventos do rádio e aumentam o tempo de resposta. O app converte para unidades de 1,25 ms de `CONFIG_ZMK_SPLIT_BLE_PREF_INT`.
+
+As opções ficam salvas como flags por alvo no projeto e no `build.yaml`. Recompile e grave o dongle ao alterá-las. São independentes da sincronização opcional de camada/conexão do OLED. A quantidade de perfis Bluetooth e o preset Studio USB também se aplicam ao central. Flags e snippets adicionais continuam disponíveis nos ajustes avançados; funções e quantidade de periféricos permanecem definidas pelo hardware. Veja [a configuração split do ZMK](https://zmk.dev/docs/config/split).
+
+## Entrar no bootloader do dongle com um combo
+
+Crie e expanda um combo, escolha duas posições deliberadas e selecione **Ação do combo → Comportamento → Entrar no bootloader (&bootloader)**. Não é necessário parâmetro. Salve, compile e grave esse keymap no dongle. Com ele conectado por USB e as metades funcionando, pressione o combo para abrir o bootloader UF2 **do dongle**; selecione esse dispositivo no assistente de flash.
+
+Conforme a [documentação de reset do ZMK](https://zmk.dev/docs/keymaps/behaviors/reset#split-keyboards), uma tecla comum aciona a metade onde foi pressionada; um combo aciona o **central**, que nesse modo é o dongle. Em um teclado comum sem dongle, o combo aciona a metade central. A digitação para enquanto o dongle está no bootloader, até o firmware voltar a executar. Mantenha o RESET físico acessível para a primeira instalação ou recuperação quando não houver eventos do teclado.
+
 ## Primeira configuração
 
 1. Exporte seu projeto como backup. Em **Configurações → Teclado e firmware → Variante de hardware**, escolha o perfil com dongle USB. Camadas, bindings, macros, combos e comportamentos permanecem no projeto. Se o preset Studio USB estava ativado, ele é movido ao novo central. Ajustes de alvos ausentes no perfil selecionado são removidos; os demais são preservados.
 2. Ative ou desative **Display** conforme os OLEDs das metades. Os controles de display e repouso automático se aplicam às metades; o receptor não tem OLED/encoder local e permanece acordado. Os perfis Bluetooth reservam duas conexões/pareamentos adicionais para os periféricos.
-3. Use **Salvar e compilar**. O app gera três firmwares de dispositivo e um de reset. Os papéis e os ajustes específicos do receptor são gerenciados pelo perfil; flags contraditórias por alvo são rejeitadas antes de salvar/compilar. O preset Studio USB se aplica ao dongle.
+3. Use **Salvar e compilar**. Os perfis atuais geram três firmwares de dispositivo e dois resets específicos por controladora. O assistente escolhe o reset adequado; não envie todos os arquivos para todos os dispositivos. Os papéis e os ajustes específicos do receptor são gerenciados pelo perfil; flags contraditórias por alvo são rejeitadas antes de salvar/compilar. O preset Studio USB se aplica ao dongle.
 4. Abra **Gravar firmware**. No primeiro uso acompanhado, selecione a configuração **já instalada** (uma metade como central ao migrar do perfil comum) ou escolha **Não tenho certeza**. O assistente torna **1. Limpar todos os dispositivos** obrigatória antes de **2. Instalar firmware do teclado**. Para **cada** dispositivo — Dongle USB, Esquerda e Direita — conecte-o, pressione RESET duas vezes, selecione o volume UF2, revise e envie o firmware de reset. Aguarde o reinício, clique em **Controladora reiniciou — confirmar** e desconecte a controladora ou desligue a metade. Apenas enviar o arquivo não libera a próxima etapa. O reset apaga os vínculos Bluetooth e as configurações ZMK armazenadas, incluindo alterações do Studio; mantém o bootloader e o projeto salvo no Z-MapFlow. Confirmar envio/reinício não comprova que as configurações foram apagadas.
 5. Selecione **Continuar com firmware do teclado**. Entre novamente no bootloader de cada dispositivo e grave o firmware correspondente: dongle, esquerda, direita. Mantenha o receptor conectado por USB, ligue ambas as metades e teste teclas, rotação e clique dos encoders. O volume UF2 não identifica a metade: selecione o dispositivo realmente conectado.
 
-O arquivo de reset é compartilhado porque esse perfil usa a mesma controladora/família UF2 nos três dispositivos. O assistente acompanha separadamente o progresso de reset e firmware. O envio sempre exige sua revisão e o botão **Enviar firmware**.
+O reset nice!nano é compartilhado apenas entre controladoras nice!nano/SuperMini compatíveis. O XIAO exige seu próprio reset, mesmo usando a mesma família UF2 nRF52840. O assistente acompanha separadamente o progresso de reset e firmware. O envio sempre exige sua revisão e o botão **Enviar firmware**.
 
 A controladora pode reiniciar antes de o sistema confirmar a última escrita. No reset, o assistente permite reconhecer o reinício sem declarar o teclado funcional. Entre novamente no bootloader e instale o firmware do teclado antes de testar teclas. Consulte [avisos na última escrita](./firmware#reinicializacao-e-avisos-de-gravacao-final).
 
@@ -66,7 +92,7 @@ Após um flash manual/externo, troca de controladoras ou uso de outro teclado f�
 
 Para alterações comuns no keymap, escolha **Firmware do teclado**, mantendo os pareamentos. Bindings, camadas e a maioria dos comportamentos são processados pelo central; depois da configuração inicial, normalmente basta gravar o receptor e fechar o assistente. Mudanças em hardware, energia, encoders ou compatibilidade de firmware exigem atualizar as metades afetadas. O app continua compilando todos os alvos declarados.
 
-As duas metades periféricas não digitam diretamente no computador sem o dongle. Para voltar à configuração comum, selecione o perfil nice!nano/SuperMini original, siga a limpeza obrigatória do dongle e das duas metades e grave os firmwares normais esquerdo/direito. Após limpar o dongle retirado, desconecte-o; ele não recebe firmware normal de metade. Os perfis comuns atual e legado do Sofle agora geram um terceiro artefato compartilhado de reset para esse retorno. O perfil original continua sendo o padrão; o uso do dongle é explícito. Se o preset Studio USB estava ativado, ele volta ao central esquerdo. Refaça os pareamentos Bluetooth com o computador se necessário.
+As duas metades periféricas não digitam diretamente no computador sem o dongle. Para voltar à configuração comum, selecione o perfil nice!nano/SuperMini original, siga a limpeza obrigatória do dongle e das duas metades e grave os firmwares normais esquerdo/direito. Após limpar o dongle retirado, desconecte-o; ele não recebe firmware normal de metade. O perfil comum atual gera resets para nice!nano e XIAO, incluindo o dongle XIAO retirado. O legado ZMK 0.3 gera apenas o reset nice!nano; para voltar de um dongle XIAO, passe primeiro pelo perfil comum atual antes de selecionar o legado. O perfil original continua sendo o padrão; o uso do dongle é explícito. Se o preset Studio USB estava ativado, ele volta ao central esquerdo. Refaça os pareamentos Bluetooth com o computador se necessário.
 
 ## Referências técnicas
 

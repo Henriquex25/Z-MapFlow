@@ -384,16 +384,18 @@ func (a *App) flashSetup(buildID string) (flash.Setup, error) {
 		return flash.Setup{}, err
 	}
 	resetAvailable := false
+	resetTargets := map[string]bool{}
 	for _, t := range v.Targets {
 		if t.Kind == "settings-reset" {
 			for _, artifact := range b.Artifacts {
 				if artifact.TargetID == t.ID {
 					resetAvailable = true
+					resetTargets[t.ID] = true
 				}
 			}
 		}
 	}
-	return flash.Setup{Plugin: d.Descriptor(), Variant: v, BuildID: buildID, ResetAvailable: resetAvailable}, nil
+	return flash.Setup{Plugin: d.Descriptor(), Variant: v, BuildID: buildID, ResetAvailable: resetAvailable, ResetTargets: resetTargets}, nil
 }
 func (a *App) GetFlashPlan(buildID string) (flash.FlashPlan, error) {
 	ctx, err := a.flashSetup(buildID)
@@ -412,6 +414,17 @@ func (a *App) SetInstalledTopology(buildID, variantID string) (flash.FlashPlan, 
 		return flash.FlashPlan{}, err
 	}
 	return a.topologies.Declare(ctx, variantID)
+}
+func (a *App) SetResetController(buildID, deviceID, controllerID string) (flash.FlashPlan, error) {
+	if !a.operation.TryLock() {
+		return flash.FlashPlan{}, fmt.Errorf("aguarde a conclusão do envio de firmware em andamento")
+	}
+	defer a.operation.Unlock()
+	ctx, err := a.flashSetup(buildID)
+	if err != nil {
+		return flash.FlashPlan{}, err
+	}
+	return a.topologies.SetResetController(ctx, deviceID, controllerID)
 }
 func (a *App) ReportExternalFlash(buildID string) (flash.FlashPlan, error) {
 	if !a.operation.TryLock() {
@@ -452,12 +465,11 @@ func (a *App) flashDevice(buildID, deviceID, volumePath string, reset, guided bo
 	}
 	targetID := deviceID
 	if reset {
-		targetID = ""
-		for _, t := range ctx.Variant.Targets {
-			if t.Kind == "settings-reset" {
-				targetID = t.ID
-			}
+		selected, err := a.topologies.ResetTarget(ctx, deviceID)
+		if err != nil {
+			return flash.Result{}, err
 		}
+		targetID = selected.ID
 	} else if !guided {
 		for _, t := range ctx.Variant.Targets {
 			if t.ID == deviceID && t.Kind == "settings-reset" {

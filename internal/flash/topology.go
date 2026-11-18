@@ -19,11 +19,12 @@ type SetupOption struct {
 	Dongle    bool   `json:"dongle"`
 }
 type SetupDevice struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Kind    string `json:"kind"`
-	Retired bool   `json:"retired"`
-	Family  uint32 `json:"family"`
+	Controller string `json:"controller,omitempty"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Kind       string `json:"kind"`
+	Retired    bool   `json:"retired"`
+	Family     uint32 `json:"family"`
 }
 type FlashPlan struct {
 	Supported    bool                  `json:"supported"`
@@ -54,6 +55,7 @@ type Setup struct {
 	Variant        models.Variant
 	BuildID        string
 	ResetAvailable bool
+	ResetTargets   map[string]bool // nil preserves compatibility with embedded callers.
 }
 type TopologyStore struct {
 	Root string
@@ -96,11 +98,16 @@ func tracked(v models.Variant) bool {
 	}
 	return false
 }
-func topology(v models.Variant) string {
+func topology(v models.Variant) string { return topologySignature(v, true) }
+func topologySignature(v models.Variant, controllers bool) string {
 	var roles []string
 	for _, t := range v.Targets {
 		if t.Kind != "settings-reset" {
-			roles = append(roles, t.ID+":"+t.Role+":"+t.Kind)
+			role := t.ID + ":" + t.Role + ":" + t.Kind
+			if controllers && t.Controller != "" {
+				role += ":" + t.Controller
+			}
+			roles = append(roles, role)
 		}
 	}
 	sort.Strings(roles)
@@ -125,11 +132,47 @@ func topologyName(v models.Variant) string {
 	}
 	return "Keyboard half central"
 }
+func controller(t models.Target) string {
+	if t.Controller != "" {
+		return t.Controller
+	}
+	return t.Board
+}
+
+// ResetTarget selects firmware for the device's controller, including a retired
+// dongle. Never substitute a reset just because the UF2 family matches.
+func ResetTarget(v models.Variant, device SetupDevice) (models.Target, error) {
+	for _, t := range v.Targets {
+		if t.Kind == "settings-reset" && controller(t) == device.Controller && device.Family == v.UF2Family {
+			return t, nil
+		}
+	}
+	return models.Target{}, fmt.Errorf("no matching reset firmware for %s; use a current hardware profile and rebuild", device.Name)
+}
+func resetTarget(ctx Setup, device SetupDevice) (models.Target, error) {
+	target, err := ResetTarget(ctx.Variant, device)
+	if err == nil && ctx.ResetTargets != nil && !ctx.ResetTargets[target.ID] {
+		return models.Target{}, fmt.Errorf("this build has no reset firmware for %s; rebuild with a compatible current profile", device.Name)
+	}
+	return target, err
+}
+func (s *TopologyStore) ResetTarget(ctx Setup, deviceID string) (models.Target, error) {
+	p, err := s.Plan(ctx)
+	if err != nil {
+		return models.Target{}, err
+	}
+	for _, device := range p.ResetDevices {
+		if device.ID == deviceID {
+			return resetTarget(ctx, device)
+		}
+	}
+	return models.Target{}, fmt.Errorf("device does not belong to this reset step")
+}
 func devices(v models.Variant) []SetupDevice {
 	var list []SetupDevice
 	for _, t := range v.Targets {
 		if t.Kind != "settings-reset" {
-			list = append(list, SetupDevice{ID: t.ID, Name: t.Name, Kind: t.Kind, Family: v.UF2Family})
+			list = append(list, SetupDevice{ID: t.ID, Name: t.Name, Kind: t.Kind, Family: v.UF2Family, Controller: controller(t)})
 		}
 	}
 	return list
@@ -198,7 +241,27 @@ func (s *TopologyStore) load(ctx Setup) (topologyState, error) {
 	if state.Version != 1 {
 		return state, fmt.Errorf("unsupported flash workflow version")
 	}
+	installed := variant(ctx.Plugin, state.CurrentVariant)
+	if state.Current != "" && state.Current == topologySignature(installed, false) {
+		state.Current = topology(installed)
+	}
 	if state.Cycle != nil {
+		previous := variant(ctx.Plugin, state.Cycle.VariantID)
+		if state.Cycle.Signature == topologySignature(previous, false) {
+			state.Cycle.Signature = topology(previous)
+			for i := range state.Cycle.Devices {
+				if state.Cycle.Devices[i].Controller != "" {
+					continue
+				}
+				for _, v := range []models.Variant{installed, previous} {
+					for _, d := range devices(v) {
+						if d.ID == state.Cycle.Devices[i].ID {
+							state.Cycle.Devices[i].Controller = d.Controller
+						}
+					}
+				}
+			}
+		}
 		if state.Cycle.ResetDone == nil {
 			state.Cycle.ResetDone = map[string]string{}
 		}
@@ -266,6 +329,21 @@ func derive(ctx Setup, state topologyState) (*flashCycle, FlashPlan) {
 	}
 	p.CanFlash = !p.Required || allDone(c.Devices, c.ResetDone)
 	p.NeedsRebuild = p.Required && !p.CanFlash && !ctx.ResetAvailable
+	if p.Required && !p.CanFlash {
+		for _, d := range p.ResetDevices {
+			if d.Controller != "" {
+				if _, err := resetTarget(ctx, d); err != nil {
+					p.NeedsRebuild = true
+				}
+			} else if ctx.ResetTargets != nil {
+				for _, target := range ctx.Variant.Targets {
+					if target.Kind == "settings-reset" && !ctx.ResetTargets[target.ID] {
+						p.NeedsRebuild = true
+					}
+				}
+			}
+		}
+	}
 	if r := c.Receipt; r != nil && !r.Consumed && (r.Status == "sent" || r.Status == "unconfirmed") {
 		p.Pending = &FlashAcknowledgement{BuildID: r.BuildID, ReceiptID: r.ID, DeviceID: r.DeviceID, Reset: r.Reset, Status: r.Status, Detail: r.Detail}
 	}
@@ -309,6 +387,21 @@ func (s *TopologyStore) Declare(ctx Setup, installedVariant string) (FlashPlan, 
 			}
 		}
 		state.Cycle = &flashCycle{Signature: topology(ctx.Variant), VariantID: ctx.Variant.ID, BuildID: ctx.BuildID, Required: true, Devices: mergeDevices(ctx.Variant, sources...), ResetDone: map[string]string{}, FirmwareDone: map[string]string{}}
+		// Multiple boards may have occupied a retired device's role. Ask which
+		// physical controller is connected before selecting reset firmware.
+		for i, device := range state.Cycle.Devices {
+			controllers := map[string]bool{}
+			for _, source := range sources {
+				for _, d := range source {
+					if d.ID == device.ID {
+						controllers[d.Controller] = true
+					}
+				}
+			}
+			if device.Retired && len(controllers) > 1 {
+				state.Cycle.Devices[i].Controller = ""
+			}
+		}
 	}
 	if err = s.save(ctx, state); err != nil {
 		return FlashPlan{}, err
@@ -337,6 +430,21 @@ func (s *TopologyStore) Forget(ctx Setup) (FlashPlan, error) {
 	}
 	state.Current, state.CurrentVariant = "", ""
 	state.Cycle = &flashCycle{Signature: topology(ctx.Variant), VariantID: ctx.Variant.ID, BuildID: ctx.BuildID, Required: true, Devices: mergeDevices(ctx.Variant, sources...), ResetDone: map[string]string{}, FirmwareDone: map[string]string{}}
+	// Multiple boards may have occupied a retired device's role. Ask which
+	// physical controller is connected before selecting reset firmware.
+	for i, device := range state.Cycle.Devices {
+		controllers := map[string]bool{}
+		for _, source := range sources {
+			for _, d := range source {
+				if d.ID == device.ID {
+					controllers[d.Controller] = true
+				}
+			}
+		}
+		if device.Retired && len(controllers) > 1 {
+			state.Cycle.Devices[i].Controller = ""
+		}
+	}
 	if err = s.save(ctx, state); err != nil {
 		return FlashPlan{}, err
 	}
@@ -380,8 +488,10 @@ func (s *TopologyStore) Begin(ctx Setup, deviceID string, reset bool) (string, e
 	for _, d := range list {
 		if d.ID == deviceID {
 			found = true
-			if reset && d.Family != ctx.Variant.UF2Family {
-				return "", fmt.Errorf("the retired device needs a compatible reset firmware")
+			if reset {
+				if _, err := resetTarget(ctx, d); err != nil {
+					return "", err
+				}
 			}
 		}
 	}
@@ -470,4 +580,39 @@ func (s *TopologyStore) Acknowledge(ctx Setup, token string) (FlashPlan, error) 
 	}
 	_, p := derive(ctx, state)
 	return p, nil
+}
+
+// SetResetController identifies a retired device whose controller cannot be
+// inferred after an external flash. It never acknowledges a transfer.
+func (s *TopologyStore) SetResetController(ctx Setup, deviceID, controllerID string) (FlashPlan, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state, err := s.load(ctx)
+	if err != nil {
+		return FlashPlan{}, err
+	}
+	c, p := derive(ctx, state)
+	if c == nil || p.NeedsSetup || !p.Required || c.FirmwareStarted {
+		return FlashPlan{}, fmt.Errorf("controller selection is only available during required cleanup")
+	}
+	for i, d := range c.Devices {
+		if d.ID != deviceID {
+			continue
+		}
+		if !d.Retired || c.ResetDone[d.ID] != "" || (c.Receipt != nil && c.Receipt.DeviceID == d.ID) {
+			return FlashPlan{}, fmt.Errorf("this controller cannot be changed during its transfer")
+		}
+		d.Controller = controllerID
+		if _, err := resetTarget(ctx, d); err != nil {
+			return FlashPlan{}, err
+		}
+		c.Devices[i] = d
+		state.Cycle = c
+		if err := s.save(ctx, state); err != nil {
+			return FlashPlan{}, err
+		}
+		_, p = derive(ctx, state)
+		return p, nil
+	}
+	return FlashPlan{}, fmt.Errorf("device does not belong to this reset step")
 }

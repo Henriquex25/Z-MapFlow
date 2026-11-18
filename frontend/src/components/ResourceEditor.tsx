@@ -60,33 +60,38 @@ export function MacroEditor({ onAssign }: AssignProps) {
         <p className="empty">{tr("Create a macro to automate a key sequence.")}</p>
       )}
       {p.layout.macros.map((m) => (
-        <article className="resource-card" key={m.id}>
-          <div className="section-toolbar">
-            <input
-              aria-label={tr("Macro name")}
-              className="field font-semibold"
-              value={m.name}
-              onChange={(e) =>
-                edit((p) => {
-                  p.layout.macros.find((x) => x.id === m.id)!.name = e.target.value;
-                })
-              }
-            />
-            <div className="flex gap-3 items-center">
-              <DraggableKey action={macroAction(m)} />
-              <button
-                className="btn primary"
-                disabled={m.steps.length === 0}
-                aria-label={tr("Assign {0} to keyboard", m.name)}
-                onClick={() => onAssign(macroAction(m))}
-              >
-                {tr("Assign to keyboard")}{" "}
-              </button>
-              <button className="btn danger" onClick={() => removeResource("macros", m.id)}>
-                {tr("Delete")}{" "}
-              </button>
-            </div>
-          </div>
+        <BehaviorCard
+          key={m.id}
+          name={m.name}
+          toolbar={
+            <>
+              <input
+                aria-label={tr("Macro name")}
+                className="field font-semibold"
+                value={m.name}
+                onChange={(e) =>
+                  edit((p) => {
+                    p.layout.macros.find((x) => x.id === m.id)!.name = e.target.value;
+                  })
+                }
+              />
+              <div className="flex gap-3 items-center">
+                <DraggableKey action={macroAction(m)} />
+                <button
+                  className="btn primary"
+                  disabled={m.steps.length === 0}
+                  aria-label={tr("Assign {0} to keyboard", m.name)}
+                  onClick={() => onAssign(macroAction(m))}
+                >
+                  {tr("Assign to keyboard")}{" "}
+                </button>
+                <button className="btn danger" onClick={() => removeResource("macros", m.id)}>
+                  {tr("Delete")}{" "}
+                </button>
+              </div>
+            </>
+          }
+        >
           <AssignmentParameters
             resource={m}
             onChange={(count, parameters) =>
@@ -248,7 +253,7 @@ export function MacroEditor({ onAssign }: AssignProps) {
               {tr("+ Wait")}{" "}
             </button>
           </div>
-        </article>
+        </BehaviorCard>
       ))}
     </div>
   );
@@ -659,9 +664,7 @@ export function ComboEditor() {
     removeResource,
     setActiveLayer,
   } = useKeyboardStore();
-  const [selected, setSelected] = useState("");
   if (!p || !plugin) return null;
-  const combo = p.layout.combos.find((c) => c.id === selected) || p.layout.combos[0];
   return (
     <div className="resource-editor">
       <div className="section-toolbar">
@@ -688,29 +691,20 @@ export function ComboEditor() {
                 slowRelease: false,
               }),
             );
-            setSelected(id);
           }}
         >
           {tr("+ New combo")}{" "}
         </button>
       </div>
-      {!combo ? (
+      {!p.layout.combos.length && (
         <p className="empty">{tr("Combine two or more keys to perform an action.")}</p>
-      ) : (
-        <>
-          <div className="flex gap-3 mb-4 flex-wrap">
-            {p.layout.combos.map((c) => (
-              <button
-                className={`btn ${combo.id === c.id ? "primary" : ""}`}
-                key={c.id}
-                onClick={() => setSelected(c.id)}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-          <article className="resource-card">
-            <div className="section-toolbar">
+      )}
+      {p.layout.combos.map((combo) => (
+        <BehaviorCard
+          key={combo.id}
+          name={combo.name}
+          toolbar={
+            <>
               <input
                 aria-label={tr("Combo name")}
                 className="field"
@@ -721,113 +715,115 @@ export function ComboEditor() {
                   })
                 }
               />
-              <NumberField
-                label={tr("Combo prior idle time (ms)")}
-                min={-1}
-                value={combo.requirePriorIdleMs ?? -1}
-                onChange={(n) =>
-                  edit((p) => {
-                    p.layout.combos.find((c) => c.id === combo.id)!.requirePriorIdleMs = n;
-                  })
-                }
-              />
-              <NumberField
-                label={tr("Activation window (ms)")}
-                min={1}
-                max={5000}
-                value={combo.timeoutMs}
-                onChange={(n) =>
-                  edit((p) => {
-                    p.layout.combos.find((c) => c.id === combo.id)!.timeoutMs = n;
-                  })
-                }
-              />
-              <BindingDrop
-                label={tr("Combo action")}
-                code={combo.binding}
-                onChange={(code) =>
-                  edit((p) => {
-                    p.layout.combos.find((c) => c.id === combo.id)!.binding = code;
-                  })
-                }
-              />
               <button className="btn danger" onClick={() => removeResource("combos", combo.id)}>
                 {tr("Delete")}{" "}
               </button>
-            </div>
-            <label className="form-label mb-4">
-              {tr("Preview layer")}{" "}
-              <select
-                className="field w-fit"
-                value={activeLayerId}
-                onChange={(e) => setActiveLayer(e.target.value)}
-              >
-                {p.layout.layers.map((layer, index) => (
-                  <option key={layer.id} value={layer.id}>
-                    {index}: {layer.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <KeyboardLayout
-              plugin={plugin}
-              layer={p.layout.layers.find((l) => l.id === activeLayerId) || p.layout.layers[0]}
-              selection={combo.positions}
-              onSelect={(index) =>
+            </>
+          }
+        >
+          <div className="combo-controls">
+            <NumberField
+              label={tr("Combo prior idle time (ms)")}
+              min={-1}
+              value={combo.requirePriorIdleMs ?? -1}
+              onChange={(n) =>
                 edit((p) => {
-                  const c = p.layout.combos.find((c) => c.id === combo.id)!;
-                  c.positions = c.positions.includes(index)
-                    ? c.positions.filter((i) => i !== index)
-                    : [...c.positions, index];
+                  p.layout.combos.find((c) => c.id === combo.id)!.requirePriorIdleMs = n;
                 })
               }
             />
-            <div className="flex flex-wrap gap-4 items-center">
-              <span className="hint">
-                {combo.positions.length} {tr("keys selected")}
-              </span>
-              <span className="hint">
-                {combo.positions.length < 2
-                  ? tr("Select at least two keys to trigger the combo.")
-                  : tr("The selected keys trigger the combo action.")}
-              </span>
-              <label>
+            <NumberField
+              label={tr("Activation window (ms)")}
+              min={1}
+              max={5000}
+              value={combo.timeoutMs}
+              onChange={(n) =>
+                edit((p) => {
+                  p.layout.combos.find((c) => c.id === combo.id)!.timeoutMs = n;
+                })
+              }
+            />
+            <BindingDrop
+              label={tr("Combo action")}
+              code={combo.binding}
+              onChange={(code) =>
+                edit((p) => {
+                  p.layout.combos.find((c) => c.id === combo.id)!.binding = code;
+                })
+              }
+            />
+          </div>
+          <label className="form-label mb-4">
+            {tr("Preview layer")}{" "}
+            <select
+              className="field w-fit"
+              value={activeLayerId}
+              onChange={(e) => setActiveLayer(e.target.value)}
+            >
+              {p.layout.layers.map((layer, index) => (
+                <option key={layer.id} value={layer.id}>
+                  {index}: {layer.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <KeyboardLayout
+            plugin={plugin}
+            layer={p.layout.layers.find((l) => l.id === activeLayerId) || p.layout.layers[0]}
+            selection={combo.positions}
+            onSelect={(index) =>
+              edit((p) => {
+                const c = p.layout.combos.find((c) => c.id === combo.id)!;
+                c.positions = c.positions.includes(index)
+                  ? c.positions.filter((i) => i !== index)
+                  : [...c.positions, index];
+              })
+            }
+          />
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="hint">
+              {combo.positions.length} {tr("keys selected")}
+            </span>
+            <span className="hint">
+              {combo.positions.length < 2
+                ? tr("Select at least two keys to trigger the combo.")
+                : tr("The selected keys trigger the combo action.")}
+            </span>
+            <label>
+              <input
+                type="checkbox"
+                checked={combo.slowRelease}
+                onChange={(e) =>
+                  edit((p) => {
+                    p.layout.combos.find((c) => c.id === combo.id)!.slowRelease = e.target.checked;
+                  })
+                }
+              />{" "}
+              {tr("Release after all keys")}{" "}
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-4">
+            <span className="hint">{tr("Layers (none selected = all):")}</span>
+            {p.layout.layers.map((l) => (
+              <label key={l.id}>
                 <input
                   type="checkbox"
-                  checked={combo.slowRelease}
-                  onChange={(e) =>
+                  checked={combo.layerIds.includes(l.id)}
+                  onChange={() =>
                     edit((p) => {
-                      p.layout.combos.find((c) => c.id === combo.id)!.slowRelease =
-                        e.target.checked;
+                      const c = p.layout.combos.find((c) => c.id === combo.id)!;
+                      c.layerIds = c.layerIds.includes(l.id)
+                        ? c.layerIds.filter((id) => id !== l.id)
+                        : [...c.layerIds, l.id];
                     })
                   }
                 />{" "}
-                {tr("Release after all keys")}{" "}
+                {l.name}
               </label>
-            </div>
-            <div className="flex flex-wrap gap-3 mt-4">
-              <span className="hint">{tr("Layers (none selected = all):")}</span>
-              {p.layout.layers.map((l) => (
-                <label key={l.id}>
-                  <input
-                    type="checkbox"
-                    checked={combo.layerIds.includes(l.id)}
-                    onChange={() =>
-                      edit((p) => {
-                        const c = p.layout.combos.find((c) => c.id === combo.id)!;
-                        c.layerIds = c.layerIds.includes(l.id)
-                          ? c.layerIds.filter((id) => id !== l.id)
-                          : [...c.layerIds, l.id];
-                      })
-                    }
-                  />{" "}
-                  {l.name}
-                </label>
-              ))}
-            </div>
-          </article>
-        </>
-      )}
+            ))}
+          </div>
+        </BehaviorCard>
+      ))}
     </div>
   );
 }

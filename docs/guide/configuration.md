@@ -16,7 +16,7 @@ Snippets and CMake arguments belong to individual build targets. USB typing and 
 
 ## Choose the keyboard language
 
-Use the **Keyboard language** selector in the action palette. Choose **US / ANSI** or **Portuguese (Brazil) — ABNT2**, or a previously imported header. The same selection is available in **Settings → Operating system layout**.
+Open the **Languages** tab in the action palette and use its **Keyboard language** selector. The selector is shown only on that tab. Choose **US / ANSI** or **Portuguese (Brazil) — ABNT2**, or a previously imported header. The same selection is available in **Settings → Operating system layout**.
 
 For ABNT2, select Portuguese and the palette opens **Languages** with its included characters, such as `Ç`. Drag a character onto a key, or click it and then click its destination. You can search by character or alias. Existing assignments keep their codes when you choose another language.
 
@@ -37,3 +37,17 @@ Configure the same keyboard layout in your operating system. The app does not sw
 In **Settings → Bluetooth and power**, **Sleep timeout (minutes)** sets the inactivity period before automatic sleep. For example, `15` means 15 minutes and `1.5` means 90 seconds. The existing supported range remains one second to 24 hours; fractions of a minute are accepted.
 
 The backend validates the value and converts it to milliseconds for the saved project and ZMK's `CONFIG_ZMK_IDLE_SLEEP_TIMEOUT`. Opening an existing project or importing a `.conf` preserves its exact millisecond value, including a value that is not a whole number of minutes. Enable **Automatic sleep** to use this timeout.
+
+## Edit combos, macros and behaviors
+
+Combos, macros, behaviors and conditional-layer rules start collapsed. Their name and header actions remain available. Use the arrow to expand one resource; other cards keep their state. Opening and closing is animated, with reduced-motion preferences respected and the header kept in place. An invalid unfinished field keeps its card open until corrected, so collapsing cannot hide a save error.
+
+For a combo, expand its card and select at least two trigger positions in the keyboard preview. Under **Combo action**, choose a **Behavior**, then its parameters:
+
+- **Key press (&kp):** choose any key from the key selector, or enter a supported shortcut in the accompanying field.
+- **Macros / Behaviors:** choose a macro or custom behavior created in the project. Its invocation parameters appear when required.
+- **Enter bootloader (&bootloader):** no parameter is needed, so no key field appears.
+
+Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. The visual selectors also appear in macro steps and behavior child actions, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
+
+For a dongle's bootloader, see [the combo shortcut](./dongle#enter-the-dongle-bootloader-with-a-combo).

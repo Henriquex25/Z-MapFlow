@@ -323,11 +323,11 @@ export function ActionTray() {
               {tr(t)}
             </button>
           ))}
-        {(tab === "Keys" || tab === "Languages") && (
+        {tab === "Languages" && (
           <KeyboardLanguageSelect
             compact
             onChange={(locale) => {
-              setTab(locale === "us" ? "Keys" : "Languages");
+              setTab("Languages");
               setSearch("");
               setCollapsed(false);
             }}

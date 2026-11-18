@@ -11,7 +11,7 @@ Select the keyboard in the header, then its controller in **Settings**. Match th
 
 The new Lily58 and Silakka54 profiles require validation on the corresponding physical keyboards. Successful compilation verifies the firmware configuration, not the PCB wiring or key operation. Other controllers and revisions require their own verified profiles; AVR Pro Micro, RP2040 Lily58 conversions and arbitrary Silakka54 clones are not covered by these targets.
 
-The Sofle v2 also offers an experimental [USB dongle central profile](./dongle) for three nice!nano v2-compatible nRF52840 controllers. The regular two-part profile remains the default.
+The Sofle v2 also offers an experimental [USB dongle central profile](./dongle) for three nice!nano v2-compatible nRF52840 controllers, or a XIAO nRF52840 receiver with nice!nano/SuperMini halves. The regular two-part profile remains the default.
 
 ## Lily58
 
@@ -48,3 +48,9 @@ There is no Bluetooth, OLED or encoder in this profile. RP2040 deep sleep is una
 ## Contribute another revision
 
 The app ships plugins rather than guessing hardware from an imported `.keymap`. See [Create keyboard plugins](../plugins) for geometry, transforms, controller variants, Docker builds and physical validation requirements.
+
+## Sofle USB and inter-half cables
+
+The supported wireless Sofle can use **USB from its central to the computer** while the halves communicate over Bluetooth. This also applies to a USB dongle. Choose USB output from the palette when needed.
+
+A stock TRRS-wired Sofle is not an included Z-MapFlow profile. Many such builds use QMK/Vial. The pinned ZMK wired transport requires full-duplex UART and a compatible hardware definition; enabling a flag does not convert a stock Sofle TRRS link. No wired Sofle conversion is added here. See [ZMK split transports](https://zmk.dev/docs/features/split-keyboards).

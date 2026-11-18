@@ -38,3 +38,25 @@ it("disables synchronization on unsupported profiles without changing the keymap
   expect(p.options.peripheralStatusSync).toBe(false);
   expect(p.layout).toEqual(layout);
 });
+it("configures native dongle battery reporting and radio interval on the central target only", () => {
+  const session = dongleFixture();
+  session.project.variantId = "dongle";
+  useKeyboardStore.getState().initialize(session);
+  render(<ConnectionTopology variant={session.plugin.variants[1]} />);
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: "Report peripheral batteries to Bluetooth hosts" }),
+  );
+  const getArgs = () => useKeyboardStore.getState().project!.buildTargets![0].cmakeArgs!;
+  expect(getArgs()).toContain("-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING=y");
+  expect(getArgs()).toContain("-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY=y");
+  fireEvent.click(screen.getByRole("checkbox", { name: "Fetch battery levels from both halves" }));
+  expect(getArgs()).toContain("-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY=n");
+  fireEvent.change(screen.getByRole("combobox", { name: "Split Bluetooth connection interval" }), {
+    target: { value: "12" },
+  });
+  expect(getArgs()).toContain("-DCONFIG_ZMK_SPLIT_BLE_PREF_INT=12");
+  expect(useKeyboardStore.getState().project!.buildTargets!.map((t) => t.targetId)).toEqual([
+    "dongle",
+  ]);
+  expect(useKeyboardStore.getState().savedProject!.buildTargets).toBeUndefined();
+});

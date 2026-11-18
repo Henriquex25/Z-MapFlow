@@ -131,7 +131,9 @@ func TestManagerSnapshotsArtifactsAndRestore(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	done := m.Current()
-	if done.Status != "success" || len(done.Artifacts) != 3 {
+	d, _ := r.Get(p.PluginID)
+	v, _ := project.Variant(p, d.Descriptor())
+	if done.Status != "success" || len(done.Artifacts) != len(v.Targets) {
 		t.Fatalf("build: %+v", done)
 	}
 	path, _, saved, e := m.ArtifactPath(b.ID, "left")
@@ -168,6 +170,9 @@ func TestDockerIntegration(t *testing.T) {
 		p.VariantID = variant
 	}
 	p.Options.PeripheralStatusSync = os.Getenv("ZMAPFLOW_DOCKER_STATUS_SYNC") == "1"
+	if os.Getenv("ZMAPFLOW_DOCKER_DONGLE_OPTIONS") == "1" {
+		p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: "dongle", CMakeArgs: []string{"-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING=y", "-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY=y", "-DCONFIG_ZMK_SPLIT_BLE_PREF_INT=12"}})
+	}
 	if os.Getenv("ZMAPFLOW_DOCKER_DISPLAY") == "0" {
 		p.Options.Display = false
 	}

@@ -127,6 +127,7 @@ export namespace flash {
 	    }
 	}
 	export class SetupDevice {
+	    controller?: string;
 	    id: string;
 	    name: string;
 	    kind: string;
@@ -139,6 +140,7 @@ export namespace flash {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.controller = source["controller"];
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.kind = source["kind"];
@@ -675,6 +677,7 @@ export namespace models {
 		}
 	}
 	export class Target {
+	    controller?: string;
 	    kind?: string;
 	    config?: Record<string, string>;
 	    role?: string;
@@ -690,6 +693,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.controller = source["controller"];
 	        this.kind = source["kind"];
 	        this.config = source["config"];
 	        this.role = source["role"];

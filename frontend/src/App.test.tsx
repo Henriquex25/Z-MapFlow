@@ -232,6 +232,7 @@ it("creates a macro, fills its steps, assigns it to keys on different layers, an
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Macro name" }), {
     target: { value: "Minha sequência" },
   });
@@ -304,9 +305,11 @@ it("creates a combo that triggers a macro without remapping the trigger keys", a
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Drag New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Combos" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New combo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New combo" }));
   expect(screen.getByText("Select at least two keys to trigger the combo.")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 1:/ }));
@@ -370,6 +373,7 @@ it("assigns a macro to encoder rotation and click while keeping its physical bin
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New macro to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CW:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CLK:/ }));
@@ -447,6 +451,7 @@ it("creates parameter routing and release continuation controls and assigns macr
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
     target: { value: "control" },
   });
@@ -686,6 +691,7 @@ it("keeps the last valid macro control duration and prevents saving an invalid d
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
     target: { value: "control" },
   });

@@ -152,14 +152,15 @@ type Position struct {
 	SensorID    string  `json:"sensorId"`
 }
 type Target struct {
-	Kind     string            `json:"kind,omitempty"`   // keyboard (default), dongle, settings-reset
-	Config   map[string]string `json:"config,omitempty"` // Required, plugin-owned Kconfig values.
-	Role     string            `json:"role,omitempty"`   // central, peripheral, or standalone
-	ID       string            `json:"id"`
-	Name     string            `json:"name"`
-	Board    string            `json:"board"`
-	Shield   string            `json:"shield"`
-	Artifact string            `json:"artifact"`
+	Controller string            `json:"controller,omitempty"` // Stable flash/reset compatibility identity; board aliases may change.
+	Kind       string            `json:"kind,omitempty"`       // keyboard (default), dongle, settings-reset
+	Config     map[string]string `json:"config,omitempty"`     // Required, plugin-owned Kconfig values.
+	Role       string            `json:"role,omitempty"`       // central, peripheral, or standalone
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	Board      string            `json:"board"`
+	Shield     string            `json:"shield"`
+	Artifact   string            `json:"artifact"`
 }
 type Variant struct {
 	Files            map[string]string `json:"files,omitempty"`

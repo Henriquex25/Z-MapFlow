@@ -69,6 +69,8 @@ export function SetAppLanguage(arg1:string):Promise<void>;
 
 export function SetInstalledTopology(arg1:string,arg2:string):Promise<flash.FlashPlan>;
 
+export function SetResetController(arg1:string,arg2:string,arg3:string):Promise<flash.FlashPlan>;
+
 export function SleepTimeoutMilliseconds(arg1:number):Promise<number>;
 
 export function StartBuild():Promise<firmware.Build>;

@@ -1,3 +1,4 @@
+import { DongleSettings } from "./DongleSettings";
 import { ArrowRight, Bluetooth, Keyboard, Usb } from "lucide-react";
 import { tr, useLocale } from "../i18n";
 import type { Plugin } from "../types/keyboard";
@@ -46,6 +47,7 @@ export function ConnectionTopology({ variant }: { variant: Plugin["variants"][nu
       <p className="hint">
         {tr("With synchronization off, peripheral OLEDs show local battery/status only.")}
       </p>
+      <DongleSettings variant={variant} />
       {variant.features?.includes("peripheral-status-sync") && project && (
         <>
           <label className="topology-sync-option">

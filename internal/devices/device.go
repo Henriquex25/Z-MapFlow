@@ -87,11 +87,18 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 					continue
 				}
 				resetCount, centralCount, peripheralCount := 0, 0, 0
-				resetBoard := ""
+				resetControllers := map[string]string{}
 				for _, target := range v.Targets {
 					if target.Kind == "settings-reset" {
 						resetCount++
-						resetBoard = target.Board
+						controller := target.Controller
+						if controller == "" {
+							controller = target.Board
+						}
+						if resetControllers[controller] != "" {
+							return nil, fmt.Errorf("duplicate reset controller")
+						}
+						resetControllers[controller] = target.Board
 						if target.Config["CONFIG_ZMK_SETTINGS_RESET_ON_START"] != "y" {
 							return nil, fmt.Errorf("pairing-migration requires a reset-on-start target")
 						}
@@ -110,12 +117,16 @@ func NewRegistry(plugins ...KeyboardDevice) (*Registry, error) {
 						return nil, fmt.Errorf("pairing-migration requires managed split-role flags")
 					}
 				}
-				if resetCount != 1 || centralCount != 1 || peripheralCount < 1 || v.UF2Family == 0 {
-					return nil, fmt.Errorf("pairing-migration requires one reset target, one central and compatible peripherals")
+				if resetCount < 1 || centralCount != 1 || peripheralCount < 1 || v.UF2Family == 0 {
+					return nil, fmt.Errorf("pairing-migration requires reset targets, one central and compatible peripherals")
 				}
 				for _, target := range v.Targets {
-					if target.Kind != "settings-reset" && target.Board != resetBoard {
-						return nil, fmt.Errorf("a shared reset requires matching controller boards")
+					controller := target.Controller
+					if controller == "" {
+						controller = target.Board
+					}
+					if target.Kind != "settings-reset" && resetControllers[controller] != target.Board {
+						return nil, fmt.Errorf("every controller requires matching reset firmware")
 					}
 				}
 			}

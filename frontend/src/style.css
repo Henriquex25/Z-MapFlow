@@ -1870,11 +1870,36 @@ h3 {
   gap: 14px;
   margin-bottom: 0;
 }
-.behavior-card:not(.expanded) {
+.behavior-card {
   padding: 12px 16px;
 }
-.behavior-body:not([hidden]) {
-  margin-top: 12px;
+.behavior-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows 220ms ease,
+    visibility 220ms;
+  visibility: hidden;
+}
+.behavior-card.expanded > .behavior-body {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+.behavior-body-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.behavior-body-content {
+  padding-top: 12px;
+}
+.behavior-toggle > svg {
+  transition: transform 220ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .behavior-body,
+  .behavior-toggle > svg {
+    transition: none;
+  }
 }
 .behavior-toggle {
   flex-shrink: 0;
@@ -2004,7 +2029,7 @@ h3 {
   margin-top: 12px;
   cursor: pointer;
 }
-.topology-sync-option input[type="checkbox"] {
+input[type="checkbox"] {
   appearance: none;
   flex: 0 0 18px;
   width: 18px;
@@ -2015,12 +2040,12 @@ h3 {
   background: var(--canvas) center / 16px 16px no-repeat;
   cursor: pointer;
 }
-.topology-sync-option input:checked {
+input[type="checkbox"]:checked {
   border-color: var(--accent-solid);
   background-color: var(--accent-solid);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
 }
-.topology-sync-option input:focus-visible {
+input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -2047,4 +2072,39 @@ h3 {
 }
 .topology-central {
   flex-direction: column;
+}
+
+.resource-editor label:has(> input[type="checkbox"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.combo-controls {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.combo-controls > .binding-drop {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.binding-behavior-select {
+  grid-column: 1 / -1;
+}
+
+.editor-workspace:has(.resource-editor) {
+  scrollbar-gutter: stable;
+}
+.flash-target > small {
+  font-size: var(--type-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+}
+.dongle-settings {
+  margin-top: 16px;
 }

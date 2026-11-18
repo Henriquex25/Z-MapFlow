@@ -268,3 +268,155 @@ func TestResetCanRecoverAnUncertainFirmwareWithoutClaimingKeyboardOperation(t *t
 		t.Fatal("old uncertain firmware receipt was replayed during recovery")
 	}
 }
+
+func TestMixedControllerResetRoutesAndReturn(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("xiao_ble_dongle", "mixed")
+	p, err := s.Declare(ctx, "nice_nano_v2")
+	if err != nil || !p.Required {
+		t.Fatalf("missing migration: %+v %v", p, err)
+	}
+	for _, id := range []string{"dongle", "left", "right"} {
+		target, err := s.ResetTarget(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := "settings_reset"
+		if id == "dongle" {
+			expected = "settings_reset_xiao"
+		}
+		if target.ID != expected {
+			t.Fatalf("%s received %s instead of %s", id, target.ID, expected)
+		}
+	}
+	resetDevices(t, s, ctx)
+	for _, id := range []string{"dongle", "left", "right"} {
+		transfer(t, s, ctx, id, false, false, "sent")
+	}
+	back := setupFor("nice_nano_v2", "back")
+	p = mustPlan(t, s, back)
+	if !p.Required || p.CanFlash {
+		t.Fatal("mixed-controller return bypassed cleanup")
+	}
+	target, err := s.ResetTarget(back, "dongle")
+	if err != nil || target.ID != "settings_reset_xiao" {
+		t.Fatalf("retired XIAO got wrong reset: %+v %v", target, err)
+	}
+	legacy := setupFor("nice_nano_v2_legacy", "legacy")
+	if _, err := s.ResetTarget(legacy, "dongle"); err == nil {
+		t.Fatal("legacy profile substituted nice!nano reset for retired XIAO")
+	}
+	resetDevices(t, s, back)
+	if !mustPlan(t, s, back).CanFlash {
+		t.Fatal("return did not unlock after correct resets")
+	}
+}
+func TestChangingDongleControllerRequiresCleanupEvenWithSameRoles(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "nice")
+	if _, err := s.Declare(ctx, "nice_nano_v2_dongle"); err != nil {
+		t.Fatal(err)
+	}
+	mixed := setupFor("xiao_ble_dongle", "xiao")
+	if p := mustPlan(t, s, mixed); !p.Required || p.CanFlash {
+		t.Fatal("controller replacement did not invalidate installed identity")
+	}
+}
+func TestUnknownRetiredDongleMustBeIdentifiedBeforeReset(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2", "normal")
+	if _, err := s.Declare(ctx, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Begin(ctx, "dongle", true); err == nil {
+		t.Fatal("unknown retired controller received guessed reset")
+	}
+	if _, err := s.SetResetController(ctx, "dongle", "unavailable"); err == nil {
+		t.Fatal("unsupported reset identity accepted")
+	}
+	if _, err := s.SetResetController(ctx, "left", "xiao_ble"); err == nil {
+		t.Fatal("operational controller changed without matching build")
+	}
+	if _, err := s.SetResetController(ctx, "dongle", "xiao_ble"); err != nil {
+		t.Fatal(err)
+	}
+	selected, err := s.ResetTarget(ctx, "dongle")
+	if err != nil || selected.ID != "settings_reset_xiao" {
+		t.Fatal("selection not persisted", selected, err)
+	}
+	token := transfer(t, s, ctx, "dongle", true, false, "sent")
+	if _, err := s.SetResetController(ctx, "dongle", "nice_nano_v2"); err == nil {
+		t.Fatal("pending reset receipt changed controller")
+	}
+	if _, err := s.Acknowledge(ctx, token); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SetResetController(ctx, "dongle", "nice_nano_v2"); err == nil {
+		t.Fatal("acknowledged reset reassigned to another board")
+	}
+}
+func TestExistingWorkflowSignatureUpgradeKeepsPairing(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "old")
+	state := topologyState{Version: 1, Current: topologySignature(ctx.Variant, false), CurrentVariant: ctx.Variant.ID}
+	if err := s.save(ctx, state); err != nil {
+		t.Fatal(err)
+	}
+	if p := mustPlan(t, s, ctx); p.Required || !p.CanFlash {
+		t.Fatal("adding controller metadata forced existing users to reset")
+	}
+	mixed := setupFor("xiao_ble_dongle", "new")
+	if p := mustPlan(t, s, mixed); !p.Required {
+		t.Fatal("legacy signature upgrade accepted different dongle controller")
+	}
+}
+func TestHistoricalBuildRequiresItsControllerSpecificResetArtifact(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("xiao_ble_dongle", "old-build")
+	ctx.ResetTargets = map[string]bool{"settings_reset": true}
+	if _, err := s.Declare(ctx, "nice_nano_v2"); err != nil {
+		t.Fatal(err)
+	}
+	if p := mustPlan(t, s, ctx); !p.NeedsRebuild {
+		t.Fatal("incomplete historical artifacts accepted")
+	}
+	if _, err := s.ResetTarget(ctx, "dongle"); err == nil {
+		t.Fatal("missing XIAO reset image substituted")
+	}
+	if _, err := s.Begin(ctx, "dongle", true); err == nil {
+		t.Fatal("missing artifact entered reset workflow")
+	}
+}
+func TestExistingPendingResetReceiptSurvivesControllerMetadataUpgrade(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "old")
+	if _, err := s.Declare(ctx, "nice_nano_v2"); err != nil {
+		t.Fatal(err)
+	}
+	token := transfer(t, s, ctx, "dongle", true, false, "sent")
+	state, err := s.load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.Current = topologySignature(variant(ctx.Plugin, state.CurrentVariant), false)
+	state.Cycle.Signature = topologySignature(ctx.Variant, false)
+	for i := range state.Cycle.Devices {
+		state.Cycle.Devices[i].Controller = ""
+	}
+	if err := s.save(ctx, state); err != nil {
+		t.Fatal(err)
+	}
+	p := mustPlan(t, s, ctx)
+	if p.Pending == nil || p.Pending.ReceiptID != token || p.CanFlash || p.NeedsRebuild {
+		t.Fatal("pending workflow lost on metadata upgrade", p)
+	}
+	if target, err := s.ResetTarget(ctx, "dongle"); err != nil || target.ID != "settings_reset" {
+		t.Fatal("old reset controller not recovered", target, err)
+	}
+	if _, err := s.Acknowledge(ctx, token); err != nil {
+		t.Fatal(err)
+	}
+	if p := mustPlan(t, s, ctx); p.ResetDone["dongle"] != "confirmed" {
+		t.Fatal("old reset acknowledgement lost")
+	}
+}

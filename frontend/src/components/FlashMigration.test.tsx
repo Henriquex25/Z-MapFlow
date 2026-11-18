@@ -15,6 +15,7 @@ vi.mock("../services/api", () => ({
     onFlashProgress: vi.fn(() => () => {}),
     getFlashPlan: vi.fn(),
     setInstalledTopology: vi.fn(),
+    setResetController: vi.fn(),
     reportExternalFlash: vi.fn(),
     acknowledgeFlash: vi.fn(),
   },
@@ -239,7 +240,47 @@ it("refuses to advance on an acknowledgement error or a build missing reset firm
   delete plan.pending;
   plan.needsRebuild = true;
   render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Rebuild this profile");
+  expect(await screen.findByRole("alert")).toHaveTextContent("compatible current profile");
   expect(screen.queryByRole("button", { name: "Next step" })).not.toBeInTheDocument();
   expect(api.flashDevice).not.toHaveBeenCalled();
 });
+
+it.each([false, true])(
+  "requires identification of an unknown retired controller (multiple reset boards: %s)",
+  async (mixed) => {
+    const { plugin, build } = setup(true);
+    const normal = plugin.variants[0];
+    const original = normal.targets.find((t) => t.kind === "settings-reset")!;
+    original.controller = "nice";
+    if (mixed)
+      normal.targets.push({
+        ...original,
+        id: "reset_xiao",
+        name: "Reset XIAO pairing",
+        controller: "xiao",
+        board: "xiao_ble//zmk",
+        artifact: "xiao-reset.uf2",
+      });
+    build.artifacts.push({ targetId: "reset_xiao", name: "xiao-reset.uf2", size: 512, sha256: "" });
+    for (const d of plan.resetDevices) if (d.id !== "dongle") d.controller = "nice";
+    vi.mocked(api.setResetController).mockImplementation(async (_build, id, controller) => {
+      plan.resetDevices.find((d) => d.id === id)!.controller = controller;
+      return structuredClone(plan);
+    });
+    render(<FlashModal plugin={plugin} build={build} onClose={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "USB dongle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    await screen.findByText(/Bootloader detected/);
+    expect(screen.getByRole("button", { name: "Next step" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("combobox", { name: "Controller in the retired device" }), {
+      target: { value: mixed ? "xiao" : "nice" },
+    });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Next step" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    expect(screen.getAllByText(mixed ? /xiao-reset.uf2/ : /reset.uf2/)[0]).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Send firmware/ }));
+    await waitFor(() =>
+      expect(api.flashDevice).toHaveBeenCalledWith(build.id, "dongle", drive.path, true),
+    );
+  },
+);

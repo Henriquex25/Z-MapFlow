@@ -48,7 +48,7 @@ export function FlashModal({
   useLocale();
   const variant = plugin.variants.find((v) => v.id === build.variantId)!;
   const available = variant.targets.filter((t) => build.artifacts.some((a) => a.targetId === t.id));
-  const resetTarget = available.find((t) => t.kind === "settings-reset");
+  const resetTargets = available.filter((t) => t.kind === "settings-reset");
   const firmwareTargets = available.filter((t) => t.kind !== "settings-reset");
   const [resetting, setResetting] = useState(false);
   const tracking = variant.features?.includes("pairing-migration") ?? false;
@@ -64,6 +64,13 @@ export function FlashModal({
   const [volume, setVolume] = useState("");
   const [manualVolume, setManualVolume] = useState<Volume | null>(null);
   const [target, setTarget] = useState("");
+  const resetDevice = plan?.resetDevices.find((d) => d.id === target);
+  const resetController = resetDevice
+    ? resetDevice.controller
+    : firmwareTargets.find((t) => t.id === target)?.controller;
+  const resetTarget = resetTargets.find((t) =>
+    resetController ? t.controller === resetController : !t.controller,
+  );
   const [firmwareCompleted, setFirmwareCompleted] = useState<Record<string, "sent" | "confirmed">>(
     {},
   );
@@ -212,6 +219,7 @@ export function FlashModal({
   const send = async () => {
     if (step !== 2 || !target || !volume || locked) return;
     if (plan?.supported && !resetting && !plan.canFlash) return;
+    if (resetting && !resetTarget) return;
     setBusy(true);
     const artifactTarget = resetting && resetTarget ? resetTarget.id : target;
     setNow(Date.now());
@@ -318,6 +326,18 @@ export function FlashModal({
       setConfiguring(false);
     }
   };
+  const chooseResetController = async (controller: string) => {
+    setConfiguring(true);
+    setError("");
+    clearVolume();
+    try {
+      applyPlan(await api.setResetController(build.id, target, controller));
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setConfiguring(false);
+    }
+  };
   const reportExternal = async () => {
     setConfiguring(true);
     setError("");
@@ -382,7 +402,7 @@ export function FlashModal({
 
         {plan && !plan.needsSetup && !plan.needsRebuild && (
           <>
-            {step === 0 && resetTarget && !plan.required && (
+            {step === 0 && resetTargets.length > 0 && !plan.required && (
               <div className="flash-mode">
                 <div className="flex gap-3 flex-wrap">
                   <button
@@ -508,6 +528,38 @@ export function FlashModal({
 
               {step === 1 && (
                 <>
+                  {resetting &&
+                    resetDevice?.retired &&
+                    (resetTargets.length > 1 ||
+                      (!resetDevice.controller && resetTargets.some((t) => t.controller))) && (
+                      <label className="form-label mb-3">
+                        {tr("Controller in the retired device")}
+                        <select
+                          className="field"
+                          aria-label={tr("Controller in the retired device")}
+                          value={resetDevice.controller ?? ""}
+                          disabled={locked}
+                          onChange={(e) => void chooseResetController(e.target.value)}
+                        >
+                          <option value="" disabled>
+                            {tr("Select the actual controller")}
+                          </option>
+                          {resetTargets.map((t) => (
+                            <option key={t.id} value={t.controller}>
+                              {tr(t.name)} · {t.board}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  {resetting && !resetTarget && (
+                    <p className="notice" role="alert">
+                      {tr(
+                        "Identify the controller before resetting. A matching UF2 family alone does not make reset firmware compatible.",
+                      )}
+                    </p>
+                  )}
+
                   <p>
                     {resetting &&
                     targets.find((t) => t.id === target)?.kind === "dongle" &&
@@ -793,7 +845,9 @@ export function FlashModal({
                   {step < 2 ? (
                     <button
                       className="btn primary"
-                      disabled={locked || (step === 0 ? !target : !volume)}
+                      disabled={
+                        locked || (step === 0 ? !target : !volume || (resetting && !resetTarget))
+                      }
                       onClick={() => setStep(step === 0 ? 1 : 2)}
                     >
                       {tr("Next step")}
@@ -802,7 +856,7 @@ export function FlashModal({
                   ) : (
                     <button
                       className="btn primary flash-send-button"
-                      disabled={locked || !target || !volume}
+                      disabled={locked || !target || !volume || (resetting && !resetTarget)}
                       onClick={send}
                     >
                       {busy ? (

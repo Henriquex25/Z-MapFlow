@@ -1,3 +1,4 @@
+import { formatKeyVisuals } from "../utils/keyFormatter";
 import { localizeMessage, tr, useLocale } from "../i18n";
 import { useEffect, useId, useState } from "react";
 import type { Project } from "../types/keyboard";
@@ -29,6 +30,7 @@ export function BindingArguments({
   const plugin = useKeyboardStore((s) => s.plugin),
     id = useId();
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [keyPicker, setKeyPicker] = useState<number | null>(null);
   const [draft, setDraft] = useState(bindingParts(code).slice(1));
   useEffect(() => setDraft(bindingParts(code).slice(1)), [code]);
   const parts = bindingParts(code),
@@ -55,9 +57,11 @@ export function BindingArguments({
   return (
     <div className="binding-arguments">
       {specs.map((spec, i) => (
-        <label className="form-label" key={i}>
-          {spec.label}
-          {specs.length > 1 ? ` ${i + 1}` : ""}
+        <div className="form-label" key={i}>
+          <span>
+            {spec.label}
+            {specs.length > 1 ? ` ${i + 1}` : ""}
+          </span>
           {spec.kind === "layer" ? (
             <select
               className="field"
@@ -98,26 +102,48 @@ export function BindingArguments({
               ))}
             </select>
           ) : (
-            <input
-              type={["integer", "percent"].includes(spec.kind) ? "number" : "text"}
-              min={spec.kind === "percent" ? 0 : undefined}
-              max={spec.kind === "percent" ? 100 : undefined}
-              className={`field ${error ? "invalid-field" : ""}`}
-              aria-invalid={!!error}
-              aria-describedby={error ? `${id}-error` : undefined}
-              aria-label={tr("{0} — argument {1}", label, i + 1)}
-              value={draft[i] ?? ""}
-              list={spec.kind === "keycode" ? `${id}-keys` : undefined}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setShowSuggestions(false)}
-              spellCheck={false}
-              placeholder={
-                spec.kind === "keycode" ? "A, LCTRL, LC(A)…" : tr("Number or ZMK expression")
-              }
-              onChange={(e) => apply(i, e.target.value)}
-            />
+            <>
+              {spec.kind === "keycode" && (
+                <select
+                  className="field"
+                  aria-label={tr("{0} — choose key {1}", label, i + 1)}
+                  value={keycodeChoices(project).includes(draft[i]) ? draft[i] : ""}
+                  onFocus={() => setKeyPicker(i)}
+                  onChange={(e) => apply(i, e.target.value)}
+                >
+                  <option value="" disabled>
+                    {tr("Choose a key or enter a shortcut below")}
+                  </option>
+                  {(keyPicker === i ? keycodeChoices(project) : [draft[i]].filter(Boolean)).map(
+                    (key) => (
+                      <option key={key} value={key}>
+                        {formatKeyVisuals(`&kp ${key}`)?.main || key} · {key}
+                      </option>
+                    ),
+                  )}
+                </select>
+              )}
+              <input
+                type={["integer", "percent"].includes(spec.kind) ? "number" : "text"}
+                min={spec.kind === "percent" ? 0 : undefined}
+                max={spec.kind === "percent" ? 100 : undefined}
+                className={`field ${error ? "invalid-field" : ""}`}
+                aria-invalid={!!error}
+                aria-describedby={error ? `${id}-error` : undefined}
+                aria-label={tr("{0} — argument {1}", label, i + 1)}
+                value={draft[i] ?? ""}
+                list={spec.kind === "keycode" ? `${id}-keys` : undefined}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setShowSuggestions(false)}
+                spellCheck={false}
+                placeholder={
+                  spec.kind === "keycode" ? "A, LCTRL, LC(A)…" : tr("Number or ZMK expression")
+                }
+                onChange={(e) => apply(i, e.target.value)}
+              />
+            </>
           )}
-        </label>
+        </div>
       ))}
       {showSuggestions && (
         <datalist id={`${id}-keys`}>

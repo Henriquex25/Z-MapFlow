@@ -1,3 +1,4 @@
+import { BehaviorCard } from "./BehaviorCard";
 import { tr, useLocale } from "../i18n";
 import { NumberField } from "./NumberField";
 import { ValidatedProperty } from "./ValidatedProperty";
@@ -428,31 +429,36 @@ export function ConditionalLayersEditor() {
         <p className="hint">{tr("Add at least three layers to create a rule.")}</p>
       )}
       {p.layout.conditionalLayers?.map((c) => (
-        <article className="resource-card" key={c.id}>
-          <div className="section-toolbar">
-            <input
-              className="field"
-              aria-label={tr("Conditional rule name")}
-              value={c.name}
-              onChange={(e) =>
-                edit((p) => {
-                  p.layout.conditionalLayers!.find((r) => r.id === c.id)!.name = e.target.value;
-                })
-              }
-            />
-            <button
-              className="btn danger"
-              onClick={() =>
-                edit((p) => {
-                  p.layout.conditionalLayers = p.layout.conditionalLayers!.filter(
-                    (r) => r.id !== c.id,
-                  );
-                })
-              }
-            >
-              {tr("Delete rule")}{" "}
-            </button>
-          </div>
+        <BehaviorCard
+          key={c.id}
+          name={c.name}
+          toolbar={
+            <>
+              <input
+                className="field"
+                aria-label={tr("Conditional rule name")}
+                value={c.name}
+                onChange={(e) =>
+                  edit((p) => {
+                    p.layout.conditionalLayers!.find((r) => r.id === c.id)!.name = e.target.value;
+                  })
+                }
+              />
+              <button
+                className="btn danger"
+                onClick={() =>
+                  edit((p) => {
+                    p.layout.conditionalLayers = p.layout.conditionalLayers!.filter(
+                      (r) => r.id !== c.id,
+                    );
+                  })
+                }
+              >
+                {tr("Delete rule")}{" "}
+              </button>
+            </>
+          }
+        >
           <p>{tr("When all these layers are active:")}</p>
           <div className="flex flex-wrap gap-3">
             {p.layout.layers
@@ -495,7 +501,7 @@ export function ConditionalLayersEditor() {
               ))}
             </select>
           </label>
-        </article>
+        </BehaviorCard>
       ))}
     </div>
   );

@@ -20,7 +20,7 @@ func TestSofleDongleKeepsLayoutAndBuildsThreeDevicesPlusReset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(v.Targets) != 4 || v.Targets[0].Role != "central" || v.Targets[0].Kind != "dongle" || v.Targets[1].Role != "peripheral" || v.Targets[2].Role != "peripheral" || v.Targets[3].Kind != "settings-reset" {
+	if len(v.Targets) != 5 || v.Targets[0].Role != "central" || v.Targets[0].Kind != "dongle" || v.Targets[1].Role != "peripheral" || v.Targets[2].Role != "peripheral" || v.Targets[3].Kind != "settings-reset" {
 		t.Fatal("wrong topology")
 	}
 	files, err := Generate(p, r)
@@ -209,5 +209,30 @@ func TestStatusSyncMigratesImportedDisplayFlagsWithoutMutatingProject(t *testing
 		if f.Name == "sofle.conf" && !strings.Contains(f.Content, original) {
 			t.Fatal("normal profile lost its original advanced settings")
 		}
+	}
+}
+
+func TestMixedControllerExportKeepsSeparateResetImages(t *testing.T) {
+	r, p := fixture(t)
+	p.VariantID = "xiao_ble_dongle"
+	files, err := Generate(p, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var matrix string
+	for _, f := range files {
+		if f.Name == "build.yaml" {
+			matrix = f.Content
+		}
+	}
+	if !strings.Contains(matrix, "xiao_ble//zmk") || !strings.Contains(matrix, "nice_nano@2.0.0//zmk") || !strings.Contains(matrix, "sofle-xiao-settings-reset") || !strings.Contains(matrix, "sofle-settings-reset") {
+		t.Fatal("mixed controller board/reset identities lost", matrix)
+	}
+	imported, err := keymap.ImportBuildMatrix(matrix, p, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := project.Validate(imported, r); err != nil {
+		t.Fatal(err)
 	}
 }
