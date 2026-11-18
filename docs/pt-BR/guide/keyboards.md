@@ -1,17 +1,40 @@
 # Teclados compatíveis
 
-Selecione o teclado no cabeçalho e a controladora em **Configurações**. Confira a PCB, a controladora e a fiação antes de compilar. Um gabinete parecido ou a mesma quantidade de teclas não garante compatibilidade de firmware.
+**Confira esta tabela antes de baixar ou compilar.** Ela descreve os perfis implementados na revisão documentada aqui. Para um pacote baixado, confira o README da tag da release; uma versão anterior pode não incluir um perfil adicionado recentemente.
 
-| Teclado | Controladora e firmware | Teclas físicas | Compilação / flash |
-| --- | --- | --- | --- |
-| Sofle v2 | nice!nano v2 / SuperMini compatível, ZMK | 58 + 2 cliques de encoder | UF2 nRF52840 esquerdo e direito |
-| Lily58 | nice!nano v2 / SuperMini compatível, ZMK | 58 | UF2 nRF52840 esquerdo e direito |
-| Silakka54 Wireless | nRF52840 com matriz compatível com Lily58, ZMK | 54 | UF2 nRF52840 esquerdo e direito |
-| Silakka54 Wired (experimental) | Fiação original RP2040 Zero, port ZMK | 54 | UF2 RP2040 esquerdo e direito |
+## Compatibilidade por teclado e configuração
 
-Os novos perfis Lily58 e Silakka54 precisam ser validados nos respectivos teclados físicos. Compilar verifica a configuração do firmware, sem comprovar a fiação ou o funcionamento das teclas. AVR Pro Micro, conversões Lily58 com RP2040 e clones arbitrários do Silakka54 não estão cobertos por esses alvos.
+| Teclado / configuração | Controladoras nas metades | Controladora do dongle | Ligação entre as partes | Validação |
+| --- | --- | --- | --- | --- |
+| Sofle v2 — duas metades | nice!nano v2 / SuperMini compatível | Sem dongle | Bluetooth | Testado no hardware SuperMini do autor |
+| Sofle v2 — dongle nice!nano/SuperMini | nice!nano v2 / SuperMini compatível | nice!nano v2 / SuperMini compatível | Bluetooth | Pareamento inicial e digitação testados no setup do autor |
+| Sofle v2 — dongle XIAO (experimental) | nice!nano v2 / SuperMini compatível | Seeed XIAO nRF52840 | Bluetooth | Compilação validada; teste físico pendente |
+| Lily58 | nice!nano v2 / SuperMini compatível | Sem perfil de dongle incluído | Bluetooth | Compilação validada; teste físico pendente |
+| Silakka54 Wireless — matriz compatível com Lily58 | nice!nano v2 / SuperMini compatível | Sem perfil de dongle incluído | Bluetooth | Compilação validada; teste físico pendente |
+| Silakka54 Wired — port ZMK experimental | RP2040 Zero, fiação original | Sem dongle | UART full-duplex | Compilação validada; teste físico pendente |
 
-O Sofle v2 também oferece um [perfil experimental com dongle USB central](./dongle) para três controladoras nRF52840 compatíveis com nice!nano v2. O perfil comum de duas metades continua sendo o padrão.
+**Testado no hardware** se refere à configuração específica Linux/Sofle do autor. Com dongle, inclui limpeza/gravação inicial, conexão de ambas as metades e digitação. Reconexão/repouso prolongados e a aparência atualizada do OLED ainda precisam de teste. Isso não representa validação física de todos os clones compatíveis.
+
+**Compilação validada; teste físico pendente** indica que o firmware passou por compilação real no Docker e validação UF2, aguardando o teste de funcionamento naquela combinação. O perfil XIAO e o port Silakka54 com fio são experimentais.
+
+Tamanho dos layouts: o Sofle v2 tem 58 switches e dois cliques de encoder, o Lily58 tem 58 switches e os dois perfis Silakka54 desenham 54 switches.
+
+Selecione o teclado no cabeçalho e a variante exata em **Configurações**. Confira PCB, controladora, bootloader e fiação. Todos os perfis incluídos compilam **ZMK** e fazem flash por um volume de bootloader **UF2** montado.
+
+## Controladoras e microcontroladores
+
+| Placa controladora | Microcontrolador | Uso incluído no aplicativo |
+| --- | --- | --- |
+| nice!nano v2 | Nordic nRF52840 | Metades do Sofle v2, Lily58 e Silakka54 Wireless compatível com Lily58; dongle central do Sofle |
+| SuperMini compatível com o perfil nice!nano v2 | Nordic nRF52840 | Os mesmos perfis, com pinagem e bootloader UF2 compatíveis; é a controladora usada no Sofle do autor |
+| Seeed Studio XIAO nRF52840, modelo original | Nordic nRF52840 | **Somente dongle central do Sofle**, com nice!nano/SuperMini nas metades |
+| RP2040 Zero | Raspberry Pi RP2040 | **Somente Silakka54 Wired**, com a fiação UART full-duplex documentada |
+
+A família do microcontrolador não define um perfil de placa controladora. Um rótulo genérico “Pro Micro”, “nRF52840” ou “RP2040” não estabelece compatibilidade. O perfil de dongle XIAO não o torna uma substituição suportada para as controladoras das metades. Os perfis atuais não cobrem XIAO RP2040/ESP32/Plus, Pro Micro AVR ATmega32U4, Raspberry Pi Pico, outras placas RP2040 ou controladoras nRF52840 arbitrárias. Placas que exigem outro protocolo de gravação também precisam de suporte além do fluxo UF2 atual.
+
+Nas configurações sem fio, o central pode usar USB até o computador enquanto as partes se comunicam por Bluetooth. No [Sofle com dongle USB](./dongle), ambas as metades são periféricas; use o perfil listado e o reset correspondente. O Sofle original com TRRS está fora dos perfis incluídos; veja [USB e cabo entre as metades](#sofle-usb-e-cabo-entre-as-metades).
+
+Para uma combinação ainda não incluída, [solicite suporte](https://github.com/Henriquex25/Z-MapFlow/issues/new?template=keyboard.yml) ou [contribua com um plugin](../plugins). Importar um keymap usa o perfil selecionado, sem acrescentar compatibilidade de hardware.
 
 ## Lily58
 

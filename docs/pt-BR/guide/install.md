@@ -1,6 +1,8 @@
 # Instalação e atualização
 
-O Z-MapFlow atende **Linux x86_64**, com **builds Windows x64 em testes iniciais**. O workflow manual atualizado gera pacotes dos dois sistemas; releases anteriores podem conter apenas Linux. A execução do CI nativo e a validação com teclado físico no Windows ainda são necessárias para confirmar o suporte. macOS e Windows ARM64 ainda não têm pacotes.
+**Antes de baixar:** confira as [tabelas de teclados e controladoras compatíveis](./keyboards), incluindo as combinações testadas no hardware e as que continuam experimentais.
+
+O Z-MapFlow atende **Linux x86_64**, com **builds Windows x64 em testes iniciais**. O workflow manual atualizado gera pacotes dos dois sistemas; releases anteriores podem conter apenas Linux. O CI nativo do Windows verifica a compilação e o instalador; a validação com teclado físico no Windows continua pendente. macOS e Windows ARM64 ainda não têm pacotes.
 
 ## Linux x86_64
 

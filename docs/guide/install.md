@@ -1,6 +1,8 @@
 # Installation and updates
 
-Z-MapFlow supports **Linux x86_64**, with **Windows x64 builds in initial testing**. The updated manual release workflow produces packages for both platforms; older published releases may contain Linux only. Native Windows CI and physical keyboard validation are still required before treating Windows support as verified. macOS and Windows ARM64 are not packaged yet.
+**Before downloading:** check the [keyboard and controller compatibility tables](./keyboards), including which combinations have physical testing and which remain experimental.
+
+Z-MapFlow supports **Linux x86_64**, with **Windows x64 builds in initial testing**. The updated manual release workflow produces packages for both platforms; older published releases may contain Linux only. Native Windows CI covers builds and installer checks; physical keyboard validation on Windows remains pending. macOS and Windows ARM64 are not packaged yet.
 
 ## Linux x86_64
 
