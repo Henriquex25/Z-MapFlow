@@ -58,7 +58,7 @@ A controller can restart before the operating system confirms its last write. Fo
 
 ## Rotate a half’s OLED 180°
 
-With a USB dongle profile selected, open **Settings → Keyboard and firmware → Dongle options → OLED orientation**. Enable **Rotate Right OLED 180°** to turn the right display toward you. Left and right can be selected independently; both start disabled. **Display** must be enabled to change these controls.
+Open **Settings → System layout and features → OLED orientation**. This control is shared by the Sofle profiles, with or without a dongle; see [OLED orientation](./configuration#oled-orientation). Enable **Rotate Right OLED 180°** to turn the right display toward you. Left and right can be selected independently; both start disabled. **OLED status display** must be enabled to change these controls.
 
 Save, rebuild and flash the selected half. Changing orientation alone does **not** require clearing pairing or flashing the dongle. The setting is saved with the project and exported build configuration, and works with synchronization on or off. It preserves the horizontal status layout, colors, font sizes and displayed information. This profile currently offers 0° and 180°; a portrait layout (90°/270°) is not provided.
 

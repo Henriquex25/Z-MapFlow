@@ -2,6 +2,7 @@ import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
 import { SleepTimeoutField } from "./SleepTimeoutField";
 import { changeHardwareVariant } from "../utils/hardwareVariant";
+import { OledOrientation } from "./OledOrientation";
 import { ConnectionTopology } from "./ConnectionTopology";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { AppSettings } from "./AppSettings";
@@ -925,6 +926,7 @@ export function SettingsEditor() {
             </label>
           )}
         </div>
+        <OledOrientation variant={variant} />
         <p className="hint mt-3">
           {tr(
             "The selected layout controls the symbols offered in the palette. Configure the same layout in your operating system.",

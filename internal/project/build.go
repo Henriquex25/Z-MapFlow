@@ -74,8 +74,8 @@ func ValidateBuild(p models.Project, plugin models.Plugin) error {
 				for _, feature := range variant.Features {
 					supported = supported || feature == "oled-rotate-180"
 				}
-				if !supported || definition.Role != "peripheral" {
-					return fmt.Errorf("OLED rotation requires a supported peripheral display profile.")
+				if !supported || (definition.Kind != "" && definition.Kind != "keyboard") {
+					return fmt.Errorf("OLED rotation requires a supported keyboard display target.")
 				}
 			}
 			if !snippetName.MatchString(snippet) || used[snippet] {

@@ -237,38 +237,56 @@ func TestMixedControllerExportKeepsSeparateResetImages(t *testing.T) {
 	}
 }
 
-func TestPeripheralRotationIsTargetSpecificAndRoundTrips(t *testing.T) {
-	r, p := fixture(t)
-	p.VariantID = "nice_nano_v2_dongle"
-	p.BuildTargets = []models.BuildTarget{{TargetID: "right", Snippets: []string{"zmapflow-oled-flip-180"}}}
-	files, err := Generate(p, r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	generated := map[string]string{}
-	for _, f := range files {
-		generated[f.Name] = f.Content
-	}
-	if !strings.Contains(generated["zephyr/module.yml"], "snippet_root: .") || !strings.Contains(generated["snippets/zmapflow-oled-flip-180/flip.overlay"], "/delete-property/ segment-remap") || !strings.Contains(generated["snippets/zmapflow-oled-flip-180/flip.overlay"], "/delete-property/ com-invdir") {
-		t.Fatal("missing hardware orientation snippet")
-	}
-	if strings.Contains(generated["sofle.keymap"], "segment-remap") {
-		t.Fatal("target orientation leaked into the shared keymap")
-	}
-	imported, err := keymap.ImportBuildMatrix(generated["build.yaml"], p, r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(imported.BuildTargets) != 1 || imported.BuildTargets[0].TargetID != "right" || len(imported.BuildTargets[0].Snippets) != 1 || imported.BuildTargets[0].Snippets[0] != "zmapflow-oled-flip-180" {
-		t.Fatal("rotation not preserved", imported.BuildTargets)
-	}
-	p.BuildTargets[0].TargetID = "dongle"
-	if project.Validate(p, r) == nil {
-		t.Fatal("screenless central accepted rotation")
-	}
-	p.BuildTargets[0].TargetID = "right"
-	p.VariantID = "nice_nano_v2"
-	if project.Validate(p, r) == nil {
-		t.Fatal("unsupported profile accepted rotation")
+func TestOledRotationIsTargetSpecificAcrossSofleProfiles(t *testing.T) {
+	for _, profile := range []string{"nice_nano_v2", "nice_nano_v2_legacy", "nice_nano_v2_dongle", "xiao_ble_dongle"} {
+		for _, half := range []string{"left", "right"} {
+			t.Run(profile+"/"+half, func(t *testing.T) {
+				r, p := fixture(t)
+				p.VariantID = profile
+				p.BuildTargets = []models.BuildTarget{{TargetID: half, Snippets: []string{"zmapflow-oled-flip-180"}}}
+				files, err := Generate(p, r)
+				if err != nil {
+					t.Fatal(err)
+				}
+				generated := map[string]string{}
+				for _, f := range files {
+					generated[f.Name] = f.Content
+				}
+				if !strings.Contains(generated["zephyr/module.yml"], "snippet_root: .") || !strings.Contains(generated["snippets/zmapflow-oled-flip-180/flip.overlay"], "/delete-property/ segment-remap") || !strings.Contains(generated["snippets/zmapflow-oled-flip-180/flip.overlay"], "/delete-property/ com-invdir") {
+					t.Fatal("missing hardware orientation snippet")
+				}
+				if !strings.Contains(profile, "dongle") && strings.Contains(generated["zephyr/module.yml"], "zmapflow-status") {
+					t.Fatal("status sync module leaked into ordinary profile")
+				}
+				if strings.Contains(generated["sofle.keymap"], "segment-remap") {
+					t.Fatal("target orientation leaked into shared keymap")
+				}
+				imported, err := keymap.ImportBuildMatrix(generated["build.yaml"], p, r)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(imported.BuildTargets, p.BuildTargets) {
+					t.Fatal("rotation not preserved", imported.BuildTargets)
+				}
+				d, _ := r.Get(p.PluginID)
+				plugin := d.Descriptor()
+				v, _ := project.Variant(p, plugin)
+				for _, target := range v.Targets {
+					if target.Kind == "dongle" || target.Kind == "settings-reset" {
+						p.BuildTargets[0].TargetID = target.ID
+						if project.ValidateBuild(p, plugin) == nil {
+							t.Fatal("screenless target accepted rotation", target.ID)
+						}
+					}
+				}
+				p.BuildTargets[0].TargetID = half
+				for i := range plugin.Variants {
+					plugin.Variants[i].Features = nil
+				}
+				if project.ValidateBuild(p, plugin) == nil {
+					t.Fatal("unsupported profile accepted rotation")
+				}
+			})
+		}
 	}
 }

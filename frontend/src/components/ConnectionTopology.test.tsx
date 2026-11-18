@@ -60,23 +60,3 @@ it("configures native dongle battery reporting and radio interval on the central
   ]);
   expect(useKeyboardStore.getState().savedProject!.buildTargets).toBeUndefined();
 });
-it("rotates only the selected peripheral OLED and clears its snippet when switching to an unsupported profile", () => {
-  const session = dongleFixture();
-  session.project.variantId = "dongle";
-  session.project.options.display = true;
-  const v = session.plugin.variants[1];
-  v.features!.push("oled-rotate-180");
-  useKeyboardStore.getState().initialize(session);
-  render(<ConnectionTopology variant={v} />);
-  fireEvent.click(screen.getByRole("checkbox", { name: "Rotate Right OLED 180°" }));
-  let p = useKeyboardStore.getState().project!;
-  expect(p.buildTargets?.find((t) => t.targetId === "right")?.snippets).toEqual([
-    "zmapflow-oled-flip-180",
-  ]);
-  expect(p.buildTargets?.find((t) => t.targetId === "left")).toBeUndefined();
-  expect(p.buildTargets?.find((t) => t.targetId === "dongle")).toBeUndefined();
-  expect(useKeyboardStore.getState().savedProject!.buildTargets).toBeUndefined();
-  const changed = structuredClone(p);
-  changeHardwareVariant(changed, session.plugin, "test");
-  expect(changed.buildTargets?.find((t) => t.targetId === "right")?.snippets).toEqual([]);
-});

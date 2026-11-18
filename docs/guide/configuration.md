@@ -32,6 +32,14 @@ Configure the same keyboard layout in your operating system. The app does not sw
 
 **Interface language is separate:** English or Brazilian Portuguese under **Settings → Application** changes app controls only. It does not enable ABNT2, change your firmware or translate user-created layer/macro names.
 
+## OLED orientation
+
+For Sofle v2, open **Settings → System layout and features → OLED orientation** and enable **Rotate Right OLED 180°** to turn the right screen toward you. The left OLED can be rotated independently. Both options start disabled and are available on the current and ZMK 0.3 profiles, **with or without a USB central dongle**. Enable **OLED status display** to change orientation; disabling the display retains your choices.
+
+Save, rebuild and flash the selected half. Changing orientation alone needs no pairing reset. The setting preserves the existing horizontal status layout, colors and font sizes; it does not add information to a screen that the selected profile does not normally provide. Only 0° and 180° are offered, not a portrait layout.
+
+Orientation is stored per build target in the project and exported `build.yaml`, and survives switching between supported Sofle profiles. Changing the central/controller can still require the [separate pairing-reset workflow](./dongle); orientation alone does not change that topology.
+
 ## Bluetooth and power
 
 In **Settings → Bluetooth and power**, **Sleep timeout (minutes)** sets the inactivity period before automatic sleep. For example, `15` means 15 minutes and `1.5` means 90 seconds. The existing supported range remains one second to 24 hours; fractions of a minute are accepted.

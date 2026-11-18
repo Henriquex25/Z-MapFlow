@@ -57,7 +57,7 @@ A controladora pode reiniciar antes de o sistema confirmar a última escrita. No
 
 ## Girar o OLED de uma metade em 180°
 
-Com um perfil de dongle USB selecionado, abra **Configurações → Teclado e firmware → Opções do dongle → Orientação do OLED**. Ative **Girar OLED Direita em 180°** para virar a tela direita na sua direção. Esquerda e direita são independentes e começam desativadas. **Display** deve estar habilitado para alterar esses controles.
+Abra **Configurações → Layout do sistema e recursos → Orientação do OLED**. O controle é compartilhado pelos perfis Sofle, com ou sem dongle; veja [orientação do OLED](./configuration#orientacao-do-oled). Ative **Girar OLED Direita em 180°** para virar a tela direita na sua direção. Esquerda e direita são independentes e começam desativadas. **OLED com status** deve estar habilitado para alterar esses controles.
 
 Salve, recompile e grave a metade escolhida. Alterar somente a orientação **não** exige limpar o pareamento nem gravar o dongle. A opção é salva no projeto e na configuração de build exportada, e funciona com a sincronização ligada ou desligada. O layout horizontal, as cores, os tamanhos das fontes e as informações são preservados. Este perfil oferece 0° e 180°; não há layout vertical de 90°/270° nesta implementação.
 

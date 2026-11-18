@@ -967,5 +967,5 @@
   "OLED orientation": "Orientação do OLED",
   "Rotate {0} OLED 180°": "Girar OLED {0} em 180°",
   "Keeps the horizontal status layout and flips only the selected half. Save, rebuild and flash that half; no pairing reset is needed for orientation alone.": "Mantém o layout horizontal e gira somente a metade escolhida. Salve, recompile e grave essa metade; alterar apenas a orientação não exige limpar o pareamento.",
-  "OLED rotation requires a supported peripheral display profile.": "A rotação do OLED exige um perfil de display periférico compatível."
+  "OLED rotation requires a supported keyboard display target.": "A rotação do OLED exige um alvo de teclado com display compatível."
 }

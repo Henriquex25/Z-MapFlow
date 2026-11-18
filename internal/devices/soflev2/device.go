@@ -71,7 +71,8 @@ func (d *Device) Descriptor() models.Plugin {
 		modern.Targets[i].Board = "nice_nano@2.0.0//zmk"
 	}
 	for _, v := range []*models.Variant{&modern, &legacy} {
-		v.Features = append(v.Features, "pairing-migration")
+		v.Features = append(v.Features, "pairing-migration", "oled-rotate-180")
+		v.Files = oledRotationFiles()
 		v.Targets = append(append([]models.Target{}, v.Targets...), models.Target{ID: "settings_reset", Kind: "settings-reset", Name: "Reset pairing", Board: v.Targets[0].Board, Shield: "settings_reset", Artifact: "sofle-settings-reset.uf2", Config: map[string]string{"CONFIG_ZMK_SETTINGS_RESET_ON_START": "y"}})
 		for i := range v.Targets {
 			v.Targets[i].Controller = "nice_nano_v2"
