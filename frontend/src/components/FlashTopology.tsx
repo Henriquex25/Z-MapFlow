@@ -51,14 +51,21 @@ export function FlashTopology({
       {plan.required && (
         <div className="notice flash-transfer-status" role="note">
           <strong>{tr("Pairing reset is required before keyboard firmware.")}</strong>
-          <p>{tr("Changing the central requires new Bluetooth pairings on every device.")}</p>
           <details>
             <summary>{tr("Setup details")}</summary>
+            <p>{tr("Changing the central requires new Bluetooth pairings on every device.")}</p>
             <p>
               {tr("Reset clears stored Bluetooth and Studio settings. Your saved project is kept.")}
             </p>
             {plan.from && <p>{tr("Installed setup: {0}", tr(plan.from))}</p>}
             <p>{tr("New setup: {0}", tr(plan.to))}</p>
+            {plan.resetDevices.some((d) => d.retired) && (
+              <p>
+                {tr(
+                  "Reset the retired dongle too, then disconnect it. Only the keyboard halves receive the final firmware for this setup.",
+                )}
+              </p>
+            )}
           </details>
         </div>
       )}
@@ -95,13 +102,6 @@ export function FlashTopology({
             </button>
           </li>
         </ol>
-      )}
-      {plan.resetDevices.some((d) => d.retired) && plan.required && (
-        <p className="hint">
-          {tr(
-            "Reset the retired dongle too, then disconnect it. Only the keyboard halves receive the final firmware for this setup.",
-          )}
-        </p>
       )}
       {!plan.required && (
         <button className="btn mt-2" disabled={busy} onClick={onExternal}>

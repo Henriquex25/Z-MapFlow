@@ -1,6 +1,6 @@
 # Sofle v2 com dongle USB
 
-O perfil experimental **nice!nano v2 / SuperMini — dongle USB central** usa três controladoras nRF52840 compatíveis. As duas metades mantêm sua matriz e encoders; a terceira controladora, avulsa, funciona como receptor USB. A validação física ainda está pendente. Compilar não comprova a compatibilidade da controladora, bootloader ou comunicação sem fio.
+O perfil experimental **nice!nano v2 / SuperMini — dongle USB central** usa três controladoras nRF52840 compatíveis. As duas metades mantêm sua matriz e encoders; a terceira controladora, avulsa, funciona como receptor USB. O autor já testou o pareamento inicial e a digitação em um Sofle v2 com três controladoras nRF52840 compatíveis; outras combinações de hardware continuam sem validação. Compilar não comprova a compatibilidade da controladora, bootloader ou comunicação sem fio.
 
 | Dispositivo | Papel | Firmware |
 | --- | --- | --- |
@@ -11,9 +11,9 @@ O perfil experimental **nice!nano v2 / SuperMini — dongle USB central** usa tr
 
 É um receptor BLE do ZMK. Não adiciona compatibilidade com dongles proprietários de 2,4 GHz. A pinagem e o bootloader precisam ser compatíveis com nice!nano v2/SuperMini; o nome “Pro Micro” sozinho não garante isso. O receptor usa alimentação USB e não precisa de teclas, encoders, OLED ou fiação de matriz.
 
-![Assistente de flash com Dongle USB, Esquerda e Direita e modo separado para limpar pareamentos](/images/z-mapflow-topology-reset-pt.png)
+![Assistente de flash com Dongle USB, Esquerda e Direita na etapa obrigatória de limpeza](/images/z-mapflow-topology-reset-pt.png)
 
-Exemplo da limpeza obrigatória ao mudar o central. A imagem usa a interface e o fluxo Go reais com envios simulados; nenhuma controladora física foi gravada.
+Exemplo da limpeza obrigatória ao mudar o central. A imagem usa a interface real com dados de compilação e fluxo simulados; nenhuma controladora física foi gravada.
 
 Por padrão, as metades mostram bateria/status periférico local. A opção abaixo adiciona um módulo de firmware para transmitir o estado do central às duas metades; os widgets padrão do ZMK, sozinhos, não fazem esse envio.
 
@@ -35,14 +35,16 @@ Em **Configurações → Teclado e firmware**, ative **Sincronizar camada e cone
 
 - **Desativada:** transmissor, serviço receptor e tela sincronizada não são compilados. As metades mantêm o status local normal.
 - **Ativada:** o dongle envia índice/nome da camada ativa, perfil Bluetooth selecionado e a **saída efetivamente selecionada**, incluindo fallback USB/BLE do ZMK. Alimentação USB sozinha não significa saída USB ativa.
-- Com **Display** ativado, cada OLED mostra camada recebida, saída/perfil e bateria local em duas linhas. `USB / B2` indica USB como saída ativa e perfil Bluetooth 2 selecionado; `BT 2 online` indica o perfil Bluetooth 2 como saída ativa. Ausência de saída aparece como offline. O nome da camada é limitado a 14 bytes UTF-8 e acompanhado pelo índice; os caracteres disponíveis dependem da fonte do firmware.
+- Com **Display** ativado, cada metade segue a aparência da tela padrão do ZMK: conexão no alto à esquerda, bateria local à direita e camada ativa com símbolo de teclado abaixo. A tela herda o tema monocromático e a inversão configurada no ZMK, com fontes padrão Montserrat 16 para o status e Montserrat 12 para a camada. A saída USB usa o símbolo USB; Bluetooth mostra o número do perfil e símbolos de conectado, desconectado ou sem pareamento. A bateria mostra o símbolo de carga quando a metade recebe alimentação USB. Uma camada sem nome mostra seu índice; nomes maiores rolam dentro da largura da tela. Os nomes continuam limitados a 14 bytes UTF-8 e os caracteres disponíveis dependem das fontes selecionadas no firmware.
 - Sem Display, a sincronização continua disponível, mas nenhuma tela OLED é compilada.
 
 Após alterar a opção, **salve, recompile e grave o dongle e ambas as metades**. A sincronização é feita pelo firmware e funciona sem manter o Z-MapFlow aberto. Os três dispositivos operacionais precisam de firmware compatível. A opção é compilada, sem alteração instantânea por USB. Depois de alinhar o ajuste nos três dispositivos, mudanças comuns de keymap normalmente continuam exigindo apenas gravar o dongle.
 
 O estado é enviado nas alterações, depois de conexão/criptografia/descoberta e em uma pequena confirmação de 20 bytes a cada cinco segundos. O módulo não transmite keycodes, WPM nem um fluxo contínuo de digitação. Utiliza os vínculos BLE pareados e criptografados existentes, sem outro pareamento. Confirmações sem mudanças não redesenham o OLED. O comportamento normal de inatividade/repouso das telas é mantido; essas confirmações não contam como atividade de teclas.
 
-O receptor invalida o estado exibido quando reconhece a desconexão ou passa 15 segundos sem uma atualização válida. `Waiting for dongle` / `No sync` indica dados indisponíveis. Ao reconectar, recebe um estado inicial mesmo se a camada não mudou. Assim, informações antigas não são apresentadas como atuais. Reconexão, despertar e aparência real dos OLEDs ainda precisam de validação física.
+O receptor invalida o estado exibido quando reconhece a desconexão ou passa 15 segundos sem uma atualização válida. `Waiting for dongle` e um símbolo de desconexão indicam dados indisponíveis. Ao reconectar, recebe um estado inicial mesmo se a camada não mudou. Assim, informações antigas não são apresentadas como atuais. O autor já testou a limpeza, gravação, conexão de ambas as metades e digitação com três controladoras nRF52840 compatíveis. Testes prolongados de reconexão/repouso e a aparência atualizada da tela ainda precisam de validação física.
+
+Atualizar apenas a aparência dessa tela exige recompilar e gravar ambas as metades, sem outra limpeza de pareamento nem atualização do dongle. Alterar a opção de sincronização em si continua exigindo firmwares compatíveis nos três dispositivos.
 
 Com a sincronização ativada, **Display** e a opção de sincronização também gerenciam a seleção de tela e os widgets padrão no firmware gerado. Flags antigas preservadas em um JSON/`.conf` importado são normalizadas durante a geração, sem apagar os ajustes avançados originais. Overrides conflitantes por alvo são rejeitados antes da compilação; a mesma seleção de tela vale para os arquivos exportados.
 

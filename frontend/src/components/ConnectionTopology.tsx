@@ -48,7 +48,7 @@ export function ConnectionTopology({ variant }: { variant: Plugin["variants"][nu
       </p>
       {variant.features?.includes("peripheral-status-sync") && project && (
         <>
-          <label className="flex items-center gap-2 mt-3">
+          <label className="topology-sync-option">
             <input
               type="checkbox"
               checked={!!project.options.peripheralStatusSync}
@@ -58,7 +58,7 @@ export function ConnectionTopology({ variant }: { variant: Plugin["variants"][nu
                 })
               }
             />
-            {tr("Synchronize layer and connection with the halves")}
+            <span>{tr("Synchronize layer and connection with the halves")}</span>
           </label>
           <p className="hint">
             {tr(
