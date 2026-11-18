@@ -1343,6 +1343,10 @@ h3 {
 .flash-topology-setup > p {
   margin: 8px 0 12px;
 }
+.flash-mode {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
 .flash-topology-phases {
   display: flex;
   gap: 8px;
