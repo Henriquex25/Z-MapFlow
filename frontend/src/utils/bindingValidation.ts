@@ -1,4 +1,5 @@
 import { tr } from "../i18n";
+import { hardwareConfigError } from "./hardwareVariant";
 import catalog from "../../../internal/zmkdata/catalog.json";
 import { behaviorAction, macroAction } from "./resourceActions";
 import type { Behavior, Plugin, Project } from "../types/keyboard";
@@ -418,6 +419,8 @@ export function parameterDefault(kind: string, p: Project) {
 }
 
 export function projectBindingError(p: Project, plugin: Plugin | null) {
+  const hardwareError = hardwareConfigError(p, plugin);
+  if (hardwareError) return tr("Required hardware setting: {0}", hardwareError);
   for (const macro of p.layout.macros) {
     const error = validateBinding(macroAction(macro).code, p, plugin);
     if (error) return `${macro.name}: ${error}`;

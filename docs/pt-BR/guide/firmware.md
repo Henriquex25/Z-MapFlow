@@ -28,6 +28,8 @@ O aplicativo escolhe o artefato do alvo informado. Uma cópia concluída confirm
 
 *Exemplo da etapa 3: confira o alvo, o firmware e a revisão da compilação antes de usar Enviar firmware. A captura mostra a interface padrão em inglês.*
 
+Nos perfis Sofle, o app verifica primeiro a organização instalada. Trocar entre central em uma metade e dongle USB acrescenta a sequência obrigatória **Limpar todos os dispositivos → Instalar firmware do teclado**. O firmware final fica bloqueado até registrar cada envio de reset e confirmação de reinício. Consulte o [guia de migração e retomada](./dongle#migracao-obrigatoria-e-retomada). Atualizações comuns na organização registrada não exigem limpeza.
+
 ## Reinicialização e avisos de gravação final
 
 Bootloaders UF2 podem reiniciar automaticamente após receber o firmware, removendo o volume USB antes de o sistema operacional terminar a confirmação final de gravação. Na SuperMini nRF52840, o autor do projeto confirmou que o teclado funcionou após o app informar:
@@ -46,6 +48,14 @@ Quando a cópia completa retorna sem erro, mas a sincronização ou o fechamento
 
 O app não repete o envio nem declara o teclado funcional apenas porque o volume desapareceu.
 
+
+## Envio que permanece pendente
+
+Durante o envio, o assistente separa as etapas de verificar o volume, abrir o arquivo, copiar, confirmar a gravação USB final e fechar. Os bytes indicam dados recebidos pelo sistema operacional; **não confirmam** que a controladora programou a memória. Após 30 segundos sem progresso de etapa/bytes, aparece um aviso de que o sistema continua aguardando. O app mantém o envio pendente, não tenta novamente sozinho e rejeita outro envio simultâneo.
+
+Se continuar travado, desconecte a controladora selecionada, cancele cópias pendentes no gerenciador de arquivos, reconecte em bootloader e aguarde a operação anterior retornar antes de tentar novamente. Uma escrita USB bloqueada também pode bloquear uma segunda cópia manual. Repita apenas o firmware correspondente; limpar pareamento é necessário na migração inicial, não a cada tentativa de envio.
+
+O app registra as etapas e o resultado do último envio em `flash/latest.json`, na pasta de configuração (`~/.config/z-mapflow/flash/latest.json` no Linux com o caminho XDG padrão). O arquivo inclui compilação/alvo, volume, bytes recebidos pelo sistema, horários e o erro retornado para diagnóstico. Um registro pendente não comprova sucesso nem falha de programação. Timeouts USB do Linux e volume inacessível precisam ser investigados além da interface do app.
 
 ## Unidades USB no Windows
 

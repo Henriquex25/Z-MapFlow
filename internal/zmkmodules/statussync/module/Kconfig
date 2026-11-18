@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MIT
+config ZMAPFLOW_STATUS_SYNC
+    bool "Relay central layer and output state to peripherals"
+    default n
+    depends on ZMK_SPLIT && ZMK_BLE
+    select BT_GATT_CLIENT if ZMK_SPLIT_ROLE_CENTRAL
+    select LV_USE_LABEL if ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL
+    imply LV_USE_THEME_MONO if ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL && LV_Z_BITS_PER_PIXEL=1
+
+# Match the built-in status screen's default fonts. Keep user font choices and
+# ZMK_DISPLAY_INVERT effective instead of forcing colors in screen.c.
+if ZMAPFLOW_STATUS_SYNC && ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL
+config LV_FONT_MONTSERRAT_16
+    default y
+
+choice LV_FONT_DEFAULT
+    default LV_FONT_DEFAULT_MONTSERRAT_16
+endchoice
+endif
+
+# The custom screen does not inherit the built-in screen's LVGL heap defaults.
+config LV_Z_MEM_POOL_SIZE
+    default 8192 if ZMAPFLOW_STATUS_SYNC && ZMK_DISPLAY && !ZMK_SPLIT_ROLE_CENTRAL

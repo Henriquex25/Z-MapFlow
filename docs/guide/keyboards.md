@@ -1,15 +1,40 @@
 # Supported keyboards
 
-Select the keyboard in the header, then its controller in **Settings**. Match the actual PCB, controller and wiring before building. A similar case or key count does not establish firmware compatibility.
+**Check this matrix before downloading or building.** It lists the profiles implemented in the source revision documented here. For a downloaded package, check the README at its release tag; an older release may not include a recently added profile.
 
-| Keyboard | Controller and firmware | Physical switches | Build / flash |
-| --- | --- | --- | --- |
-| Sofle v2 | nice!nano v2 / compatible SuperMini, ZMK | 58 + 2 encoder buttons | Left and right nRF52840 UF2 |
-| Lily58 | nice!nano v2 / compatible SuperMini, ZMK | 58 | Left and right nRF52840 UF2 |
-| Silakka54 Wireless | nRF52840 with Lily58-compatible matrix, ZMK | 54 | Left and right nRF52840 UF2 |
-| Silakka54 Wired (experimental) | Original RP2040 Zero wiring, ZMK port | 54 | Left and right RP2040 UF2 |
+## Keyboard and setup matrix
 
-The new Lily58 and Silakka54 profiles require validation on the corresponding physical keyboards. Successful compilation verifies the firmware configuration, not the PCB wiring or key operation. Other controllers and revisions require their own verified profiles; AVR Pro Micro, RP2040 Lily58 conversions and arbitrary Silakka54 clones are not covered by these targets.
+| Keyboard / setup | Half controllers | Dongle controller | Link between parts | Validation |
+| --- | --- | --- | --- | --- |
+| Sofle v2 — two halves | nice!nano v2 / compatible SuperMini | None | Bluetooth | Hardware tested on the author's SuperMini setup |
+| Sofle v2 — nice!nano/SuperMini dongle | nice!nano v2 / compatible SuperMini | nice!nano v2 / compatible SuperMini | Bluetooth | Initial pairing and typing tested on the author's setup |
+| Sofle v2 — XIAO dongle (experimental) | nice!nano v2 / compatible SuperMini | Seeed XIAO nRF52840 | Bluetooth | Build verified; physical testing pending |
+| Lily58 | nice!nano v2 / compatible SuperMini | No included dongle profile | Bluetooth | Build verified; physical testing pending |
+| Silakka54 Wireless — Lily58-compatible matrix | nice!nano v2 / compatible SuperMini | No included dongle profile | Bluetooth | Build verified; physical testing pending |
+| Silakka54 Wired — experimental ZMK port | RP2040 Zero, original wiring | None | Full-duplex UART | Build verified; physical testing pending |
+
+**Hardware tested** identifies the author's particular Linux/Sofle configuration. For the dongle, this includes initial reset/flashing, both halves connecting and typing; extended reconnection/sleep and the updated OLED appearance still need testing. It does not establish physical validation of every compatible clone.
+
+**Build verified; physical testing pending** means the firmware has passed actual Docker compilation and UF2 validation, with hardware operation still awaiting a test on that combination. The XIAO profile and wired Silakka54 port are experimental.
+
+Layout sizes: Sofle v2 has 58 switches plus two encoder buttons, Lily58 has 58 switches, and both Silakka54 profiles draw 54 switches.
+
+Select the keyboard in the header and the exact hardware variant in **Settings**. Match the actual PCB, controller, bootloader and wiring. All included profiles build **ZMK** and flash through a mounted **UF2** bootloader volume.
+
+## Controller boards and microcontrollers
+
+| Controller board | Microcontroller | Included roles / keyboards |
+| --- | --- | --- |
+| nice!nano v2 | Nordic nRF52840 | Sofle v2, Lily58 and Lily58-compatible Silakka54 Wireless halves; Sofle central dongle |
+| SuperMini compatible with the nice!nano v2 profile | Nordic nRF52840 | The same profiles, with a matching pinout and UF2 bootloader; the author's Sofle uses these controllers |
+| Seeed Studio XIAO nRF52840, original model | Nordic nRF52840 | **Sofle central dongle only**, paired with nice!nano/SuperMini halves |
+| RP2040 Zero | Raspberry Pi RP2040 | **Silakka54 Wired only**, using its documented full-duplex UART wiring |
+
+A microcontroller family is not a controller-board profile. A generic “Pro Micro”, “nRF52840” or “RP2040” label does not establish compatibility. XIAO's dongle profile does not make it a supported replacement for the controllers in the keyboard halves. The current profiles do not cover XIAO RP2040/ESP32/Plus variants, AVR ATmega32U4 Pro Micro, Raspberry Pi Pico, other RP2040 boards or arbitrary nRF52840 controllers. A board needing another flashing protocol also requires support beyond the current UF2 flow.
+
+Wireless setups support USB from their central to the computer while using Bluetooth between parts. A [Sofle USB dongle setup](./dongle) keeps both halves as peripherals; use the listed dongle profile and matching reset firmware. A stock TRRS-wired Sofle is outside the included profiles; see [USB and inter-half cables](#sofle-usb-and-inter-half-cables).
+
+For an unlisted keyboard/controller combination, [request support](https://github.com/Henriquex25/Z-MapFlow/issues/new?template=keyboard.yml) or [contribute a plugin](../plugins). Importing a keymap uses the selected profile and does not add hardware compatibility.
 
 ## Lily58
 
@@ -46,3 +71,9 @@ There is no Bluetooth, OLED or encoder in this profile. RP2040 deep sleep is una
 ## Contribute another revision
 
 The app ships plugins rather than guessing hardware from an imported `.keymap`. See [Create keyboard plugins](../plugins) for geometry, transforms, controller variants, Docker builds and physical validation requirements.
+
+## Sofle USB and inter-half cables
+
+The supported wireless Sofle can use **USB from its central to the computer** while the halves communicate over Bluetooth. This also applies to a USB dongle. Choose USB output from the palette when needed.
+
+A stock TRRS-wired Sofle is not an included Z-MapFlow profile. Many such builds use QMK/Vial. The pinned ZMK wired transport requires full-duplex UART and a compatible hardware definition; enabling a flag does not convert a stock Sofle TRRS link. No wired Sofle conversion is added here. See [ZMK split transports](https://zmk.dev/docs/features/split-keyboards).

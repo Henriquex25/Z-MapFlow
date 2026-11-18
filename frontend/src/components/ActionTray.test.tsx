@@ -30,6 +30,8 @@ it("selects bundled ABNT2, assigns cedilla, and preserves its binding when switc
     </>,
   );
   const original = structuredClone(useKeyboardStore.getState().savedProject);
+  expect(screen.queryByRole("combobox", { name: "Keyboard language" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Languages" }));
   useKeyboardStore
     .getState()
     .selectAction({ keymapIndex: -1, row: 0, col: 0, code: "&kp A", label: "" });
@@ -51,7 +53,7 @@ it("selects bundled ABNT2, assigns cedilla, and preserves its binding when switc
   expect(validateBinding("&kp PT_C_CEDILLA", state.project!, state.plugin)).toBe("");
   expect(state.project!.preamble).toContain('#include "keys_pt_abnt2.h"');
   expect(state.savedProject).toEqual(original);
-  expect(screen.getByRole("button", { name: "Keys" })).toHaveClass("active");
+  expect(screen.getByRole("button", { name: "Languages" })).toHaveClass("active");
 });
 
 it("imports another language from the palette, displays an annotated character and searches by it", async () => {
@@ -84,7 +86,7 @@ it("imports another language from the palette, displays an annotated character a
     target: { value: "us" },
   });
   expect(screen.getByRole("textbox", { name: "Search actions" })).toHaveValue("");
-  expect(screen.getByRole("button", { name: "Keys" })).toHaveClass("active");
+  expect(screen.getByRole("button", { name: "Languages" })).toHaveClass("active");
 });
 
 it("keeps Settings and palette language selectors synchronized without changing the interface language", () => {
@@ -97,8 +99,9 @@ it("keeps Settings and palette language selectors synchronized without changing 
   fireEvent.change(screen.getByRole("combobox", { name: "Operating system layout" }), {
     target: { value: "pt-br" },
   });
-  expect(screen.getByRole("combobox", { name: "Keyboard language" })).toHaveValue("pt-br");
+  expect(screen.queryByRole("combobox", { name: "Keyboard language" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Languages" }));
+  expect(screen.getByRole("combobox", { name: "Keyboard language" })).toHaveValue("pt-br");
   expect(screen.getByRole("button", { name: "Drag PT_C_CEDILLA" })).toBeVisible();
   expect(useAppPreferences.getState().locale).toBe("en");
 });

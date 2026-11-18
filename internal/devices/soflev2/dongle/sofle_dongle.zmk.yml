@@ -1,0 +1,6 @@
+file_format: "1"
+id: sofle_dongle
+name: Sofle USB dongle
+url: https://github.com/Henriquex25/Z-MapFlow
+type: shield
+features: [keys]

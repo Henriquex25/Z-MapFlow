@@ -3,6 +3,7 @@ package firmware
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -130,7 +131,9 @@ func TestManagerSnapshotsArtifactsAndRestore(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	done := m.Current()
-	if done.Status != "success" || len(done.Artifacts) != 2 {
+	d, _ := r.Get(p.PluginID)
+	v, _ := project.Variant(p, d.Descriptor())
+	if done.Status != "success" || len(done.Artifacts) != len(v.Targets) {
 		t.Fatalf("build: %+v", done)
 	}
 	path, _, saved, e := m.ArtifactPath(b.ID, "left")
@@ -166,6 +169,30 @@ func TestDockerIntegration(t *testing.T) {
 	if variant := os.Getenv("ZMAPFLOW_DOCKER_VARIANT"); variant != "" {
 		p.VariantID = variant
 	}
+	p.Options.PeripheralStatusSync = os.Getenv("ZMAPFLOW_DOCKER_STATUS_SYNC") == "1"
+	for _, half := range []string{"left", "right"} {
+		if os.Getenv("ZMAPFLOW_DOCKER_ROTATE_"+strings.ToUpper(half)) == "1" {
+			p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: half, Snippets: []string{"zmapflow-oled-flip-180"}})
+		}
+	}
+	if os.Getenv("ZMAPFLOW_DOCKER_DONGLE_OPTIONS") == "1" {
+		p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: "dongle", CMakeArgs: []string{"-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING=y", "-DCONFIG_ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY=y", "-DCONFIG_ZMK_SPLIT_BLE_PREF_INT=12"}})
+	}
+	if os.Getenv("ZMAPFLOW_DOCKER_DISPLAY") == "0" {
+		p.Options.Display = false
+	}
+	if os.Getenv("ZMAPFLOW_DOCKER_STUDIO") == "1" {
+		d, _ := r.Get(p.PluginID)
+		v, err := project.Variant(p, d.Descriptor())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, target := range v.Targets {
+			if target.Role == "central" || target.Role == "standalone" {
+				p.BuildTargets = append(p.BuildTargets, models.BuildTarget{TargetID: target.ID, Snippets: []string{"studio-rpc-usb-uart"}, CMakeArgs: []string{"-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"}})
+			}
+		}
+	}
 	if path := os.Getenv("ZMAPFLOW_DOCKER_KEYMAP"); path != "" {
 		var err error
 		p, err = keymap.ImportFile(path, p, r)
@@ -176,6 +203,18 @@ func TestDockerIntegration(t *testing.T) {
 		p.BuildTargets = []models.BuildTarget{{TargetID: "left", Snippets: []string{"studio-rpc-usb-uart"}, CMakeArgs: []string{"-DCONFIG_ZMK_STUDIO=y", "-DCONFIG_ZMK_USB=y"}}}
 		// Exercise an inherited sensor before a configured sensor as well.
 		p.Layout.Layers[1].Sensors[0].Inherited = true
+	}
+	if path := os.Getenv("ZMAPFLOW_DOCKER_PROJECT"); path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, &p); err != nil {
+			t.Fatal(err)
+		}
+		if os.Getenv("ZMAPFLOW_DOCKER_DISPLAY") == "0" {
+			p.Options.Display = false
+		}
 	}
 	service := project.Service{Root: t.TempDir(), Registry: r}
 	var saveErr error

@@ -2,7 +2,7 @@ import { tr, useLocale } from "../i18n";
 import { headerSymbols } from "../utils/firmwareSettings";
 import { headerCharacter, keyboardLanguageHeaders } from "../utils/keyboardLanguage";
 import { useImportLanguageHeaders } from "../hooks/useImportLanguageHeaders";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, FileUp } from "lucide-react";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
 import { api } from "../services/api";
@@ -223,7 +223,7 @@ const tabs = [
   "Resources",
   "Languages",
 ] as const;
-export function ActionTray() {
+export const ActionTray = memo(function ActionTray() {
   useLocale();
   const p = useKeyboardStore((s) => s.project)!;
   const plugin = useKeyboardStore((s) => s.plugin);
@@ -323,11 +323,11 @@ export function ActionTray() {
               {tr(t)}
             </button>
           ))}
-        {(tab === "Keys" || tab === "Languages") && (
+        {tab === "Languages" && (
           <KeyboardLanguageSelect
             compact
             onChange={(locale) => {
-              setTab(locale === "us" ? "Keys" : "Languages");
+              setTab("Languages");
               setSearch("");
               setCollapsed(false);
             }}
@@ -612,4 +612,4 @@ export function ActionTray() {
       </div>
     </section>
   );
-}
+});

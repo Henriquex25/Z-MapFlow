@@ -16,7 +16,7 @@ Snippets e argumentos CMake pertencem a cada alvo da matriz de compilação. O U
 
 ## Escolher o idioma das teclas
 
-Use o seletor **Idioma das teclas** na paleta de ações. Escolha **US / ANSI**, **Português (Brasil) — ABNT2** ou um header importado anteriormente. A mesma seleção está em **Configurações → Layout do sistema operacional**.
+Abra a aba **Idiomas** da paleta e use o seletor **Idioma das teclas**, exibido somente nessa aba. Escolha **US / ANSI**, **Português (Brasil) — ABNT2** ou um header importado anteriormente. A mesma seleção está em **Configurações → Layout do sistema operacional**.
 
 Para ABNT2, selecione Português e a paleta abre **Idiomas** com os caracteres incluídos, como `Ç`. Arraste um caractere para uma tecla ou clique nele e depois no destino. A busca aceita caracteres ou nomes de aliases. As atribuições existentes mantêm seus códigos ao escolher outro idioma.
 
@@ -32,8 +32,34 @@ Configure o mesmo layout de teclado no sistema operacional. O app não altera es
 
 **O idioma da interface é independente:** inglês ou Português Brasil em **Configurações → Aplicativo** altera os controles do app. Ele não habilita ABNT2, não altera bindings e não traduz nomes de camadas ou macros criados pelo usuário.
 
+## Orientação do OLED
+
+No Sofle v2, abra **Configurações → Layout do sistema e recursos → Orientação do OLED** e ative **Girar OLED Direita em 180°** para virar a tela direita na sua direção. A esquerda pode ser girada independentemente. As duas opções começam desativadas e estão disponíveis nos perfis atual e ZMK 0.3, **com ou sem dongle USB central**. Habilite **OLED com status** para alterar a orientação; desativar o display preserva suas escolhas.
+
+Salve, recompile e grave a metade escolhida. Alterar somente a orientação não exige limpar o pareamento. O layout horizontal, as cores e os tamanhos das fontes são preservados; a rotação não acrescenta informações que o perfil escolhido normalmente não exibe. Há opções de 0° e 180°, sem layout vertical.
+
+A orientação fica salva por alvo de build no projeto e no `build.yaml` exportado, e permanece ao trocar entre perfis Sofle compatíveis. Mudar a central/controladora ainda pode exigir o [fluxo separado de limpeza de pareamento](./dongle); alterar apenas a orientação não modifica essa organização.
+
 ## Bluetooth e energia
 
 Em **Configurações → Bluetooth e energia**, **Inatividade para repouso (minutos)** define o tempo sem atividade antes do repouso automático. Por exemplo, `15` representa 15 minutos e `1.5` representa 90 segundos. O intervalo aceito continua sendo de um segundo a 24 horas, com suporte a frações de minuto.
 
 O backend valida o valor e converte para milissegundos no projeto salvo e em `CONFIG_ZMK_IDLE_SLEEP_TIMEOUT` do ZMK. Abrir um projeto ou importar um `.conf` preserva o valor exato em milissegundos, mesmo quando ele não corresponde a minutos inteiros. Ative **Repouso automático** para usar esse tempo.
+
+## Editar combos, macros e comportamentos
+
+Combos, macros, comportamentos e regras de camadas condicionais começam recolhidos. O nome e as ações do cabeçalho continuam disponíveis. Use a seta para expandir um recurso; os demais mantêm seu estado. A abertura e o fechamento são animados, respeitam a preferência de movimento reduzido e mantêm o cabeçalho parado. Um campo incompleto inválido mantém o cartão aberto até a correção, para não esconder erros de salvamento.
+
+Para um combo, expanda o cartão e selecione pelo menos duas posições no desenho do teclado. Em **Ação do combo**, escolha um **Comportamento** e depois seus parâmetros:
+
+- **Pressionar tecla (&kp):** escolha qualquer tecla no seletor ou digite um atalho válido no campo complementar.
+- **Macros / Comportamentos:** escolha uma macro ou comportamento criado no projeto. Os parâmetros de uso aparecem quando necessários.
+- **Entrar no bootloader (&bootloader):** não exige parâmetros, portanto não aparece campo de tecla.
+
+Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. Os seletores também aparecem nas etapas de macros e nas ações internas de comportamentos, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
+
+Para o bootloader do dongle, veja [o atalho por combo](./dongle#entrar-no-bootloader-do-dongle-com-um-combo).
+
+### Buscar comportamentos e parâmetros
+
+Clique em um seletor de comportamento ou parâmetro e digite um nome, código de tecla ou grupo, como `bootloader`, `F13` ou `Macros`. Use as setas e Enter, ou clique em um resultado. Escape cancela a busca; apenas digitar não altera o binding. Listas longas exibem somente as opções visíveis. O campo de tecla/atalho abaixo do seletor continua aceitando atalhos validados, como `LC(A)`.

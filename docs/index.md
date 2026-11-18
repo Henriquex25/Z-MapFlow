@@ -9,6 +9,9 @@ hero:
       text: Get started
       link: /guide/install
     - theme: alt
+      text: Keyboard compatibility
+      link: /guide/keyboards
+    - theme: alt
       text: Add a keyboard plugin
       link: /plugins
 features:

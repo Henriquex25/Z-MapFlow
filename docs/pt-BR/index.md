@@ -9,6 +9,9 @@ hero:
       text: Instalar
       link: /pt-BR/guide/install
     - theme: alt
+      text: Teclados e controladoras
+      link: /pt-BR/guide/keyboards
+    - theme: alt
       text: Contribuir
       link: /pt-BR/community/contributing
 features:

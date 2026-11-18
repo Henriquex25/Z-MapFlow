@@ -37,7 +37,7 @@ export function BuildPanel({
 }) {
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
-  const [flash, setFlash] = useState(false);
+  const [flash, setFlash] = useState<{ build: Build; plugin: Plugin } | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState("");
   const [toast, setToast] = useState("");
@@ -55,6 +55,9 @@ export function BuildPanel({
   }, [build?.id]);
   const shown = selected || build;
   const plugin = plugins.find((p) => p.id === shown?.pluginId);
+  const buildingTarget = plugin?.variants
+    .find((v) => v.id === shown?.variantId)
+    ?.targets.find((t) => t.id === shown?.stage);
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [shown?.logs?.length, expanded]);
@@ -93,7 +96,13 @@ export function BuildPanel({
         )}
         {shown && (
           <>
-            <span className="hint">{tr(stageLabels[shown.stage] || shown.stage)}</span>
+            <span className="hint">
+              {stageLabels[shown.stage]
+                ? tr(stageLabels[shown.stage])
+                : buildingTarget
+                  ? tr("Building {0}", tr(buildingTarget.name))
+                  : tr(shown.stage)}
+            </span>
             <span className="badge">
               {tr("Revision")} {shown.revision.slice(0, 8)}
             </span>
@@ -123,7 +132,12 @@ export function BuildPanel({
               <button className="btn" disabled={exporting} onClick={exportFiles}>
                 {exporting ? tr("Exporting…") : tr("Export firmware")}
               </button>
-              <button className="btn primary" onClick={() => setFlash(true)}>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  if (plugin) setFlash({ build: shown, plugin });
+                }}
+              >
                 {tr("Flash firmware")}{" "}
               </button>
             </>
@@ -164,8 +178,8 @@ export function BuildPanel({
             tr("Waiting for compiler output…")}
         </pre>
       )}
-      {flash && shown && plugin && (
-        <FlashModal build={shown} plugin={plugin} onClose={() => setFlash(false)} />
+      {flash && (
+        <FlashModal build={flash.build} plugin={flash.plugin} onClose={() => setFlash(null)} />
       )}
     </section>
   );

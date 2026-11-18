@@ -1,0 +1,1 @@
+/* Event delivery is simulated by the smoke test. */

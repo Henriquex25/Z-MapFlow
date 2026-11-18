@@ -14,3 +14,9 @@ Read `AGENT.md`. Keep hardware-specific rules in plugins, preserve immutable sna
 The UI and default documentation are English. Update `internal/i18n/pt-BR.json` for visible strings and preserve the distinction between interface language and keyboard layout. The application version is owned solely by `VERSION`.
 
 Do not include credentials or personal configuration. The project uses MIT; contributions use the same license. Preserve third-party notices. Harassment, discrimination and personal attacks are not accepted in issues, pull requests or reviews.
+
+## Maintainer workflow
+
+Use a focused `feat/`, `fix/` or `docs/` branch and open a pull request targeting `main`; feature work is not committed directly to `main`. Open a draft while implementation or hardware validation is incomplete. The existing CI runs on pull requests and checks Linux, Windows and documentation. Review the diff and checks before merging; merging and release publication remain explicit maintainer actions. Release drafts are still created manually from `main`.
+
+Repository owners should protect `main` with required CI checks and prohibit direct pushes. This recommendation does not imply that protection is already enabled.

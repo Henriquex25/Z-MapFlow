@@ -104,9 +104,122 @@ export namespace firmware {
 
 export namespace flash {
 	
+	export class FlashAcknowledgement {
+	    buildId: string;
+	    receiptId: string;
+	    deviceId: string;
+	    reset: boolean;
+	    status: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FlashAcknowledgement(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.buildId = source["buildId"];
+	        this.receiptId = source["receiptId"];
+	        this.deviceId = source["deviceId"];
+	        this.reset = source["reset"];
+	        this.status = source["status"];
+	        this.detail = source["detail"];
+	    }
+	}
+	export class SetupDevice {
+	    controller?: string;
+	    id: string;
+	    name: string;
+	    kind: string;
+	    retired: boolean;
+	    family: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetupDevice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.controller = source["controller"];
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.kind = source["kind"];
+	        this.retired = source["retired"];
+	        this.family = source["family"];
+	    }
+	}
+	export class SetupOption {
+	    variantId: string;
+	    name: string;
+	    dongle: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetupOption(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.variantId = source["variantId"];
+	        this.name = source["name"];
+	        this.dongle = source["dongle"];
+	    }
+	}
+	export class FlashPlan {
+	    supported: boolean;
+	    needsSetup: boolean;
+	    required: boolean;
+	    canFlash: boolean;
+	    needsRebuild: boolean;
+	    from: string;
+	    to: string;
+	    options: SetupOption[];
+	    resetDevices: SetupDevice[];
+	    resetDone: Record<string, string>;
+	    firmwareDone: Record<string, string>;
+	    pending?: FlashAcknowledgement;
+	
+	    static createFrom(source: any = {}) {
+	        return new FlashPlan(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.supported = source["supported"];
+	        this.needsSetup = source["needsSetup"];
+	        this.required = source["required"];
+	        this.canFlash = source["canFlash"];
+	        this.needsRebuild = source["needsRebuild"];
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.options = this.convertValues(source["options"], SetupOption);
+	        this.resetDevices = this.convertValues(source["resetDevices"], SetupDevice);
+	        this.resetDone = source["resetDone"];
+	        this.firmwareDone = source["firmwareDone"];
+	        this.pending = this.convertValues(source["pending"], FlashAcknowledgement);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Result {
 	    status: string;
 	    detail: string;
+	    receiptId?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Result(source);
@@ -116,8 +229,11 @@ export namespace flash {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.status = source["status"];
 	        this.detail = source["detail"];
+	        this.receiptId = source["receiptId"];
 	    }
 	}
+	
+	
 	export class Volume {
 	    path: string;
 	    name: string;
@@ -503,6 +619,7 @@ export namespace models {
 	    }
 	}
 	export class Options {
+	    peripheralStatusSync?: boolean;
 	    rgbUnderglow?: boolean;
 	    backlight?: boolean;
 	    softOff?: boolean;
@@ -524,6 +641,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.peripheralStatusSync = source["peripheralStatusSync"];
 	        this.rgbUnderglow = source["rgbUnderglow"];
 	        this.backlight = source["backlight"];
 	        this.softOff = source["softOff"];
@@ -559,6 +677,9 @@ export namespace models {
 		}
 	}
 	export class Target {
+	    controller?: string;
+	    kind?: string;
+	    config?: Record<string, string>;
 	    role?: string;
 	    id: string;
 	    name: string;
@@ -572,6 +693,9 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.controller = source["controller"];
+	        this.kind = source["kind"];
+	        this.config = source["config"];
 	        this.role = source["role"];
 	        this.id = source["id"];
 	        this.name = source["name"];
@@ -581,6 +705,8 @@ export namespace models {
 	    }
 	}
 	export class Variant {
+	    files?: Record<string, string>;
+	    overlay?: string;
 	    features?: string[];
 	    zmkRevision: string;
 	    buildImage: string;
@@ -597,6 +723,8 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.files = source["files"];
+	        this.overlay = source["overlay"];
 	        this.features = source["features"];
 	        this.zmkRevision = source["zmkRevision"];
 	        this.buildImage = source["buildImage"];

@@ -17,6 +17,7 @@ import (
 const fileLimit = 4 * 1024 * 1024
 
 var quotedInclude = regexp.MustCompile(`(?m)^\s*#\s*include\s*"([^"\n]+)"`)
+var managedArgument = regexp.MustCompile(`^-D(CONFIG_[A-Za-z0-9_]+)(?::[A-Za-z]+)?=(.*)$`)
 
 func readFile(name string) ([]byte, error) {
 	f, e := os.Open(name)
@@ -98,7 +99,18 @@ func ImportFile(path string, base models.Project, registry *devices.Registry) (m
 	}
 	conf, e := readFile(strings.TrimSuffix(path, filepath.Ext(path)) + ".conf")
 	if e == nil {
-		p, e = ImportConfig(string(conf), p)
+		d, _ := registry.Get(p.PluginID)
+		v, _ := project.Variant(p, d.Descriptor())
+		slots := 0
+		for _, t := range v.Targets {
+			if t.Role == "peripheral" {
+				slots++
+			}
+		}
+		if slots == 0 {
+			slots = 1
+		}
+		p, e = ImportConfig(string(conf), p, slots)
 	}
 	if e != nil && !os.IsNotExist(e) {
 		return models.Project{}, e
@@ -239,6 +251,24 @@ func ImportBuildMatrix(source string, p models.Project, registry *devices.Regist
 		if e != nil {
 			return p, e
 		}
+		// Required profile flags are regenerated rather than becoming user overrides.
+		var userArgs []string
+		for _, arg := range settings.CMakeArgs {
+			match := managedArgument.FindStringSubmatch(arg)
+			managed := false
+			if len(match) > 0 {
+				for _, t := range variant.Targets {
+					if t.ID == id {
+						value, known := t.Config[match[1]]
+						managed = known && value == match[2]
+					}
+				}
+			}
+			if !managed {
+				userArgs = append(userArgs, arg)
+			}
+		}
+		settings.CMakeArgs = userArgs
 		if len(settings.Snippets) > 0 || len(settings.CMakeArgs) > 0 {
 			p.BuildTargets = append(p.BuildTargets, settings)
 		}

@@ -70,7 +70,33 @@ func (d *Device) Descriptor() models.Plugin {
 	for i := range modern.Targets {
 		modern.Targets[i].Board = "nice_nano@2.0.0//zmk"
 	}
-	p.Variants = []models.Variant{modern, legacy}
+	for _, v := range []*models.Variant{&modern, &legacy} {
+		v.Features = append(v.Features, "pairing-migration", "oled-rotate-180")
+		v.Files = oledRotationFiles()
+		v.Targets = append(append([]models.Target{}, v.Targets...), models.Target{ID: "settings_reset", Kind: "settings-reset", Name: "Reset pairing", Board: v.Targets[0].Board, Shield: "settings_reset", Artifact: "sofle-settings-reset.uf2", Config: map[string]string{"CONFIG_ZMK_SETTINGS_RESET_ON_START": "y"}})
+		for i := range v.Targets {
+			v.Targets[i].Controller = "nice_nano_v2"
+		}
+		for i := 0; i < 2; i++ {
+			central := "n"
+			if v.Targets[i].Role == "central" {
+				central = "y"
+			}
+			v.Targets[i].Config = map[string]string{"CONFIG_ZMK_SPLIT": "y", "CONFIG_ZMK_SPLIT_ROLE_CENTRAL": central}
+		}
+	}
+	// Include the XIAO reset on current profiles so a retired mixed-board dongle
+	// can be cleaned safely when returning to a half-central setup.
+	modern.Targets = append(modern.Targets, models.Target{ID: "settings_reset_xiao", Controller: "xiao_ble", Kind: "settings-reset", Name: "Reset XIAO pairing", Board: "xiao_ble//zmk", Shield: "settings_reset", Artifact: "sofle-xiao-settings-reset.uf2", Config: map[string]string{"CONFIG_ZMK_SETTINGS_RESET_ON_START": "y"}})
+	modern.BootloaderBoards = append(append([]string{}, modern.BootloaderBoards...), "XIAO", "Seeed")
+	dongle := dongleVariant(modern)
+	xiao := dongleVariant(modern)
+	xiao.ID = "xiao_ble_dongle"
+	xiao.Name = "XIAO nRF52840 dongle + nice!nano v2 / SuperMini halves (experimental)"
+	xiao.Targets[0].Board = "xiao_ble//zmk"
+	xiao.Targets[0].Controller = "xiao_ble"
+	xiao.Instructions = "Mixed-controller setup: use a Seeed Studio XIAO nRF52840 as USB dongle and nice!nano v2-compatible controllers in both halves. Double-press RESET on the connected controller to open its UF2 bootloader. Select the actual device; the app selects its matching reset firmware. Return to a current ZMK half-central profile before using a legacy profile. Physical validation of this combination is pending."
+	p.Variants = []models.Variant{modern, legacy, dongle, xiao}
 	for i := range p.Positions {
 		if p.Positions[i].SensorID != "" {
 			p.Positions[i].Width = 1.6

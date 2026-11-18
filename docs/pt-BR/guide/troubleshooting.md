@@ -8,6 +8,18 @@ Se os arquivos mostram `OK` ou `SUCESSO` e a mensagem seguinte informa que falta
 
 Confira a arquitetura e as bibliotecas GTK/WebKit indicadas na [instalação](./install). Execute o binário no terminal para obter a mensagem do sistema. Pacotes oficiais Linux usam WebKitGTK 4.1.
 
+## Rolagem ou animações lentas no Linux
+
+Executar `./build/bin/z-mapflow` usa o renderizador desktop normal. Recompile após alterar o código; reiniciar um binário antigo não carrega as mudanças. O app permite aceleração gráfica no WebKit quando disponível e evita renderizar os editores novamente quando o status da compilação não mudou.
+
+Se o driver de vídeo causar uma janela vazia ou problemas visuais, feche o app e teste o modo por software no terminal:
+
+```sh
+ZMAPFLOW_DISABLE_GPU=1 ./build/bin/z-mapflow
+```
+
+Na versão instalada, substitua o caminho pelo executável. A variável vale apenas para essa execução. Ao reportar, inclua versão do app, distribuição Linux, GPU/driver e se essa alternativa mudou o comportamento. O desempenho também depende do WebKit e do sistema gráfico da máquina.
+
 ## Docker não é encontrado
 
 Inicie Docker Desktop ou o serviço Docker e confira `docker info` e `docker context show` no terminal. O aplicativo precisa usar o mesmo contexto e ter acesso ao socket. Não execute o aplicativo inteiro como root.

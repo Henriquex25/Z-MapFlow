@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { dongleFixture } from "../test/dongleFixture";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { BuildPanel } from "./BuildPanel";
 import { fixture } from "../test/fixtures";
@@ -9,6 +10,7 @@ vi.mock("../services/api", () => ({
     listBuilds: vi.fn(),
     volumes: vi.fn(),
     flash: vi.fn(),
+    onFlashProgress: vi.fn(() => () => {}),
     selectVolume: vi.fn(),
     exportFirmware: vi.fn(),
   },
@@ -18,6 +20,31 @@ beforeEach(() => {
   vi.mocked(api.listBuilds).mockResolvedValue([]);
   vi.mocked(api.volumes).mockResolvedValue([{ path: "/test/UF2", name: "UF2", board: "Test" }]);
   vi.mocked(api.flash).mockResolvedValue({ status: "sent", detail: "" });
+});
+
+it("keeps the opened flash wizard bound to its original build when another result arrives", async () => {
+  const { plugin, build } = dongleFixture();
+  const props = { build, plugins: [plugin], currentRevision: "saved", onError: vi.fn() };
+  const view = render(<BuildPanel {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Flash firmware" }));
+  const dialog = screen.getByRole("dialog");
+  view.rerender(
+    <BuildPanel
+      {...props}
+      build={{ ...build, id: "new-build", revision: "new-revision" }}
+      plugins={[]}
+    />,
+  );
+  expect(within(dialog).getByText(/Revision saved/)).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Left" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Next step" }));
+  await waitFor(() =>
+    expect(within(dialog).getByRole("button", { name: "Next step" })).toBeEnabled(),
+  );
+  fireEvent.click(within(dialog).getByRole("button", { name: "Next step" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Send firmware — Left" }));
+  await within(dialog).findByText("File sent — Left");
+  expect(api.flash).toHaveBeenCalledWith(build.id, "left", "/test/UF2");
 });
 it("requires the connected half, allows retry, and selects the corresponding artifact", async () => {
   const s = fixture();
@@ -113,3 +140,14 @@ it.each(["/tmp/firmwares", ""])(
     }
   },
 );
+
+it("uses plugin target names for additional firmware build stages", async () => {
+  const s = dongleFixture();
+  const target = s.plugin.variants[1].targets[0];
+  target.id = "receiver_custom";
+  const build = { ...s.build, status: "running", stage: "receiver_custom" };
+  render(
+    <BuildPanel build={build} plugins={[s.plugin]} currentRevision="saved" onError={vi.fn()} />,
+  );
+  expect(screen.getByText("Building USB dongle")).toBeInTheDocument();
+});

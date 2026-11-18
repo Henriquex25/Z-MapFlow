@@ -1,3 +1,4 @@
+import { selectOption } from "./test/selectOption";
 import { useAppPreferences } from "./i18n";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -232,6 +233,7 @@ it("creates a macro, fills its steps, assigns it to keys on different layers, an
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Macro name" }), {
     target: { value: "Minha sequência" },
   });
@@ -304,9 +306,11 @@ it("creates a combo that triggers a macro without remapping the trigger keys", a
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Drag New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Combos" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New combo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New combo" }));
   expect(screen.getByText("Select at least two keys to trigger the combo.")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 1:/ }));
@@ -370,6 +374,7 @@ it("assigns a macro to encoder rotation and click while keeping its physical bin
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New macro to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CW:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CLK:/ }));
@@ -418,9 +423,7 @@ it("creates mod-morphs and edits a key binding without replacing its reusable de
   render(<App />);
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Add behavior type" }), {
-    target: { value: "mod-morph" },
-  });
+  selectOption("Add behavior type", "mod-morph");
   const morph = getProject().layout.behaviors[0];
   expect(morph.properties!.mods).toContain("MOD_LSFT");
   fireEvent.click(screen.getByRole("button", { name: `Assign ${morph.name} to keyboard` }));
@@ -447,12 +450,11 @@ it("creates parameter routing and release continuation controls and assigns macr
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
     target: { value: "control" },
   });
-  fireEvent.change(screen.getByRole("combobox", { name: "Macro control" }), {
-    target: { value: "&macro_param_1to1" },
-  });
+  selectOption("Macro control", "&macro_param_1to1");
   expect(getProject().layout.macros[0].parameterCount).toBe(1);
   const add = within(screen.getByRole("group", { name: "Add step" }));
   fireEvent.click(add.getByText("Advanced ZMK code"));
@@ -468,7 +470,7 @@ it("creates parameter routing and release continuation controls and assigns macr
   });
   fireEvent.click(screen.getByText("Parameters for new assignments"));
   fireEvent.change(
-    screen.getByRole("combobox", { name: "Parameters for new assignments — argument 1" }),
+    screen.getByRole("textbox", { name: "Parameters for new assignments — argument 1" }),
     {
       target: { value: "ESC" },
     },
@@ -629,7 +631,7 @@ it("validates a single keycode argument before changing the mapping", async () =
   render(<App />);
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
-  const input = screen.getByRole("combobox", { name: "Key action — argument 1" });
+  const input = screen.getByRole("textbox", { name: "Key action — argument 1" });
   fireEvent.change(input, { target: { value: "A B" } });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(getProject().layout.layers[0].keys[0].code).toBe("&kp A");
@@ -686,12 +688,11 @@ it("keeps the last valid macro control duration and prevents saving an invalid d
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
     target: { value: "control" },
   });
-  fireEvent.change(screen.getByRole("combobox", { name: "Macro control" }), {
-    target: { value: "&macro_wait_time" },
-  });
+  selectOption("Macro control", "&macro_wait_time");
   const duration = screen.getByRole("spinbutton", { name: "Control duration (ms)" });
   fireEvent.change(duration, { target: { value: "60001" } });
   expect(duration).toHaveAttribute("aria-invalid", "true");

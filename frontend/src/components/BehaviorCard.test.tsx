@@ -2,6 +2,7 @@ import { DndContext } from "@dnd-kit/core";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { BehaviorEditor } from "./ResourceEditor";
+import { BehaviorCard } from "./BehaviorCard";
 import { newBehavior } from "./AdvancedResources";
 import { fixture } from "../test/fixtures";
 import { useKeyboardStore } from "../store/useKeyboardStore";
@@ -83,4 +84,46 @@ it("localizes disclosure controls and leaves behavior names untouched", () => {
   expect(
     screen.getByRole("button", { name: "Mostrar configurações de Home row mods" }),
   ).toHaveAttribute("aria-expanded", "false");
+});
+
+it("reverses an in-progress disclosure from its current height and releases content after closing", () => {
+  const animations: { cancel: ReturnType<typeof vi.fn>; onfinish: (() => void) | null }[] = [];
+  const original = Object.getOwnPropertyDescriptor(Element.prototype, "animate");
+  const animate = vi.fn(() => {
+    const animation = { cancel: vi.fn(), onfinish: null as (() => void) | null };
+    animations.push(animation);
+    return animation;
+  });
+  Object.defineProperty(Element.prototype, "animate", { configurable: true, value: animate });
+  const rect = vi
+    .spyOn(Element.prototype, "getBoundingClientRect")
+    .mockReturnValue({ height: 75 } as DOMRect);
+  try {
+    render(
+      <BehaviorCard name="Test" toolbar={<input aria-label="Name" />}>
+        <input aria-label="Setting" />
+      </BehaviorCard>,
+    );
+    const header = screen.getByRole("textbox", { name: "Name" });
+    fireEvent.click(screen.getByRole("button", { name: "Show settings for Test" }));
+    expect(animate).toHaveBeenLastCalledWith(
+      [{ height: "75px" }, { height: "75px" }],
+      expect.objectContaining({ duration: 180 }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide settings for Test" }));
+    expect(animations[0].cancel).toHaveBeenCalled();
+    expect(animate).toHaveBeenLastCalledWith(
+      [{ height: "75px" }, { height: "0px" }],
+      expect.anything(),
+    );
+    expect(screen.queryByRole("textbox", { name: "Setting" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Setting")).toBeInTheDocument();
+    act(() => animations[1].onfinish?.());
+    expect(screen.queryByLabelText("Setting")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBe(header);
+  } finally {
+    rect.mockRestore();
+    if (original) Object.defineProperty(Element.prototype, "animate", original);
+    else Reflect.deleteProperty(Element.prototype, "animate");
+  }
 });
