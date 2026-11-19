@@ -86,3 +86,12 @@ func TestNativeFlashMethodsCannotBypassRequiredTopologyReset(t *testing.T) {
 		t.Fatal("blocked operation touched simulated bootloader", err)
 	}
 }
+
+func TestUndoSetupCannotRunDuringAnActiveUSBOperation(t *testing.T) {
+	a := NewApp()
+	a.operation.Lock()
+	defer a.operation.Unlock()
+	if _, err := a.UndoFlashSetupSelection("build"); err == nil || !strings.Contains(err.Error(), "envio de firmware em andamento") {
+		t.Fatalf("undo was allowed during a transfer: %v", err)
+	}
+}

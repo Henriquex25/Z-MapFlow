@@ -30,6 +30,14 @@ The app selects the artifact associated with the target. A completed copy confir
 
 *Example of step 3: review the target, firmware and build revision before choosing Send firmware.*
 
+## Correct an accidental setup choice
+
+Before the first transfer, **Undo setup choice** returns to the installed-setup selection so you can correct a mistaken click, including **I'm not sure**. It can also undo an accidental **I flashed outside the app or changed controllers** report and restore the previous workflow. The available undo survives closing and reopening the app.
+
+Only the guide’s selection is reversed. Once a transfer starts, the app removes this undo option because a controller may already have changed, even if the write later reports an error. **Close** still lets you leave and resume; pending acknowledgements and required cleanup are retained. Returning to a previous choice never cancels a USB write or skips an existing migration.
+
+The first setup screen uses the available modal space. On smaller windows, its choices scroll together rather than being clipped to a short panel.
+
 ## Restart and final write warnings
 
 UF2 bootloaders can restart automatically after receiving firmware, removing their USB drive before the operating system finishes its final write confirmation. On SuperMini nRF52840, the project author observed a working keyboard after the app reported:

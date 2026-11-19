@@ -15,6 +15,7 @@ vi.mock("../services/api", () => ({
     onFlashProgress: vi.fn(() => () => {}),
     getFlashPlan: vi.fn(),
     setInstalledTopology: vi.fn(),
+    undoFlashSetupSelection: vi.fn(),
     setResetController: vi.fn(),
     reportExternalFlash: vi.fn(),
     acknowledgeFlash: vi.fn(),
@@ -284,3 +285,83 @@ it.each([false, true])(
     );
   },
 );
+
+it.each(["A keyboard half is central", "I'm not sure — guide me through a full reset"])(
+  "lets the user undo %s before any transfer and correct the installed setup",
+  async (choice) => {
+    const { plugin, build } = setup();
+    plan.needsSetup = true;
+    plan.required = false;
+    plan.options = [
+      { variantId: "test", name: "Left central", dongle: false },
+      { variantId: "dongle", name: "USB central", dongle: true },
+    ];
+    vi.mocked(api.setInstalledTopology).mockImplementation(async (_build, id) => {
+      plan.needsSetup = false;
+      plan.canUndoSetup = true;
+      plan.required = id !== "dongle";
+      plan.canFlash = !plan.required;
+      return structuredClone(plan);
+    });
+    vi.mocked(api.undoFlashSetupSelection).mockImplementation(async () => {
+      plan.needsSetup = true;
+      plan.canUndoSetup = false;
+      plan.required = false;
+      plan.canFlash = false;
+      return structuredClone(plan);
+    });
+    render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
+    await screen.findByRole("heading", { name: "Which setup is installed on your keyboard now?" });
+    expect(screen.getByRole("dialog")).toHaveClass("choosing-setup");
+    fireEvent.click(screen.getByRole("button", { name: choice }));
+    await screen.findByText("Pairing reset is required before keyboard firmware.");
+    expect(screen.getByRole("dialog")).not.toHaveClass("choosing-setup");
+    // The correction remains accessible even after reaching the connection step.
+    fireEvent.click(screen.getByRole("button", { name: "Left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo setup choice" }));
+    await screen.findByRole("heading", { name: "Which setup is installed on your keyboard now?" });
+    expect(screen.queryByRole("button", { name: "Next step" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "USB dongle is central" }));
+    expect(await screen.findByRole("button", { name: "Keyboard firmware" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.queryByText("Pairing reset is required before keyboard firmware."),
+    ).not.toBeInTheDocument();
+    expect(api.undoFlashSetupSelection).toHaveBeenCalledWith("build");
+    expect(api.flashDevice).not.toHaveBeenCalled();
+  },
+);
+
+it("locks undo while sending and refreshes the plan after an interrupted write", async () => {
+  const { plugin, build } = setup();
+  plan.canUndoSetup = true;
+  let reject!: (reason: Error) => void;
+  vi.mocked(api.flashDevice).mockImplementation(() => {
+    plan.canUndoSetup = false;
+    return new Promise((_resolve, fail) => {
+      reject = fail;
+    });
+  });
+  render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
+  await send("Left");
+  expect(screen.getByRole("button", { name: "Undo setup choice" })).toBeDisabled();
+  reject(new Error("Interrupted USB write"));
+  await screen.findByText("Transfer failed — Left");
+  expect(screen.queryByRole("button", { name: "Undo setup choice" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /2\. Install keyboard firmware/ })).toBeDisabled();
+  expect(api.undoFlashSetupSelection).not.toHaveBeenCalled();
+});
+
+it("shows an undo error without hiding the required cleanup or changing progress", async () => {
+  const { plugin, build } = setup();
+  plan.canUndoSetup = true;
+  vi.mocked(api.undoFlashSetupSelection).mockRejectedValue(new Error("Choice is locked"));
+  render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Undo setup choice" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Choice is locked");
+  expect(screen.getByRole("button", { name: /2\. Install keyboard firmware/ })).toBeDisabled();
+  expect(api.flashDevice).not.toHaveBeenCalled();
+});

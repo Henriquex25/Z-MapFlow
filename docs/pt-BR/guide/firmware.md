@@ -30,6 +30,14 @@ O aplicativo escolhe o artefato do alvo informado. Uma cópia concluída confirm
 
 Nos perfis Sofle, o app verifica primeiro a organização instalada. Trocar entre central em uma metade e dongle USB acrescenta a sequência obrigatória **Limpar todos os dispositivos → Instalar firmware do teclado**. O firmware final fica bloqueado até registrar cada envio de reset e confirmação de reinício. Consulte o [guia de migração e retomada](./dongle#migracao-obrigatoria-e-retomada). Atualizações comuns na organização registrada não exigem limpeza.
 
+## Corrigir uma escolha acidental da configuração
+
+Antes do primeiro envio, **Desfazer escolha da configuração** retorna à seleção do que está instalado, permitindo corrigir um clique errado, inclusive em **Não tenho certeza**. Também permite desfazer um clique acidental em **Fiz flash fora do app ou troquei as controladoras**, restaurando o fluxo anterior. A opção disponível continua válida ao fechar e reabrir o app.
+
+Somente a escolha do guia é desfeita. Ao iniciar um envio, o app remove essa opção porque uma controladora já pode ter sido alterada, mesmo que a escrita depois retorne um erro. **Fechar** continua permitindo sair e retomar; confirmações pendentes e a limpeza obrigatória são preservadas. Voltar à escolha anterior não cancela uma escrita USB nem pula uma migração existente.
+
+A tela inicial aproveita o espaço disponível da modal. Em janelas menores, as opções rolam juntas, sem ficarem limitadas a um painel curto e cortado.
+
 ## Reinicialização e avisos de gravação final
 
 Bootloaders UF2 podem reiniciar automaticamente após receber o firmware, removendo o volume USB antes de o sistema operacional terminar a confirmação final de gravação. Na SuperMini nRF52840, o autor do projeto confirmou que o teclado funcionou após o app informar:

@@ -9,6 +9,7 @@ export function FlashTopology({
   onDeclare,
   onExternal,
   onPhase,
+  onUndoSetup,
 }: {
   plan: FlashPlan;
   busy: boolean;
@@ -16,11 +17,12 @@ export function FlashTopology({
   onDeclare: (variantId: string) => void;
   onExternal: () => void;
   onPhase: (reset: boolean) => void;
+  onUndoSetup: () => void;
 }) {
   if (!plan.supported) return null;
   if (plan.needsSetup)
     return (
-      <section className="flash-topology-setup">
+      <section className="flash-topology-setup flash-topology-choice">
         <h3>{tr("Which setup is installed on your keyboard now?")}</h3>
         <p>
           {tr(
@@ -56,67 +58,85 @@ export function FlashTopology({
       </section>
     );
   return (
-    <div className="flash-topology-setup">
-      {plan.required && (
-        <div className="notice flash-transfer-status" role="note">
-          <strong>{tr("Pairing reset is required before keyboard firmware.")}</strong>
-          <details>
-            <summary>{tr("Setup details")}</summary>
-            <p>{tr("Changing the central requires new Bluetooth pairings on every device.")}</p>
-            <p>
-              {tr("Reset clears stored Bluetooth and Studio settings. Your saved project is kept.")}
-            </p>
-            {plan.from && <p>{tr("Installed setup: {0}", tr(plan.from))}</p>}
-            <p>{tr("New setup: {0}", tr(plan.to))}</p>
-            {plan.resetDevices.some((d) => d.retired) && (
-              <p>
-                {tr(
-                  "Reset the retired dongle too, then disconnect it. Only the keyboard halves receive the final firmware for this setup.",
-                )}
-              </p>
-            )}
-          </details>
+    <>
+      {plan.canUndoSetup && (
+        <div className="flash-setup-back">
+          <button className="btn" disabled={busy} onClick={onUndoSetup}>
+            <RotateCcw size={18} aria-hidden="true" />
+            {tr("Undo setup choice")}
+          </button>
+          <p className="hint">
+            {tr("No firmware has been sent since this choice. You can go back and correct it.")}
+          </p>
         </div>
       )}
-      {plan.needsRebuild && (
-        <p className="notice error" role="alert">
-          {tr(
-            "This build lacks reset firmware for an affected controller. Select a compatible current profile and rebuild before changing the topology.",
-          )}
-        </p>
-      )}
-      {plan.required && (
-        <ol className="flash-topology-phases" aria-label={tr("Topology migration steps")}>
-          <li className={resetting ? "current" : ""} aria-current={resetting ? "step" : undefined}>
-            <button
-              className={`btn ${resetting ? "primary" : ""}`}
-              disabled={busy || plan.needsRebuild}
-              onClick={() => onPhase(true)}
+      <div className="flash-topology-setup">
+        {plan.required && (
+          <div className="notice flash-transfer-status" role="note">
+            <strong>{tr("Pairing reset is required before keyboard firmware.")}</strong>
+            <details>
+              <summary>{tr("Setup details")}</summary>
+              <p>{tr("Changing the central requires new Bluetooth pairings on every device.")}</p>
+              <p>
+                {tr(
+                  "Reset clears stored Bluetooth and Studio settings. Your saved project is kept.",
+                )}
+              </p>
+              {plan.from && <p>{tr("Installed setup: {0}", tr(plan.from))}</p>}
+              <p>{tr("New setup: {0}", tr(plan.to))}</p>
+              {plan.resetDevices.some((d) => d.retired) && (
+                <p>
+                  {tr(
+                    "Reset the retired dongle too, then disconnect it. Only the keyboard halves receive the final firmware for this setup.",
+                  )}
+                </p>
+              )}
+            </details>
+          </div>
+        )}
+        {plan.needsRebuild && (
+          <p className="notice error" role="alert">
+            {tr(
+              "This build lacks reset firmware for an affected controller. Select a compatible current profile and rebuild before changing the topology.",
+            )}
+          </p>
+        )}
+        {plan.required && (
+          <ol className="flash-topology-phases" aria-label={tr("Topology migration steps")}>
+            <li
+              className={resetting ? "current" : ""}
+              aria-current={resetting ? "step" : undefined}
             >
-              {plan.canFlash ? <Check size={18} /> : <RotateCcw size={18} />}
-              {tr("1. Reset every device")}
-            </button>
-          </li>
-          <li
-            className={!resetting ? "current" : ""}
-            aria-current={!resetting ? "step" : undefined}
-          >
-            <button
-              className={`btn ${!resetting ? "primary" : ""}`}
-              disabled={busy || !plan.canFlash}
-              onClick={() => onPhase(false)}
+              <button
+                className={`btn ${resetting ? "primary" : ""}`}
+                disabled={busy || plan.needsRebuild}
+                onClick={() => onPhase(true)}
+              >
+                {plan.canFlash ? <Check size={18} /> : <RotateCcw size={18} />}
+                {tr("1. Reset every device")}
+              </button>
+            </li>
+            <li
+              className={!resetting ? "current" : ""}
+              aria-current={!resetting ? "step" : undefined}
             >
-              {plan.canFlash ? <ArrowRight size={18} /> : <LockKeyhole size={18} />}{" "}
-              {tr("2. Install keyboard firmware")}
-            </button>
-          </li>
-        </ol>
-      )}
-      {!plan.required && (
-        <button className="btn mt-2" disabled={busy} onClick={onExternal}>
-          {tr("I flashed outside the app or changed controllers")}
-        </button>
-      )}
-    </div>
+              <button
+                className={`btn ${!resetting ? "primary" : ""}`}
+                disabled={busy || !plan.canFlash}
+                onClick={() => onPhase(false)}
+              >
+                {plan.canFlash ? <ArrowRight size={18} /> : <LockKeyhole size={18} />}{" "}
+                {tr("2. Install keyboard firmware")}
+              </button>
+            </li>
+          </ol>
+        )}
+        {!plan.required && (
+          <button className="btn mt-2" disabled={busy} onClick={onExternal}>
+            {tr("I flashed outside the app or changed controllers")}
+          </button>
+        )}
+      </div>
+    </>
   );
 }

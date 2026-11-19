@@ -1301,10 +1301,42 @@ h3 {
   overflow-y: auto;
   margin-top: 8px;
 }
+.modal-card.flash-modal.choosing-setup {
+  height: auto;
+}
+.flash-topology-setup.flash-topology-choice {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+.flash-setup-back {
+  flex-shrink: 0;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.flash-setup-back .btn {
+  min-height: 34px;
+  padding: 6px 10px;
+}
+@media (max-height: 560px) {
+  .modal-card.flash-modal:not(.choosing-setup) {
+    height: auto;
+    overflow-y: auto;
+  }
+  .flash-modal:not(.choosing-setup) .flash-wizard-panel {
+    flex: 0 0 auto;
+    min-height: 240px;
+    overflow: visible;
+  }
+}
 .flash-modal.with-topology {
   width: 1000px;
 }
 .flash-modal > .section-toolbar {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   gap: 12px;

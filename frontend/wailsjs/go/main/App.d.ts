@@ -74,3 +74,5 @@ export function SetResetController(arg1:string,arg2:string,arg3:string):Promise<
 export function SleepTimeoutMilliseconds(arg1:number):Promise<number>;
 
 export function StartBuild():Promise<firmware.Build>;
+
+export function UndoFlashSetupSelection(arg1:string):Promise<flash.FlashPlan>;
