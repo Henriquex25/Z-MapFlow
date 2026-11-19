@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -20,7 +21,6 @@ func TestWindowsUpdatePlansRejectUnconfinedPaths(t *testing.T) {
 		func(p *updatePlan) { p.Target = `C:\\app.exe` },
 		func(p *updatePlan) { p.Target = "app.exe:stream.exe" },
 		func(p *updatePlan) { p.Staged = "other.exe" },
-		func(p *updatePlan) { p.ParentPID = os.Getpid() },
 		func(p *updatePlan) { p.Version = "1.2.3-beta" },
 		func(p *updatePlan) { p.SHA256 = "bad" },
 	} {
@@ -29,6 +29,20 @@ func TestWindowsUpdatePlansRejectUnconfinedPaths(t *testing.T) {
 		if err := p.validate(); err == nil {
 			t.Fatalf("accepted invalid plan: %+v", p)
 		}
+	}
+
+	// The app validates this plan before launching the helper, so its own PID
+	// is expected here. The helper rejects its own PID when it reads the file.
+	valid.ParentPID = os.Getpid()
+	if err := valid.validate(); err != nil {
+		t.Fatalf("the launching app's PID must be accepted: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "plan.json")
+	if err := os.WriteFile(path, []byte(`{"parentPid":`+strconv.Itoa(os.Getpid())+`,"target":"z-mapflow.exe","staged":".z-mapflow-update-test.exe","version":"1.2.3","sha256":"`+hex.EncodeToString(make([]byte, 32))+`"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readPlan(path); err == nil {
+		t.Fatal("the helper must not accept its own PID as the parent")
 	}
 }
 
