@@ -54,6 +54,7 @@ export function FlashModal({
   const tracking = variant.features?.includes("pairing-migration") ?? false;
   const [plan, setPlan] = useState<FlashPlan | null>(tracking ? null : untrackedPlan);
   const [planError, setPlanError] = useState("");
+  const [setupError, setSetupError] = useState("");
   const [configuring, setConfiguring] = useState(false);
   const [receipt, setReceipt] = useState("");
   const targets = resetting && plan?.supported ? plan.resetDevices : firmwareTargets;
@@ -253,6 +254,13 @@ export function FlashModal({
       if (plan?.supported) applyPlan(await api.getFlashPlan(build.id));
     } catch (e) {
       setError(String(e));
+      if (plan?.supported) {
+        try {
+          applyPlan(await api.getFlashPlan(build.id));
+        } catch {
+          /* Preserve the original transfer error. */
+        }
+      }
     } finally {
       unsubscribe();
       clearVolume();
@@ -315,13 +323,13 @@ export function FlashModal({
   };
   const declareSetup = async (variantID: string) => {
     setConfiguring(true);
-    setError("");
+    setSetupError("");
     try {
       const next = await api.setInstalledTopology(build.id, variantID);
       applyPlan(next);
       setResetting(next.required && !next.canFlash);
     } catch (e) {
-      setError(String(e));
+      setSetupError(String(e));
     } finally {
       setConfiguring(false);
     }
@@ -340,13 +348,29 @@ export function FlashModal({
   };
   const reportExternal = async () => {
     setConfiguring(true);
-    setError("");
+    setSetupError("");
     try {
       applyPlan(await api.reportExternalFlash(build.id));
       setResetting(true);
       restart(false);
     } catch (e) {
-      setError(String(e));
+      setSetupError(String(e));
+    } finally {
+      setConfiguring(false);
+    }
+  };
+
+  const undoSetup = async () => {
+    if (locked) return;
+    setConfiguring(true);
+    setSetupError("");
+    try {
+      const next = await api.undoFlashSetupSelection(build.id);
+      applyPlan(next);
+      setResetting(next.required && !next.canFlash);
+      restart(false);
+    } catch (e) {
+      setSetupError(String(e));
     } finally {
       setConfiguring(false);
     }
@@ -355,7 +379,7 @@ export function FlashModal({
   return (
     <div className="modal-backdrop">
       <section
-        className={`modal-card flash-modal ${plan?.supported ? "with-topology" : ""}`}
+        className={`modal-card flash-modal ${plan?.supported ? "with-topology" : ""} ${plan?.needsSetup ? "choosing-setup" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="flash-title"
@@ -392,11 +416,12 @@ export function FlashModal({
             onDeclare={declareSetup}
             onExternal={reportExternal}
             onPhase={changePhase}
+            onUndoSetup={undoSetup}
           />
         )}
-        {plan?.needsSetup && error && (
+        {setupError && (
           <p className="notice error" role="alert">
-            {localizeMessage(error)}
+            {localizeMessage(setupError)}
           </p>
         )}
 

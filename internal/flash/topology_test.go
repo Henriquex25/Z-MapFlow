@@ -2,6 +2,7 @@ package flash
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -418,5 +419,133 @@ func TestExistingPendingResetReceiptSurvivesControllerMetadataUpgrade(t *testing
 	}
 	if p := mustPlan(t, s, ctx); p.ResetDone["dongle"] != "confirmed" {
 		t.Fatal("old reset acknowledgement lost")
+	}
+}
+
+func TestUndoInitialSetupChoiceRestoresSelectionAndAllowsCorrection(t *testing.T) {
+	for _, installed := range []string{"nice_nano_v2", "nice_nano_v2_dongle", ""} {
+		t.Run(installed, func(t *testing.T) {
+			root := t.TempDir()
+			s := &TopologyStore{Root: root}
+			ctx := setupFor("nice_nano_v2_dongle", "build")
+			p, err := s.Declare(ctx, installed)
+			if err != nil || !p.CanUndoSetup {
+				t.Fatal("choice is not reversible", p, err)
+			}
+			s = &TopologyStore{Root: root}
+			p, err = s.UndoSetupSelection(ctx)
+			if err != nil || !p.NeedsSetup || p.CanFlash || p.CanUndoSetup {
+				t.Fatal("did not restore initial selection", p, err)
+			}
+			p, err = s.Declare(ctx, "nice_nano_v2_dongle")
+			if err != nil || p.Required || !p.CanFlash {
+				t.Fatal("corrected choice did not remove false migration", p, err)
+			}
+		})
+	}
+}
+
+func TestSetupUndoExpiresBeforeAnyWriteIncludingAnInterruptedTransfer(t *testing.T) {
+	for _, reset := range []bool{false, true} {
+		t.Run(fmt.Sprint(reset), func(t *testing.T) {
+			root := t.TempDir()
+			s := &TopologyStore{Root: root}
+			ctx := setupFor("nice_nano_v2_dongle", "build")
+			if _, err := s.Declare(ctx, "nice_nano_v2_dongle"); err != nil {
+				t.Fatal(err)
+			}
+			token, err := s.Begin(ctx, "left", reset)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s = &TopologyStore{Root: root}
+			if mustPlan(t, s, ctx).CanUndoSetup {
+				t.Fatal("active transfer remains undoable")
+			}
+			if _, err := s.UndoSetupSelection(ctx); err == nil {
+				t.Fatal("undo bypassed a started transfer")
+			}
+			if err := s.Finish(ctx, token, Result{}, errors.New("interrupted")); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.UndoSetupSelection(ctx); err == nil {
+				t.Fatal("failed write restored a possibly obsolete hardware claim")
+			}
+			if reset && mustPlan(t, s, ctx).CanFlash {
+				t.Fatal("failed reset unlocked keyboard firmware")
+			}
+		})
+	}
+}
+
+func TestUndoExternalFlashReportRestoresPendingMigrationWithoutBypass(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "build")
+	if _, err := s.Declare(ctx, "nice_nano_v2"); err != nil {
+		t.Fatal(err)
+	}
+	token := transfer(t, s, ctx, "left", true, false, "unconfirmed")
+	if p, err := s.Forget(ctx); err != nil || !p.CanUndoSetup {
+		t.Fatal(p, err)
+	}
+	p, err := s.UndoSetupSelection(ctx)
+	if err != nil || !p.Required || p.CanFlash || p.CanUndoSetup || p.Pending == nil || p.Pending.ReceiptID != token {
+		t.Fatal("undo lost prior migration/receipt", p, err)
+	}
+	if _, err := s.Begin(ctx, "dongle", false); err == nil {
+		t.Fatal("undo external report bypassed required cleanup")
+	}
+	if _, err := s.Acknowledge(ctx, token); err != nil {
+		t.Fatal("old receipt no longer works", err)
+	}
+}
+
+func TestUndoExternalReportReturnsToInstalledSetupAndCannotUndoCompletedMigration(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "build")
+	if _, err := s.Declare(ctx, "nice_nano_v2_dongle"); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"dongle", "left", "right"} {
+		transfer(t, s, ctx, id, false, false, "sent")
+	}
+	if mustPlan(t, s, ctx).CanUndoSetup {
+		t.Fatal("completed hardware install is undoable")
+	}
+	if _, err := s.Forget(ctx); err != nil {
+		t.Fatal(err)
+	}
+	s = &TopologyStore{Root: s.Root}
+	p, err := s.UndoSetupSelection(ctx)
+	if err != nil || p.Required || !p.CanFlash || len(p.FirmwareDone) != 3 || p.CanUndoSetup {
+		t.Fatal("did not restore known installed state", p, err)
+	}
+}
+
+func TestUndoLegacyFirstKnownDeclarationDoesNotDiscardTrackedWrites(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2_dongle", "build")
+	v := variant(ctx.Plugin, "nice_nano_v2")
+	if err := s.save(ctx, topologyState{Version: 1, Current: topology(v), CurrentVariant: v.ID}); err != nil {
+		t.Fatal(err)
+	}
+	p, err := s.UndoSetupSelection(ctx)
+	if err != nil || !p.NeedsSetup {
+		t.Fatal("old first declaration cannot be corrected", p, err)
+	}
+	if _, err := s.Declare(ctx, ""); err != nil {
+		t.Fatal(err)
+	}
+	transfer(t, s, ctx, "left", true, true, "sent")
+	state, err := s.load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.BeforeSetup = nil // Existing v0.3 state has no checkpoint field.
+	if err := s.save(ctx, state); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UndoSetupSelection(ctx); err == nil {
+		t.Fatal("legacy progress was discarded")
 	}
 }

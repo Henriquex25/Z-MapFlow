@@ -137,3 +137,7 @@ export function SleepTimeoutMilliseconds(arg1) {
 export function StartBuild() {
   return window['go']['main']['App']['StartBuild']();
 }
+
+export function UndoFlashSetupSelection(arg1) {
+  return window['go']['main']['App']['UndoFlashSetupSelection'](arg1);
+}

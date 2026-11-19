@@ -967,5 +967,8 @@
   "OLED orientation": "Orientação do OLED",
   "Rotate {0} OLED 180°": "Girar OLED {0} em 180°",
   "Keeps the horizontal status layout and flips only the selected half. Save, rebuild and flash that half; no pairing reset is needed for orientation alone.": "Mantém o layout horizontal e gira somente a metade escolhida. Salve, recompile e grave essa metade; alterar apenas a orientação não exige limpar o pareamento.",
-  "OLED rotation requires a supported keyboard display target.": "A rotação do OLED exige um alvo de teclado com display compatível."
+  "OLED rotation requires a supported keyboard display target.": "A rotação do OLED exige um alvo de teclado com display compatível.",
+  "Undo setup choice": "Desfazer escolha da configuração",
+  "No firmware has been sent since this choice. You can go back and correct it.": "Nenhum firmware foi enviado desde essa escolha. Você pode voltar e corrigi-la.",
+  "The setup choice cannot be undone after a transfer starts. Close the guide to resume later.": "A escolha não pode ser desfeita após iniciar um envio. Feche o guia para continuar depois."
 }

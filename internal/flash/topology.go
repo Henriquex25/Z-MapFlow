@@ -29,6 +29,7 @@ type SetupDevice struct {
 type FlashPlan struct {
 	Supported    bool                  `json:"supported"`
 	NeedsSetup   bool                  `json:"needsSetup"`
+	CanUndoSetup bool                  `json:"canUndoSetup,omitempty"`
 	Required     bool                  `json:"required"`
 	CanFlash     bool                  `json:"canFlash"`
 	NeedsRebuild bool                  `json:"needsRebuild"`
@@ -62,7 +63,15 @@ type TopologyStore struct {
 	mu   sync.Mutex
 }
 type topologyState struct {
-	Version        int         `json:"version"`
+	Version        int              `json:"version"`
+	Current        string           `json:"current"`
+	CurrentVariant string           `json:"currentVariant"`
+	Cycle          *flashCycle      `json:"cycle,omitempty"`
+	BeforeSetup    *setupCheckpoint `json:"beforeSetup,omitempty"`
+}
+
+// Only app workflow state is restored. This checkpoint expires before USB writes.
+type setupCheckpoint struct {
 	Current        string      `json:"current"`
 	CurrentVariant string      `json:"currentVariant"`
 	Cycle          *flashCycle `json:"cycle,omitempty"`
@@ -279,11 +288,52 @@ func (s *TopologyStore) save(ctx Setup, state topologyState) error {
 	return storage.AtomicJSON(path, state)
 }
 
+func canUndoSetup(state topologyState) bool {
+	c := state.Cycle
+	// Older versions saved a first known setup without a cycle. No tracked
+	// operation has started in that case, so it can safely return to selection.
+	if c == nil {
+		return state.BeforeSetup != nil || state.Current != ""
+	}
+	return state.BeforeSetup != nil && !c.Attempted && !c.FirmwareStarted && !c.Completed && c.Receipt == nil && len(c.ResetDone) == 0 && len(c.FirmwareDone) == 0
+}
+
+func checkpointSetup(state *topologyState) {
+	if state.BeforeSetup == nil {
+		state.BeforeSetup = &setupCheckpoint{Current: state.Current, CurrentVariant: state.CurrentVariant, Cycle: state.Cycle}
+	}
+}
+
+// UndoSetupSelection reverses a UI choice, never an attempted hardware write.
+func (s *TopologyStore) UndoSetupSelection(ctx Setup) (FlashPlan, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state, err := s.load(ctx)
+	if err != nil {
+		return FlashPlan{}, err
+	}
+	if !tracked(ctx.Variant) || !canUndoSetup(state) {
+		return FlashPlan{}, fmt.Errorf("The setup choice cannot be undone after a transfer starts. Close the guide to resume later.")
+	}
+	before := state.BeforeSetup
+	if before == nil {
+		before = &setupCheckpoint{}
+	}
+	state.Current, state.CurrentVariant, state.Cycle = before.Current, before.CurrentVariant, before.Cycle
+	state.BeforeSetup = nil
+	if err := s.save(ctx, state); err != nil {
+		return FlashPlan{}, err
+	}
+	_, p := derive(ctx, state)
+	return p, nil
+}
+
 func derive(ctx Setup, state topologyState) (*flashCycle, FlashPlan) {
 	p := FlashPlan{Supported: tracked(ctx.Variant), CanFlash: true, To: topologyName(ctx.Variant), Options: []SetupOption{}, ResetDevices: []SetupDevice{}, ResetDone: map[string]string{}, FirmwareDone: map[string]string{}}
 	if !p.Supported {
 		return nil, p
 	}
+	p.CanUndoSetup = canUndoSetup(state)
 	seen := map[string]bool{}
 	for _, v := range ctx.Plugin.Variants {
 		if tracked(v) && !seen[topology(v)] {
@@ -373,6 +423,7 @@ func (s *TopologyStore) Declare(ctx Setup, installedVariant string) (FlashPlan, 
 	if !tracked(ctx.Variant) || state.Current != "" || state.Cycle != nil {
 		return FlashPlan{}, fmt.Errorf("the installed setup has already been recorded")
 	}
+	checkpointSetup(&state)
 	if installedVariant != "" {
 		v := variant(ctx.Plugin, installedVariant)
 		if !tracked(v) {
@@ -422,6 +473,7 @@ func (s *TopologyStore) Forget(ctx Setup) (FlashPlan, error) {
 	if !tracked(ctx.Variant) {
 		return FlashPlan{}, fmt.Errorf("this profile does not track topology changes")
 	}
+	checkpointSetup(&state)
 	var sources [][]SetupDevice
 	for _, v := range ctx.Plugin.Variants {
 		if tracked(v) {
@@ -510,6 +562,7 @@ func (s *TopologyStore) Begin(ctx Setup, deviceID string, reset bool) (string, e
 		delete(c.FirmwareDone, deviceID)
 	}
 	c.Attempted = true
+	state.BeforeSetup = nil
 	token := rand.Text()
 	c.Receipt = &transferReceipt{ID: token, BuildID: ctx.BuildID, DeviceID: deviceID, Reset: reset, Status: "pending"}
 	state.Cycle = c

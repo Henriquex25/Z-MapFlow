@@ -167,6 +167,7 @@ export namespace flash {
 	export class FlashPlan {
 	    supported: boolean;
 	    needsSetup: boolean;
+	    canUndoSetup?: boolean;
 	    required: boolean;
 	    canFlash: boolean;
 	    needsRebuild: boolean;
@@ -186,6 +187,7 @@ export namespace flash {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.supported = source["supported"];
 	        this.needsSetup = source["needsSetup"];
+	        this.canUndoSetup = source["canUndoSetup"];
 	        this.required = source["required"];
 	        this.canFlash = source["canFlash"];
 	        this.needsRebuild = source["needsRebuild"];

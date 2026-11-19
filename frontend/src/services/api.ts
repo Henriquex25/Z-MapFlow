@@ -54,6 +54,8 @@ export const api = {
   flash: go.FlashFirmware,
   flashDevice: go.FlashDevice,
   getFlashPlan: (buildId: string): Promise<FlashPlan> => go.GetFlashPlan(buildId),
+  undoFlashSetupSelection: (buildId: string): Promise<FlashPlan> =>
+    go.UndoFlashSetupSelection(buildId),
   setInstalledTopology: (buildId: string, variantId: string): Promise<FlashPlan> =>
     go.SetInstalledTopology(buildId, variantId),
   setResetController: (buildId: string, deviceId: string, controller: string): Promise<FlashPlan> =>
