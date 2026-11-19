@@ -27,7 +27,7 @@ func (p updatePlan) validate() error {
 			return errors.New("invalid Windows update filename")
 		}
 	}
-	if p.ParentPID <= 1 || p.ParentPID == os.Getpid() || p.Target == p.Staged || strings.HasPrefix(p.Target, ".z-mapflow-") || !strings.HasPrefix(p.Staged, ".z-mapflow-update-") || !stableVersion.MatchString(p.Version) {
+	if p.ParentPID <= 1 || p.Target == p.Staged || strings.HasPrefix(p.Target, ".z-mapflow-") || !strings.HasPrefix(p.Staged, ".z-mapflow-update-") || !stableVersion.MatchString(p.Version) {
 		return errors.New("invalid Windows update plan")
 	}
 	sum, err := hex.DecodeString(p.SHA256)
@@ -59,7 +59,16 @@ func readPlan(name string) (updatePlan, error) {
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return p, errors.New("unexpected Windows update plan content")
 	}
-	return p, p.validate()
+	if err := p.validate(); err != nil {
+		return p, err
+	}
+	// The updater helper must never wait for itself. The parent app creates and
+	// validates this same plan before launching the helper, so its PID is valid
+	// there and can only be rejected in the helper process that reads the plan.
+	if p.ParentPID == os.Getpid() {
+		return p, errors.New("invalid Windows update plan")
+	}
+	return p, nil
 }
 
 func verifyFileHash(name, expected string) error {
