@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"golang.org/x/sys/windows"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,7 +36,15 @@ func init() {
 			return true
 		}
 		if len(os.Args) == 1 {
-			os.WriteFile(marker, []byte("restarted"), 0600)
+			var startup windows.StartupInfo
+			if err := windows.GetStartupInfo(&startup); err != nil {
+				panic(err)
+			}
+			status := "restarted"
+			if startup.Flags&windows.STARTF_USESHOWWINDOW != 0 && startup.ShowWindow == windows.SW_HIDE {
+				status = "restarted with hidden window"
+			}
+			os.WriteFile(marker, []byte(status), 0600)
 			return true
 		}
 		return false
@@ -109,6 +118,9 @@ func TestNativeWindowsUpdateWaitsForLockedParentThenRestarts(t *testing.T) {
 		t.Fatalf("%v: %s", err, output.String())
 	}
 	waitForFile(t, marker)
+	if status, err := os.ReadFile(marker); err != nil || string(status) != "restarted" {
+		t.Fatalf("replacement GUI must start visibly: %q (%v)", status, err)
+	}
 	if current, err := os.ReadFile(target); err != nil || !bytes.Equal(current, updated) {
 		t.Fatal("update was not installed")
 	}

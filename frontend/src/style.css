@@ -2226,3 +2226,54 @@ input[type="checkbox"]:focus-visible {
 .search-select-empty {
   padding: 12px;
 }
+
+/* Keep secondary cleanup actions inside equal-height device cards. */
+.flash-device-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.flash-device-card.selected {
+  border-color: var(--accent);
+}
+.flash-modal .flash-device-card .flash-target {
+  display: grid;
+  grid-template-rows: 28px 24px 18px;
+  justify-items: center;
+  align-content: center;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 132px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.flash-device-card.selected .flash-target {
+  background: var(--accent-soft, #7853da20);
+}
+.flash-device-card .flash-device-skip {
+  margin: 0 10px 10px;
+  border-top: 1px solid var(--border-strong);
+  white-space: normal;
+  font-size: var(--type-caption);
+}
+.cleanup-warning-backdrop {
+  z-index: 110;
+}
+.cleanup-warning {
+  width: 540px;
+}
+.cleanup-warning > svg {
+  color: var(--accent);
+}
+.cleanup-warning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}

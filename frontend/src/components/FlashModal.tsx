@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { localizeMessage, tr, useLocale } from "../i18n";
 import type { Build, Plugin, Volume, FlashPlan } from "../types/keyboard";
+import { SkipCleanupDialog } from "./SkipCleanupDialog";
 import { FlashTopology } from "./FlashTopology";
 import { api, type FlashProgress } from "../services/api";
 
@@ -56,6 +57,7 @@ export function FlashModal({
   const [planError, setPlanError] = useState("");
   const [setupError, setSetupError] = useState("");
   const [skipDevice, setSkipDevice] = useState("");
+  const [skipError, setSkipError] = useState("");
   const [configuring, setConfiguring] = useState(false);
   const [receipt, setReceipt] = useState("");
   const targets = resetting && plan?.supported ? plan.resetDevices : firmwareTargets;
@@ -383,6 +385,7 @@ export function FlashModal({
     <div className="modal-backdrop">
       <section
         className={`modal-card flash-modal ${plan?.supported ? "with-topology" : ""} ${plan?.needsSetup ? "choosing-setup" : ""}`}
+        inert={!!skipDevice}
         role="dialog"
         aria-modal="true"
         aria-labelledby="flash-title"
@@ -524,9 +527,12 @@ export function FlashModal({
                     aria-label={tr(hasDongle ? "Connected device" : "Connected half")}
                   >
                     {targets.map((t) => (
-                      <div key={t.id} className="flex flex-col gap-2 min-w-0">
+                      <div
+                        key={t.id}
+                        className={`flash-device-card ${target === t.id ? "selected" : ""}`}
+                      >
                         <button
-                          className={`btn flash-target ${target === t.id ? "primary" : ""}`}
+                          className="btn flash-target"
                           aria-label={tr(t.name)}
                           aria-pressed={target === t.id}
                           onClick={() => {
@@ -561,9 +567,12 @@ export function FlashModal({
                           t.retired &&
                           !completed[t.id] && (
                             <button
-                              className="btn"
+                              className="btn flash-device-skip"
                               disabled={locked || !!plan.pending}
-                              onClick={() => setSkipDevice(t.id)}
+                              onClick={() => {
+                                setSkipError("");
+                                setSkipDevice(t.id);
+                              }}
                             >
                               {tr("Skip cleanup for this device")}
                             </button>
@@ -571,48 +580,6 @@ export function FlashModal({
                       </div>
                     ))}
                   </div>
-                  {skipDevice && (
-                    <div
-                      role="alertdialog"
-                      aria-labelledby="skip-reset-title"
-                      aria-describedby="skip-reset-warning"
-                      className="notice mt-3"
-                    >
-                      <p>{targetName(skipDevice)}</p>
-                      <strong id="skip-reset-title">
-                        {tr("This device's cleanup will be skipped")}
-                      </strong>
-                      <p id="skip-reset-warning">
-                        {tr(
-                          "Keep this device powered off and disconnected while using the new setup. Before using it again, clear its pairing settings. Reusing it without cleanup may cause connection and pairing problems.",
-                        )}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <button className="btn" disabled={locked} onClick={() => setSkipDevice("")}>
-                          {tr("Cancel")}
-                        </button>
-                        <button
-                          autoFocus
-                          className="btn primary"
-                          disabled={locked}
-                          onClick={async () => {
-                            setConfiguring(true);
-                            setSetupError("");
-                            try {
-                              applyPlan(await api.skipRetiredReset(build.id, skipDevice));
-                              setSkipDevice("");
-                            } catch (e) {
-                              setSetupError(String(e));
-                            } finally {
-                              setConfiguring(false);
-                            }
-                          }}
-                        >
-                          {tr("I understand, skip cleanup")}
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
 
@@ -1041,6 +1008,26 @@ export function FlashModal({
           </>
         )}
       </section>
+      {skipDevice && (
+        <SkipCleanupDialog
+          device={targetName(skipDevice)}
+          busy={configuring}
+          error={skipError}
+          onCancel={() => setSkipDevice("")}
+          onAcknowledge={async () => {
+            setConfiguring(true);
+            setSkipError("");
+            try {
+              applyPlan(await api.skipRetiredReset(build.id, skipDevice));
+              setSkipDevice("");
+            } catch (e) {
+              setSkipError(String(e));
+            } finally {
+              setConfiguring(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

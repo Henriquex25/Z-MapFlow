@@ -59,3 +59,5 @@ docker info --format '{{.OSType}}'
  Se acabou de instalar o Docker, reabra o Z-MapFlow para atualizar o ambiente. O app também verifica os diretórios padrão do Docker Desktop quando o menu Iniciar tem um PATH antigo.
 
 A atualização aguarda o processo anterior encerrar e mantém `z-mapflow.exe.previous`. Em caso de problema após reiniciar, feche o app, preserve uma cópia do executável com falha e copie o backup de volta para `z-mapflow.exe`, ou reinstale um setup oficial anterior. Exporte o projeto antes de voltar para uma versão com outro schema de dados.
+
+Algumas versões anteriores do Z-MapFlow para Windows iniciam o app atualizado com a janela oculta. Se a atualização terminar, mas nenhuma janela aparecer e abrir o app novamente não funcionar, encerre o processo do Z-MapFlow no Gerenciador de Tarefas e abra o app normalmente. As configurações são preservadas. A correção vale para atualizações iniciadas por uma versão que já a contenha, pois o helper é copiado do app em execução.

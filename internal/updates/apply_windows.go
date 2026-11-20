@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -186,7 +187,9 @@ func runWindowsPlan(planName string) error {
 }
 
 func restartWindows(target string) error {
-	cmd := hostcmd.Command(target)
+	// The replacement is a GUI app. hostcmd hides child windows for CLI tools,
+	// which also hides Wails' first window and leaves an invisible single instance.
+	cmd := exec.Command(target)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
