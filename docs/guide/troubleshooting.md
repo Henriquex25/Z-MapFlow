@@ -59,3 +59,5 @@ If a new release opens but behaves incorrectly, close the app and restore `z-map
 ## Report a problem
 
 Open an [issue](https://github.com/Henriquex25/Z-MapFlow/issues/new/choose) with the version shown in the header, OS, keyboard/variant, reproduction steps and relevant logs. Review configuration files before attaching them so you do not publish personal data. See [contributing](../community/contributing).
+
+Some older Windows builds of Z-MapFlow restart the updated app with its window hidden. If the update completes but no window appears and opening the app again does nothing, end the Z-MapFlow process in Task Manager and reopen it normally. Its settings are preserved. The updater fix applies to updates initiated by a version containing the fix, because the helper is copied from the running app.

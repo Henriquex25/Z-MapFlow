@@ -376,8 +376,23 @@ it("requires acknowledging the warning to skip retired cleanup and excludes the 
     return structuredClone(plan);
   });
   render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Skip cleanup for this device" }));
+  const skip = await screen.findByRole("button", { name: "Skip cleanup for this device" });
+  expect(skip.closest(".flash-device-card")).toContainElement(
+    screen.getByRole("button", { name: "USB dongle" }),
+  );
+  expect(document.querySelectorAll(".flash-device-card")).toHaveLength(3);
+  fireEvent.click(skip);
   expect(api.skipRetiredReset).not.toHaveBeenCalled();
+  const dialog = screen.getByRole("alertdialog");
+  expect(dialog.parentElement?.parentElement).toBe(document.body);
+  expect(document.querySelector(".flash-wizard-panel")).not.toContainElement(dialog);
+  expect(document.activeElement).toBe(
+    screen.getByRole("button", { name: "I understand, skip cleanup" }),
+  );
+  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(api.skipRetiredReset).not.toHaveBeenCalled();
+  fireEvent.click(skip);
   expect(screen.getByRole("alertdialog")).toHaveTextContent(
     "Reusing it without cleanup may cause connection and pairing problems.",
   );
