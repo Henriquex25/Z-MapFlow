@@ -58,6 +58,8 @@ export const api = {
     go.UndoFlashSetupSelection(buildId),
   setInstalledTopology: (buildId: string, variantId: string): Promise<FlashPlan> =>
     go.SetInstalledTopology(buildId, variantId),
+  skipRetiredReset: (buildId: string, deviceId: string): Promise<FlashPlan> =>
+    go.SkipRetiredReset(buildId, deviceId),
   setResetController: (buildId: string, deviceId: string, controller: string): Promise<FlashPlan> =>
     go.SetResetController(buildId, deviceId, controller),
   reportExternalFlash: (buildId: string): Promise<FlashPlan> => go.ReportExternalFlash(buildId),

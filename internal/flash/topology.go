@@ -218,7 +218,7 @@ func allDone(list []SetupDevice, done map[string]string) bool {
 		return false
 	}
 	for _, d := range list {
-		if done[d.ID] == "" {
+		if done[d.ID] == "" || (done[d.ID] == "skipped" && !d.Retired) {
 			return false
 		}
 	}
@@ -381,6 +381,9 @@ func derive(ctx Setup, state topologyState) (*flashCycle, FlashPlan) {
 	p.NeedsRebuild = p.Required && !p.CanFlash && !ctx.ResetAvailable
 	if p.Required && !p.CanFlash {
 		for _, d := range p.ResetDevices {
+			if c.ResetDone[d.ID] != "" {
+				continue
+			}
 			if d.Controller != "" {
 				if _, err := resetTarget(ctx, d); err != nil {
 					p.NeedsRebuild = true
@@ -660,6 +663,39 @@ func (s *TopologyStore) SetResetController(ctx Setup, deviceID, controllerID str
 			return FlashPlan{}, err
 		}
 		c.Devices[i] = d
+		state.Cycle = c
+		if err := s.save(ctx, state); err != nil {
+			return FlashPlan{}, err
+		}
+		_, p = derive(ctx, state)
+		return p, nil
+	}
+	return FlashPlan{}, fmt.Errorf("device does not belong to this reset step")
+}
+
+// SkipRetiredReset records acknowledgement of the reuse warning, never a USB
+// transfer. Only devices absent from the destination may bypass cleanup.
+func (s *TopologyStore) SkipRetiredReset(ctx Setup, deviceID string) (FlashPlan, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state, err := s.load(ctx)
+	if err != nil {
+		return FlashPlan{}, err
+	}
+	c, p := derive(ctx, state)
+	if c == nil || p.NeedsSetup || !p.Required || c.FirmwareStarted || p.Pending != nil {
+		return FlashPlan{}, fmt.Errorf("Cleanup can only be skipped for a retired device before firmware installation, with no pending acknowledgement.")
+	}
+	for _, d := range c.Devices {
+		if d.ID != deviceID {
+			continue
+		}
+		if !d.Retired || c.ResetDone[d.ID] != "" {
+			return FlashPlan{}, fmt.Errorf("Only a device absent from the destination setup can skip cleanup.")
+		}
+		c.ResetDone[d.ID] = "skipped"
+		c.Attempted = true
+		state.BeforeSetup = nil
 		state.Cycle = c
 		if err := s.save(ctx, state); err != nil {
 			return FlashPlan{}, err

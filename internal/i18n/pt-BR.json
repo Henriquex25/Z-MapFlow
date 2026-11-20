@@ -970,5 +970,13 @@
   "OLED rotation requires a supported keyboard display target.": "A rotação do OLED exige um alvo de teclado com display compatível.",
   "Undo setup choice": "Desfazer escolha da configuração",
   "No firmware has been sent since this choice. You can go back and correct it.": "Nenhum firmware foi enviado desde essa escolha. Você pode voltar e corrigi-la.",
-  "The setup choice cannot be undone after a transfer starts. Close the guide to resume later.": "A escolha não pode ser desfeita após iniciar um envio. Feche o guia para continuar depois."
+  "The setup choice cannot be undone after a transfer starts. Close the guide to resume later.": "A escolha não pode ser desfeita após iniciar um envio. Feche o guia para continuar depois.",
+  "Skip cleanup for this device": "Ignorar limpeza deste dispositivo",
+  "Cleanup skipped": "Limpeza ignorada",
+  "This device's cleanup will be skipped": "A limpeza deste dispositivo será ignorada",
+  "Keep this device powered off and disconnected while using the new setup. Before using it again, clear its pairing settings. Reusing it without cleanup may cause connection and pairing problems.": "Mantenha este dispositivo desligado e desconectado enquanto utiliza a nova configuração. Antes de voltar a utilizá-lo, limpe seus pareamentos. Usá-lo novamente sem essa limpeza pode causar problemas de conexão e pareamento.",
+  "I understand, skip cleanup": "Entendi, ignorar limpeza",
+  "Cleanup can only be skipped for a retired device before firmware installation, with no pending acknowledgement.": "Só é possível ignorar a limpeza de um dispositivo retirado antes da instalação do firmware e sem confirmação pendente.",
+  "Only a device absent from the destination setup can skip cleanup.": "Só é possível ignorar a limpeza de um dispositivo ausente na configuração de destino.",
+  "For devices absent from the new setup, you may skip cleanup after acknowledging the reuse warning.": "Para dispositivos ausentes na nova configuração, você pode ignorar a limpeza após reconhecer o aviso sobre reutilização."
 }

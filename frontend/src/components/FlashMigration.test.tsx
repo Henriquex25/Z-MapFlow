@@ -17,6 +17,7 @@ vi.mock("../services/api", () => ({
     setInstalledTopology: vi.fn(),
     undoFlashSetupSelection: vi.fn(),
     setResetController: vi.fn(),
+    skipRetiredReset: vi.fn(),
     reportExternalFlash: vi.fn(),
     acknowledgeFlash: vi.fn(),
   },
@@ -364,4 +365,27 @@ it("shows an undo error without hiding the required cleanup or changing progress
   expect(await screen.findByRole("alert")).toHaveTextContent("Choice is locked");
   expect(screen.getByRole("button", { name: /2\. Install keyboard firmware/ })).toBeDisabled();
   expect(api.flashDevice).not.toHaveBeenCalled();
+});
+
+it("requires acknowledging the warning to skip retired cleanup and excludes the dongle from final firmware", async () => {
+  const { plugin, build } = setup(true);
+  plan.resetDone = { left: "confirmed", right: "confirmed" };
+  vi.mocked(api.skipRetiredReset).mockImplementation(async () => {
+    plan.resetDone.dongle = "skipped";
+    plan.canFlash = true;
+    return structuredClone(plan);
+  });
+  render(<FlashModal build={build} plugin={plugin} onClose={() => {}} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Skip cleanup for this device" }));
+  expect(api.skipRetiredReset).not.toHaveBeenCalled();
+  expect(screen.getByRole("alertdialog")).toHaveTextContent(
+    "Reusing it without cleanup may cause connection and pairing problems.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "I understand, skip cleanup" }));
+  await waitFor(() => expect(api.skipRetiredReset).toHaveBeenCalledWith("build", "dongle"));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(screen.getAllByText("Cleanup skipped").length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole("button", { name: /2. Install keyboard firmware/ }));
+  expect(screen.queryByRole("button", { name: "USB dongle" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Left" })).toBeInTheDocument();
 });

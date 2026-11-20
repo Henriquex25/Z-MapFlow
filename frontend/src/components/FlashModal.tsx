@@ -55,6 +55,7 @@ export function FlashModal({
   const [plan, setPlan] = useState<FlashPlan | null>(tracking ? null : untrackedPlan);
   const [planError, setPlanError] = useState("");
   const [setupError, setSetupError] = useState("");
+  const [skipDevice, setSkipDevice] = useState("");
   const [configuring, setConfiguring] = useState(false);
   const [receipt, setReceipt] = useState("");
   const targets = resetting && plan?.supported ? plan.resetDevices : firmwareTargets;
@@ -72,10 +73,12 @@ export function FlashModal({
   const resetTarget = resetTargets.find((t) =>
     resetController ? t.controller === resetController : !t.controller,
   );
-  const [firmwareCompleted, setFirmwareCompleted] = useState<Record<string, "sent" | "confirmed">>(
-    {},
-  );
-  const [resetCompleted, setResetCompleted] = useState<Record<string, "sent" | "confirmed">>({});
+  const [firmwareCompleted, setFirmwareCompleted] = useState<
+    Record<string, "sent" | "confirmed" | "skipped">
+  >({});
+  const [resetCompleted, setResetCompleted] = useState<
+    Record<string, "sent" | "confirmed" | "skipped">
+  >({});
   const completed = resetting ? resetCompleted : firmwareCompleted;
   const setCompleted = resetting ? setResetCompleted : setFirmwareCompleted;
   const [notice, setNotice] = useState<{
@@ -100,8 +103,8 @@ export function FlashModal({
   const applyPlan = (next: FlashPlan) => {
     setPlan(next);
     if (next.supported) {
-      setResetCompleted(next.resetDone as Record<string, "sent" | "confirmed">);
-      setFirmwareCompleted(next.firmwareDone as Record<string, "sent" | "confirmed">);
+      setResetCompleted(next.resetDone as Record<string, "sent" | "confirmed" | "skipped">);
+      setFirmwareCompleted(next.firmwareDone as Record<string, "sent" | "confirmed" | "skipped">);
     }
   };
   useEffect(() => {
@@ -521,33 +524,95 @@ export function FlashModal({
                     aria-label={tr(hasDongle ? "Connected device" : "Connected half")}
                   >
                     {targets.map((t) => (
-                      <button
-                        key={t.id}
-                        className={`btn flash-target ${target === t.id ? "primary" : ""}`}
-                        aria-label={tr(t.name)}
-                        aria-pressed={target === t.id}
-                        onClick={() => {
-                          setTarget(t.id);
-                          clearVolume();
-                        }}
-                      >
-                        {t.kind === "dongle" ? (
-                          <Usb size={28} aria-hidden="true" />
-                        ) : (
-                          <Keyboard size={28} aria-hidden="true" />
-                        )}
-                        <span>{tr(t.name)}</span>
-                        {completed[t.id] && (
-                          <small>
-                            <Check size={16} aria-hidden="true" />
-                            {completed[t.id] === "confirmed"
-                              ? tr("Confirmed by you")
-                              : tr("File sent")}
-                          </small>
-                        )}
-                      </button>
+                      <div key={t.id} className="flex flex-col gap-2 min-w-0">
+                        <button
+                          className={`btn flash-target ${target === t.id ? "primary" : ""}`}
+                          aria-label={tr(t.name)}
+                          aria-pressed={target === t.id}
+                          onClick={() => {
+                            setTarget(t.id);
+                            clearVolume();
+                          }}
+                        >
+                          {t.kind === "dongle" ? (
+                            <Usb size={28} aria-hidden="true" />
+                          ) : (
+                            <Keyboard size={28} aria-hidden="true" />
+                          )}
+                          <span>{tr(t.name)}</span>
+                          {completed[t.id] && (
+                            <small>
+                              {completed[t.id] === "skipped" ? (
+                                <Info size={16} aria-hidden="true" />
+                              ) : (
+                                <Check size={16} aria-hidden="true" />
+                              )}
+                              {completed[t.id] === "skipped"
+                                ? tr("Cleanup skipped")
+                                : completed[t.id] === "confirmed"
+                                  ? tr("Confirmed by you")
+                                  : tr("File sent")}
+                            </small>
+                          )}
+                        </button>
+                        {resetting &&
+                          plan.required &&
+                          "retired" in t &&
+                          t.retired &&
+                          !completed[t.id] && (
+                            <button
+                              className="btn"
+                              disabled={locked || !!plan.pending}
+                              onClick={() => setSkipDevice(t.id)}
+                            >
+                              {tr("Skip cleanup for this device")}
+                            </button>
+                          )}
+                      </div>
                     ))}
                   </div>
+                  {skipDevice && (
+                    <div
+                      role="alertdialog"
+                      aria-labelledby="skip-reset-title"
+                      aria-describedby="skip-reset-warning"
+                      className="notice mt-3"
+                    >
+                      <p>{targetName(skipDevice)}</p>
+                      <strong id="skip-reset-title">
+                        {tr("This device's cleanup will be skipped")}
+                      </strong>
+                      <p id="skip-reset-warning">
+                        {tr(
+                          "Keep this device powered off and disconnected while using the new setup. Before using it again, clear its pairing settings. Reusing it without cleanup may cause connection and pairing problems.",
+                        )}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <button className="btn" disabled={locked} onClick={() => setSkipDevice("")}>
+                          {tr("Cancel")}
+                        </button>
+                        <button
+                          autoFocus
+                          className="btn primary"
+                          disabled={locked}
+                          onClick={async () => {
+                            setConfiguring(true);
+                            setSetupError("");
+                            try {
+                              applyPlan(await api.skipRetiredReset(build.id, skipDevice));
+                              setSkipDevice("");
+                            } catch (e) {
+                              setSetupError(String(e));
+                            } finally {
+                              setConfiguring(false);
+                            }
+                          }}
+                        >
+                          {tr("I understand, skip cleanup")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -837,7 +902,9 @@ export function FlashModal({
               <div className="flash-completed" aria-label={tr("Transfer progress")}>
                 {targets.map((t) => (
                   <span key={t.id} className={completed[t.id] ? "complete" : ""}>
-                    {completed[t.id] ? (
+                    {completed[t.id] === "skipped" ? (
+                      <Info size={16} aria-hidden="true" />
+                    ) : completed[t.id] ? (
                       <CircleCheck size={16} aria-hidden="true" />
                     ) : (
                       <Keyboard size={16} aria-hidden="true" />
@@ -845,7 +912,11 @@ export function FlashModal({
                     {tr(t.name)}
                     {completed[t.id] && (
                       <small>
-                        {completed[t.id] === "confirmed" ? tr("Confirmed by you") : tr("File sent")}
+                        {completed[t.id] === "skipped"
+                          ? tr("Cleanup skipped")
+                          : completed[t.id] === "confirmed"
+                            ? tr("Confirmed by you")
+                            : tr("File sent")}
                       </small>
                     )}
                   </span>

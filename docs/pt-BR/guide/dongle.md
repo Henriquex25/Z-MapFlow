@@ -37,6 +37,8 @@ Em **Configurações → Teclado e firmware → Opções do dongle**:
 
 As opções ficam salvas como flags por alvo no projeto e no `build.yaml`. Recompile e grave o dongle ao alterá-las. São independentes da sincronização opcional de camada/conexão do OLED. A quantidade de perfis Bluetooth e o preset Studio USB também se aplicam ao central. Flags e snippets adicionais continuam disponíveis nos ajustes avançados; funções e quantidade de periféricos permanecem definidas pelo hardware. Veja [a configuração split do ZMK](https://zmk.dev/docs/config/split).
 
+Os dispositivos ausentes na configuração de destino oferecem **Ignorar limpeza deste dispositivo** na seleção de dispositivos. Leia o alerta e escolha **Entendi, ignorar limpeza** para registrar **Limpeza ignorada**, separadamente de um reset confirmado. Mantenha esse dispositivo desligado e desconectado; limpe seus pareamentos antes de reutilizá-lo para evitar problemas de conexão/pareamento. O reconhecimento persiste ao reabrir o guia e recompilar a mesma topologia. Todos os dispositivos da configuração de destino continuam exigindo limpeza. A seleção do firmware final segue a topologia de destino, portanto o dongle retirado não aparece. Reintroduzi-lo em uma migração futura exige a limpeza novamente.
+
 ## Entrar no bootloader do dongle com um combo
 
 Crie e expanda um combo, escolha duas posições deliberadas e selecione **Ação do combo → Comportamento → Entrar no bootloader (&bootloader)**. Não é necessário parâmetro. Salve, compile e grave esse keymap no dongle. Com ele conectado por USB e as metades funcionando, pressione o combo para abrir o bootloader UF2 **do dongle**; selecione esse dispositivo no assistente de flash.

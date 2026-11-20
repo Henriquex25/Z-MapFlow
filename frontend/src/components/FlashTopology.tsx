@@ -91,6 +91,13 @@ export function FlashTopology({
                   )}
                 </p>
               )}
+              {plan.resetDevices.some((d) => d.retired) && (
+                <p>
+                  {tr(
+                    "For devices absent from the new setup, you may skip cleanup after acknowledging the reuse warning.",
+                  )}
+                </p>
+              )}
             </details>
           </div>
         )}
