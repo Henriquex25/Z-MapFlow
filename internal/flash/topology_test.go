@@ -549,3 +549,56 @@ func TestUndoLegacyFirstKnownDeclarationDoesNotDiscardTrackedWrites(t *testing.T
 		t.Fatal("legacy progress was discarded")
 	}
 }
+
+func TestSkipCleanupOnlyForRetiredDevicePersistsAndNeverPermitsItsFirmware(t *testing.T) {
+	s := &TopologyStore{Root: t.TempDir()}
+	ctx := setupFor("nice_nano_v2", "return-build")
+	if _, err := s.Declare(ctx, "nice_nano_v2_dongle"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SkipRetiredReset(ctx, "left"); err == nil {
+		t.Fatal("active half skipped cleanup")
+	}
+	if _, err := s.SkipRetiredReset(ctx, "missing"); err == nil {
+		t.Fatal("unknown device skipped cleanup")
+	}
+	token := transfer(t, s, ctx, "right", true, false, "sent")
+	if _, err := s.SkipRetiredReset(ctx, "dongle"); err == nil {
+		t.Fatal("pending acknowledgement bypassed")
+	}
+	if _, err := s.Acknowledge(ctx, token); err != nil {
+		t.Fatal(err)
+	}
+	p, err := s.SkipRetiredReset(ctx, "dongle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.CanFlash || p.ResetDone["dongle"] != "skipped" {
+		t.Fatal("skip claimed reset or bypassed remaining half", p)
+	}
+	if _, err := s.Begin(ctx, "left", false); err == nil {
+		t.Fatal("firmware bypassed half reset")
+	}
+	s = &TopologyStore{Root: s.Root}
+	ctx.BuildID = "recompiled"
+	if p := mustPlan(t, s, ctx); p.ResetDone["dongle"] != "skipped" {
+		t.Fatal("skip lost after reopen/rebuild")
+	}
+	transfer(t, s, ctx, "left", true, true, "sent")
+	if !mustPlan(t, s, ctx).CanFlash {
+		t.Fatal("retired device blocked destination firmware")
+	}
+	if _, err := s.Begin(ctx, "dongle", false); err == nil {
+		t.Fatal("retired dongle received firmware")
+	}
+	transfer(t, s, ctx, "left", false, true, "sent")
+	transfer(t, s, ctx, "right", false, true, "sent")
+	back := setupFor("nice_nano_v2_dongle", "reuse-dongle")
+	p = mustPlan(t, s, back)
+	if !p.Required || p.CanFlash || p.ResetDone["dongle"] != "" {
+		t.Fatal("reusing dongle inherited skip", p)
+	}
+	if _, err := s.SkipRetiredReset(back, "dongle"); err == nil {
+		t.Fatal("destination dongle skipped cleanup")
+	}
+}

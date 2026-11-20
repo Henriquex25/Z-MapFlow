@@ -130,6 +130,10 @@ export function SetResetController(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetResetController'](arg1, arg2, arg3);
 }
 
+export function SkipRetiredReset(arg1, arg2) {
+  return window['go']['main']['App']['SkipRetiredReset'](arg1, arg2);
+}
+
 export function SleepTimeoutMilliseconds(arg1) {
   return window['go']['main']['App']['SleepTimeoutMilliseconds'](arg1);
 }

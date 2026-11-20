@@ -426,6 +426,17 @@ func (a *App) UndoFlashSetupSelection(buildID string) (flash.FlashPlan, error) {
 	}
 	return a.topologies.UndoSetupSelection(ctx)
 }
+func (a *App) SkipRetiredReset(buildID, deviceID string) (flash.FlashPlan, error) {
+	if !a.operation.TryLock() {
+		return flash.FlashPlan{}, fmt.Errorf("aguarde a conclusão do envio de firmware em andamento")
+	}
+	defer a.operation.Unlock()
+	ctx, err := a.flashSetup(buildID)
+	if err != nil {
+		return flash.FlashPlan{}, err
+	}
+	return a.topologies.SkipRetiredReset(ctx, deviceID)
+}
 func (a *App) SetResetController(buildID, deviceID, controllerID string) (flash.FlashPlan, error) {
 	if !a.operation.TryLock() {
 		return flash.FlashPlan{}, fmt.Errorf("aguarde a conclusão do envio de firmware em andamento")

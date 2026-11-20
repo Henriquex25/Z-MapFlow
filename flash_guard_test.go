@@ -95,3 +95,12 @@ func TestUndoSetupCannotRunDuringAnActiveUSBOperation(t *testing.T) {
 		t.Fatalf("undo was allowed during a transfer: %v", err)
 	}
 }
+
+func TestSkipCleanupCannotRunDuringAnActiveUSBOperation(t *testing.T) {
+	a := NewApp()
+	a.operation.Lock()
+	defer a.operation.Unlock()
+	if _, err := a.SkipRetiredReset("build", "dongle"); err == nil || !strings.Contains(err.Error(), "envio de firmware em andamento") {
+		t.Fatalf("skip was allowed during a transfer: %v", err)
+	}
+}
