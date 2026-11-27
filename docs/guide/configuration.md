@@ -1,5 +1,7 @@
 # ZMK configuration and languages
 
+Settings are organized into **Keyboard and firmware**, **Application** and **Diagnostics** tabs. Application preferences are local; firmware options belong to the project. For USB logging and live serial capture, see [diagnostics](./diagnostics).
+
 ## Import a configuration
 
 Select the correct keyboard/variant, then open its `.keymap`. The app also looks for the matching `.conf`, local `.h` headers and a nearby `build.yaml`. Geometry and physical binding order come from the selected plugin. Import does not modify your original repository.

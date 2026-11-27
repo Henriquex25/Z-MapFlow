@@ -6,6 +6,7 @@ import {models} from '../models';
 import {version} from '../models';
 import {firmware} from '../models';
 import {community} from '../models';
+import {diagnostics} from '../models';
 
 export function AcknowledgeFlash(arg1:string,arg2:string):Promise<flash.FlashPlan>;
 
@@ -13,7 +14,11 @@ export function CancelBuild():Promise<void>;
 
 export function CheckForUpdates():Promise<updates.Info>;
 
+export function ClearDiagnostics():Promise<void>;
+
 export function DismissCommunityPrompt(arg1:string):Promise<void>;
+
+export function ExportDiagnostics():Promise<string>;
 
 export function ExportFirmware(arg1:string):Promise<string>;
 
@@ -27,6 +32,8 @@ export function FlashDevice(arg1:string,arg2:string,arg3:string,arg4:boolean):Pr
 
 export function FlashFirmware(arg1:string,arg2:string,arg3:string):Promise<flash.Result>;
 
+export function ForgetFlashGuidance(arg1:string):Promise<void>;
+
 export function GetAppInfo():Promise<version.Info>;
 
 export function GetBuild(arg1:string):Promise<firmware.Build>;
@@ -34,6 +41,10 @@ export function GetBuild(arg1:string):Promise<firmware.Build>;
 export function GetBuildStatus():Promise<firmware.Build>;
 
 export function GetCommunityStatus():Promise<community.Status>;
+
+export function GetDiagnostics():Promise<diagnostics.Snapshot>;
+
+export function GetFlashGuidance(arg1:string):Promise<Array<flash.Recommendation>>;
 
 export function GetFlashPlan(arg1:string):Promise<flash.FlashPlan>;
 
@@ -46,6 +57,8 @@ export function ImportProject(arg1:string,arg2:string):Promise<models.Session>;
 export function InstallUpdate(arg1:string):Promise<void>;
 
 export function ListBuilds():Promise<Array<firmware.Build>>;
+
+export function ListDiagnosticPorts():Promise<Array<string>>;
 
 export function ListPlugins():Promise<Array<models.Plugin>>;
 
@@ -76,5 +89,9 @@ export function SkipRetiredReset(arg1:string,arg2:string):Promise<flash.FlashPla
 export function SleepTimeoutMilliseconds(arg1:number):Promise<number>;
 
 export function StartBuild():Promise<firmware.Build>;
+
+export function StartDiagnostics(arg1:string):Promise<void>;
+
+export function StopDiagnostics():Promise<void>;
 
 export function UndoFlashSetupSelection(arg1:string):Promise<flash.FlashPlan>;

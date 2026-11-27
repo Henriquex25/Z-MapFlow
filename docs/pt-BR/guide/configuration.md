@@ -1,5 +1,7 @@
 # Configuração ZMK e idiomas
 
+As configurações são organizadas nas abas **Teclado e firmware**, **Aplicativo** e **Diagnóstico**. Preferências do aplicativo são locais; opções de firmware pertencem ao projeto. Para habilitar logs USB e capturar a porta serial, consulte o [diagnóstico](./diagnostics).
+
 ## Importar uma configuração
 
 Selecione o teclado/variante e abra seu `.keymap`. O aplicativo procura também o `.conf` de mesmo nome, headers `.h` locais e o `build.yaml` próximo. A geometria e ordem física das teclas vêm do plugin.

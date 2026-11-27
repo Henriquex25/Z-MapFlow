@@ -1,5 +1,7 @@
 # Compilar, exportar e gravar firmware
 
+A seleção de dispositivos também exibe [orientações de atualização](./diagnostics#quais-dispositivos-atualizar) com base nos envios registrados neste computador. As recomendações não escondem dispositivos nem substituem a limpeza obrigatória ao migrar topologia.
+
 ## Compilação
 
 Inicie o Docker e salve seu projeto. **Salvar e compilar** executa o fluxo completo; **Compilar** usa somente a revisão salva anteriormente. O container é temporário e utiliza cache para reduzir downloads posteriores.

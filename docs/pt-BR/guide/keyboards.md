@@ -79,3 +79,5 @@ O Sofle sem fio suportado pode usar **USB entre o central e o computador**, mant
 O Sofle original com TRRS entre as metades não é um perfil incluído no Z-MapFlow. Muitas dessas montagens usam QMK/Vial. O transporte com fio da revisão ZMK usada exige UART full-duplex e uma definição de hardware compatível; ativar uma flag não converte o TRRS original do Sofle. Não foi adicionada conversão com fio do Sofle. Veja [os transportes split do ZMK](https://zmk.dev/docs/features/split-keyboards).
 
 Além das três controladoras nice!nano/SuperMini, há um perfil experimental com **XIAO nRF52840 no dongle e nice!nano/SuperMini nas metades**. Consulte [a escolha da controladora e os resets adequados](./dongle).
+
+O desenho dos polegares do Sofle segue o [PCB oficial v2](https://github.com/josefadamcik/SofleKeyboard/blob/master/Sofle_v2/PCB/SofleKeyboard.kicad_pcb), com teclas inclinadas e espelhadas e a tecla mais interna de cada metade alongada para 1,5u. O espaçamento do editor reserva espaço para os controles dos encoders; a geometria visual não altera a ordem dos bindings do firmware.

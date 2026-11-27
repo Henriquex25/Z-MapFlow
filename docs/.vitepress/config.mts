@@ -7,6 +7,7 @@ const english = {
     { text: 'Use the app', items: [
       { text: 'Installation and updates', link: '/guide/install' },
       { text: 'Getting started', link: '/guide/getting-started' },
+      { text: 'Firmware diagnostics', link: '/guide/diagnostics' },
       { text: 'Supported keyboards', link: '/guide/keyboards' },
       { text: 'Sofle USB dongle', link: '/guide/dongle' },
       { text: 'ZMK configuration and languages', link: '/guide/configuration' },
@@ -30,6 +31,7 @@ const portuguese = {
     { text: 'Usar o aplicativo', items: [
       { text: 'Instalação e atualização', link: '/pt-BR/guide/install' },
       { text: 'Primeiros passos', link: '/pt-BR/guide/getting-started' },
+      { text: 'Diagnóstico do firmware', link: '/pt-BR/guide/diagnostics' },
       { text: 'Teclados compatíveis', link: '/pt-BR/guide/keyboards' },
       { text: 'Dongle USB no Sofle', link: '/pt-BR/guide/dongle' },
       { text: 'Configuração ZMK e idiomas', link: '/pt-BR/guide/configuration' },

@@ -2247,7 +2247,7 @@ input[type="checkbox"]:focus-visible {
   align-content: center;
   flex: 0 0 auto;
   width: 100%;
-  min-height: 132px;
+  min-height: 112px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2276,4 +2276,78 @@ input[type="checkbox"]:focus-visible {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+}
+
+.settings-tabs,
+.diagnostic-controls,
+.diagnostic-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.settings-editor {
+  padding: 16px;
+  min-width: 0;
+}
+.settings-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--canvas);
+  padding: 8px 0;
+}
+.diagnostic-targets label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.diagnostic-output {
+  height: 320px;
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--canvas);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.flash-guidance {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.flash-guidance summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+.flash-guidance ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.flash-guidance li span {
+  display: block;
+  font-size: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+.flash-guidance-devices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  list-style: none;
+  padding: 0 !important;
+}
+.flash-guidance-devices li {
+  font-size: var(--type-caption);
+}
+
+.diagnostic-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }

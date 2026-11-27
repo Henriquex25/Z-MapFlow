@@ -17,7 +17,7 @@ func (d *Device) GetName() string       { return "Sofle v2" }
 func (d *Device) Descriptor() models.Plugin {
 	p := models.Plugin{
 		ContractVersion: 1, ID: d.GetIdentifier(), Version: "1.0.0", Name: d.GetName(), KeymapName: "sofle", KeyCount: 60,
-		Width: 16, Height: 5.9, ZMKRevision: "v0.3.0", BuildImage: "zmkfirmware/zmk-build-arm:3.5",
+		Width: 16, Height: 6.45, ZMKRevision: "v0.3.0", BuildImage: "zmkfirmware/zmk-build-arm:3.5",
 		Config:       "CONFIG_EC11=y\nCONFIG_EC11_TRIGGER_GLOBAL_THREAD=y\n",
 		Overlay:      "&left_encoder { status = \"okay\"; };\n&right_encoder { status = \"okay\"; };\n",
 		Capabilities: []string{"layers", "macros", "combos", "hold-tap", "tap-dance", "encoders", "bluetooth", "display", "pointing"},
@@ -47,15 +47,35 @@ func (d *Device) Descriptor() models.Plugin {
 	for col := 0; col < 6; col++ {
 		add(36+col, float64(col), 3+offsets[col], "")
 	}
-	add(42, 6.25, 2.9, "encoder_left")
-	add(43, 8.2, 2.9, "encoder_right")
+	add(42, 6.25, 2.7, "encoder_left")
+	add(43, 8.2, 2.7, "encoder_right")
 	for col := 0; col < 6; col++ {
 		add(44+col, float64(col+10), 3+offsets[5-col], "")
 	}
-	for col := 0; col < 5; col++ {
-		add(50+col, float64(col+1)+0.2, 4.7, "")
-		add(55+col, float64(col+10)-0.2, 4.7, "")
+	// Thumb switch centres from the official Sofle_v2 PCB (SW30..SW26).
+	// Reference: josefadamcik/SofleKeyboard, Sofle_v2/PCB/SofleKeyboard.kicad_pcb.
+	// The PCB describes the right half; mirror around the canvas centre for left.
+	// Add 0.3u below the physical coordinates to clear the existing simplified
+	// main-row stagger. Convert KiCad angles to CSS rotation about the key centre.
+	thumbs := []struct{ x, y, height, rotation float64 }{
+		{177.5, 123.7, 1, 0},
+		{158.5, 121.2, 1, 0},
+		{139.5, 123.8, 1, 0},
+		{117.6, 128.4, 1, -23},
+		{96.7, 133.41, 1.5, -30},
 	}
+	for col, thumb := range thumbs {
+		rightCentre := 10.5 + (thumb.x-120.5)/19
+		centreY := .8 + (thumb.y-45.01)/19
+		leftIndex, rightIndex := 50+col, 59-col
+		add(leftIndex, 16-rightCentre-.5, centreY-thumb.height/2, "")
+		p.Positions[len(p.Positions)-1].Height = thumb.height
+		p.Positions[len(p.Positions)-1].Rotation = -thumb.rotation
+		add(rightIndex, rightCentre-.5, centreY-thumb.height/2, "")
+		p.Positions[len(p.Positions)-1].Height = thumb.height
+		p.Positions[len(p.Positions)-1].Rotation = thumb.rotation
+	}
+
 	legacy := p.Variants[0]
 	legacy.ID = "nice_nano_v2_legacy"
 	legacy.Name = "nice!nano v2 / SuperMini — ZMK 0.3"

@@ -28,17 +28,18 @@ type Artifact struct {
 	SHA256   string `json:"sha256"`
 }
 type Build struct {
-	ID         string     `json:"id"`
-	Revision   string     `json:"revision"`
-	PluginID   string     `json:"pluginId"`
-	VariantID  string     `json:"variantId"`
-	Status     string     `json:"status"`
-	Stage      string     `json:"stage"`
-	StartedAt  string     `json:"startedAt"`
-	FinishedAt string     `json:"finishedAt"`
-	Error      string     `json:"error"`
-	Logs       []string   `json:"logs"`
-	Artifacts  []Artifact `json:"artifacts"`
+	Fingerprints map[string]string `json:"fingerprints,omitempty"`
+	ID           string            `json:"id"`
+	Revision     string            `json:"revision"`
+	PluginID     string            `json:"pluginId"`
+	VariantID    string            `json:"variantId"`
+	Status       string            `json:"status"`
+	Stage        string            `json:"stage"`
+	StartedAt    string            `json:"startedAt"`
+	FinishedAt   string            `json:"finishedAt"`
+	Error        string            `json:"error"`
+	Logs         []string          `json:"logs"`
+	Artifacts    []Artifact        `json:"artifacts"`
 }
 
 // Provider allows a future GitHub Actions implementation without changing the editor.
@@ -160,6 +161,12 @@ func clone(b *Build) *Build {
 		return nil
 	}
 	c := *b
+	if b.Fingerprints != nil {
+		c.Fingerprints = map[string]string{}
+		for k, v := range b.Fingerprints {
+			c.Fingerprints[k] = v
+		}
+	}
 	c.Logs = append([]string{}, b.Logs...)
 	c.Artifacts = append([]Artifact{}, b.Artifacts...)
 	return &c
@@ -234,21 +241,22 @@ func (m *Manager) Start(parent context.Context, p models.Project) (*Build, error
 	if err = storage.AtomicJSON(filepath.Join(dir, "project.json"), p); err != nil {
 		return nil, err
 	}
-	b := &Build{ID: id, Revision: p.Revision, PluginID: p.PluginID, VariantID: p.VariantID, Status: "running", Stage: "preparing", StartedAt: time.Now().UTC().Format(time.RFC3339), Logs: []string{}, Artifacts: []Artifact{}}
+	d, _ := m.Registry.Get(p.PluginID)
+	profile := BuildProfile(p, d.Descriptor())
+	b := &Build{Fingerprints: Fingerprints(p, profile, files), ID: id, Revision: p.Revision, PluginID: p.PluginID, VariantID: p.VariantID, Status: "running", Stage: "preparing", StartedAt: time.Now().UTC().Format(time.RFC3339), Logs: []string{}, Artifacts: []Artifact{}}
 	if err = storage.AtomicJSON(filepath.Join(m.Root, "last-build.json"), b); err != nil {
 		return nil, err
 	}
 	m.build = b
 	ctx, cancel := context.WithTimeout(parent, 45*time.Minute)
 	m.cancel = cancel
-	d, _ := m.Registry.Get(p.PluginID)
 	provider := m.Provider
 	if provider == nil {
 		provider = DockerProvider{}
 	}
 	done := make(chan struct{})
 	m.done = done
-	go func() { defer close(done); m.run(ctx, cancel, provider, p, BuildProfile(p, d.Descriptor()), id, dir) }()
+	go func() { defer close(done); m.run(ctx, cancel, provider, p, profile, id, dir) }()
 	return clone(b), nil
 }
 func (m *Manager) run(ctx context.Context, cancel context.CancelFunc, provider Provider, p models.Project, plugin models.Plugin, id, dir string) {

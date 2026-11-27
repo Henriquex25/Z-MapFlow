@@ -19,6 +19,7 @@ import {
 import { localizeMessage, tr, useLocale } from "../i18n";
 import type { Build, Plugin, Volume, FlashPlan } from "../types/keyboard";
 import { SkipCleanupDialog } from "./SkipCleanupDialog";
+import { FlashGuidance } from "./FlashGuidance";
 import { FlashTopology } from "./FlashTopology";
 import { api, type FlashProgress } from "../services/api";
 
@@ -514,6 +515,9 @@ export function FlashModal({
 
               {step === 0 && (
                 <>
+                  {!resetting && (
+                    <FlashGuidance key={JSON.stringify(completed)} buildId={build.id} />
+                  )}
                   <p>
                     {tr(
                       hasDongle

@@ -707,9 +707,11 @@ it("switches the entire editor language without editing the firmware project", a
   render(<App />);
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Application" }));
   expect(screen.getByRole("combobox", { name: "Interface language" })).toHaveValue("en");
   const original = structuredClone(getProject());
   const saved = structuredClone(useKeyboardStore.getState().savedProject);
+  fireEvent.click(screen.getByRole("tab", { name: "Application" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Interface language" }), {
     target: { value: "pt-BR" },
   });
@@ -745,6 +747,7 @@ it("preserves user-created names and bindings when switching languages", async (
   await screen.findByRole("textbox", { name: "Layer name" });
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
   const original = structuredClone(getProject());
+  fireEvent.click(screen.getByRole("tab", { name: "Application" }));
   fireEvent.change(screen.getByRole("combobox", { name: "Interface language" }), {
     target: { value: "pt-BR" },
   });

@@ -4,7 +4,7 @@ Code fixes, documentation, translations, usability improvements and new keyboard
 
 - [Community guide](https://henriquex25.github.io/Z-MapFlow/community/contributing)
 - [Development environment and checks](docs/community/development.md)
-- [Step-by-step keyboard plugin guide](docs/plugins.md)
+- [Step-by-step keyboard plugin guide](docs/plugins.md), including the [validation checklist](docs/plugins.md#contributor-validation-checklist)
 - [Release process and central version](docs/community/releases.md)
 
 Use the issue forms for bugs, features and proposed keyboards. Discuss substantial changes before implementing them. PRs should describe the concrete problem, resulting behavior and validation, with screenshots for interface changes.

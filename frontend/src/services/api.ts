@@ -21,6 +21,14 @@ async function native<T>(run: () => Promise<T>): Promise<T> {
   return run();
 }
 export const api = {
+  listDiagnosticPorts: go.ListDiagnosticPorts,
+  getDiagnostics: go.GetDiagnostics,
+  startDiagnostics: go.StartDiagnostics,
+  stopDiagnostics: go.StopDiagnostics,
+  clearDiagnostics: go.ClearDiagnostics,
+  exportDiagnostics: () => native(() => go.ExportDiagnostics()),
+  getFlashGuidance: go.GetFlashGuidance,
+  forgetFlashGuidance: go.ForgetFlashGuidance,
   sleepTimeoutMilliseconds: go.SleepTimeoutMilliseconds,
   communityStatus: go.GetCommunityStatus,
   recordCommunityMinute: go.RecordCommunityMinute,

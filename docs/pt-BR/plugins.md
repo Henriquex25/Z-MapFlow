@@ -104,3 +104,26 @@ O serviço compara IDs, papéis e tipos dos alvos operacionais, sem tratar o per
 O backend salva a intenção antes da escrita USB e só libera o firmware final após cada envio de reset e confirmação explícita de reinício. Cópias incompletas/pending não permitem confirmação; incerteza na escrita final exige confirmação do usuário. O estado sobrevive a reaberturas e recompilações compatíveis; progresso de firmware antigo é descartado. Importações e histórico não alteram registros do hardware. Consulte `internal/flash/topology_test.go` e o [guia de migração](./guide/dongle#migracao-obrigatoria-e-retomada). A seleção da metade e a informação sobre flashes externos continuam explícitas, pois o volume não identifica esquerda/direita e o app não observa operações externas.
 
 A identidade de migração também considera `Target.Controller`, sem confundir aliases de toolchain com troca física. Registros antigos são atualizados sem impor reset apenas pela adição desses metadados. Veja o perfil XIAO do Sofle e seu retorno pelo perfil atual.
+
+## Checklist de validação para contribuidores
+
+Copie esta lista para PRs de plugins. Informe **Passou**, **Falhou**, **Não testado** ou **Não se aplica** para cada item, identificando a revisão do teclado e a controladora. Compilação, cópia simulada e funcionamento físico são resultados diferentes; passar no CI não confirma o hardware.
+
+| Verificação | Resultado / evidência |
+| --- | --- |
+| Ordem da matriz/transform e todos os índices conferem com fontes ZMK funcionais | |
+| Geometria, tamanhos/ângulos dos polegares, limites e quantidade de teclas conferem | |
+| Registro/projeto padrão validam; salvar/abrir e exportar/importar preservam bindings | |
+| Todos os alvos board/shield compilam na revisão ZMK fixada | |
+| Encoders: sentido de rotação, índices dos cliques e sensores opcionais | |
+| Reset correspondente e instruções de bootloader para cada controladora | |
+| Descoberta do volume UF2 e envio nos sistemas declarados | |
+| Todas as teclas e ambas as metades produzem a saída esperada | |
+| Pareamento, repouso/despertar e reconexão no hardware | |
+| OLED, bateria, USB e Bluetooth funcionam quando anunciados | |
+| Migração com dongle, recuperação/reset e sincronização opcional, se disponíveis | |
+| Recursos incompatíveis bloqueados e combinações não testadas documentadas | |
+
+Anexe logs de compilação, uma imagem do layout e um relato do teste físico. Se não tiver o hardware, informe isso e convide quem possui o modelo para testar; identifique o suporte experimental. Não inclua dados privados de pareamento nem logs de teclas sem revisá-los.
+
+Os logs USB podem ser habilitados por alvo em **Configurações → Diagnóstico**. A orientação de atualização depende de IDs estáveis e papéis central/periférico corretos. Consulte o [diagnóstico](./guide/diagnostics).

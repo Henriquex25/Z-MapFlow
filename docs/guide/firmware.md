@@ -1,5 +1,7 @@
 # Build, export and flash firmware
 
+The device-selection step also offers [update advice](./diagnostics#which-devices-should-i-update) based on locally recorded transfers. Advice never hides a destination device or replaces the required topology-cleanup flow.
+
 ## Build
 
 Start Docker and save your project. **Save and build** runs the complete flow; **Build** uses the last saved revision. Builds use temporary containers and persistent caches to reduce repeat downloads.

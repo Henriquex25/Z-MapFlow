@@ -104,3 +104,17 @@ func TestSkipCleanupCannotRunDuringAnActiveUSBOperation(t *testing.T) {
 		t.Fatalf("skip was allowed during a transfer: %v", err)
 	}
 }
+
+func TestDiagnosticsAndAdviceChangesCannotOverlapFirmwareWrite(t *testing.T) {
+	a := NewApp()
+	a.operation.Lock()
+	defer a.operation.Unlock()
+	for _, operation := range []func() error{
+		func() error { return a.StartDiagnostics("not-a-real-port") },
+		func() error { return a.ForgetFlashGuidance("not-a-build") },
+	} {
+		if err := operation(); err == nil || !strings.Contains(err.Error(), "envio de firmware em andamento") {
+			t.Fatalf("operation not serialized: %v", err)
+		}
+	}
+}

@@ -5,6 +5,7 @@ import { changeHardwareVariant } from "../utils/hardwareVariant";
 import { OledOrientation } from "./OledOrientation";
 import { ConnectionTopology } from "./ConnectionTopology";
 import { KeyboardLanguageSelect } from "./KeyboardLanguageSelect";
+import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { AppSettings } from "./AppSettings";
 import { tr, useLocale } from "../i18n";
 import { memo, useState } from "react";
@@ -856,13 +857,67 @@ export const ComboEditor = memo(function ComboEditor() {
 });
 export function SettingsEditor() {
   useLocale();
+  const [tab, setTab] = useState("keyboard");
+  return (
+    <div className="settings-editor">
+      <h2>{tr("Settings")}</h2>
+      <div className="settings-tabs" role="tablist" aria-label={tr("Settings categories")}>
+        {[
+          ["keyboard", "Keyboard and firmware"],
+          ["application", "Application"],
+          ["diagnostics", "Diagnostics"],
+        ].map(([id, label], index) => (
+          <button
+            key={id}
+            id={`settings-tab-${id}`}
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls="settings-panel"
+            tabIndex={tab === id ? 0 : -1}
+            className={`btn ${tab === id ? "primary" : ""}`}
+            onClick={() => setTab(id)}
+            onKeyDown={(e) => {
+              const ids = ["keyboard", "application", "diagnostics"];
+              const next =
+                e.key === "ArrowRight"
+                  ? (index + 1) % 3
+                  : e.key === "ArrowLeft"
+                    ? (index + 2) % 3
+                    : e.key === "Home"
+                      ? 0
+                      : e.key === "End"
+                        ? 2
+                        : -1;
+              if (next >= 0) {
+                e.preventDefault();
+                setTab(ids[next]);
+                document.getElementById(`settings-tab-${ids[next]}`)?.focus();
+              }
+            }}
+          >
+            {tr(label)}
+          </button>
+        ))}
+      </div>
+      <div id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${tab}`}>
+        {tab === "application" ? (
+          <AppSettings />
+        ) : tab === "diagnostics" ? (
+          <DiagnosticsPanel />
+        ) : (
+          <KeyboardSettings />
+        )}
+      </div>
+    </div>
+  );
+}
+function KeyboardSettings() {
+  useLocale();
   const { project: p, plugin, edit } = useKeyboardStore();
   if (!p || !plugin) return null;
   const variant = plugin.variants.find((v) => v.id === p.variantId)!;
   return (
     <div className="resource-editor">
-      <h2>{tr("Settings")}</h2>
-      <AppSettings />
       <div className="resource-card">
         <h3>{tr("Keyboard and firmware")}</h3>
         <label className="form-label mt-3">
