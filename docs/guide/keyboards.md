@@ -17,7 +17,7 @@
 
 **Build verified; physical testing pending** means the firmware has passed actual Docker compilation and UF2 validation, with hardware operation still awaiting a test on that combination. The XIAO profile and wired Silakka54 port are experimental.
 
-Layout sizes: Sofle v2 has 58 switches plus two encoder buttons, Lily58 has 58 switches, and both Silakka54 profiles draw 54 switches.
+Layout sizes: Sofle v2 has 58 switches plus two encoder buttons, Lily58 has 58 switches, and both Silakka54 profiles draw 54 switches. The Sofle thumb clusters follow the [official v2 PCB](https://github.com/josefadamcik/SofleKeyboard/blob/master/Sofle_v2/PCB/SofleKeyboard.kicad_pcb), with mirrored angled keys and a 1.5u innermost key on each half. Editor spacing leaves room for the encoder controls; visual geometry does not change firmware binding order.
 
 Select the keyboard in the header and the exact hardware variant in **Settings**. Match the actual PCB, controller, bootloader and wiring. All included profiles build **ZMK** and flash through a mounted **UF2** bootloader volume.
 
