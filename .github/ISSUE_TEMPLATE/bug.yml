@@ -32,4 +32,4 @@ body:
     id: logs
     attributes:
       label: Logs and screenshots
-      description: Remove credentials and personal information before attaching files. Include the ZMK revision for firmware problems.
+      description: Remove credentials and personal information before attaching files. Include the ZMK revision for firmware problems. Settings → Diagnostics can export firmware USB logs; review identifiers and key events before sharing.

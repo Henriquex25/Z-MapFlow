@@ -186,3 +186,26 @@ Opt a compatible variant into `pairing-migration` and include a `settings-reset`
 The generic flash service compares operational target IDs, roles, kinds and stable controller identities rather than saved-project variants or toolchain board aliases. Existing workflow signatures are upgraded without forcing a reset just because controller metadata was added. Initial installed-role knowledge comes from an explicit user declaration; later attempted/completed transfers and native receipts are local workflow state. Required cleanup uses the union of old, partially migrated and destination devices. Retired receivers are reset-only and disappear from final-firmware selection. The registry requires matching board/reset definitions per controller and one central. The wizard selects resets by controller identity, including a retired receiver. Unknown retired controllers need explicit identification before a reset can be sent. The current implementation still uses one UF2 family per variant; mixed UF2 families or non-UF2 protocols need a dedicated implementation. Include reset targets needed for supported return migrations, not just currently operational devices. The Sofle XIAO profile and return path illustrate this.
 
 The backend persists the write intent before USB I/O and unlocks final firmware only after each actual reset copy and explicit restart acknowledgement. Copy errors/pending writes cannot produce acknowledgements; final sync uncertainty requires user acknowledgement. State survives reopening and compatible rebuilds, while stale firmware progress is discarded. Imports/build history cannot change physical-state records. See `internal/flash/topology_test.go` and the [migration guide](./guide/dongle#required-migration-steps-and-resuming). The app cannot identify left/right from a volume or observe external flashes, so device selection and external-change reporting remain explicit.
+
+## Contributor validation checklist
+
+Copy this checklist into keyboard-plugin PRs. Mark each item **Passed**, **Failed**, **Not tested** or **Not applicable**, and name the exact keyboard revision/controller. Compilation, simulated transfer and physical operation are separate results; do not mark a hardware check as passed because CI succeeds.
+
+| Check | Result / evidence |
+| --- | --- |
+| Matrix/transform order and every key index match working ZMK sources | |
+| Geometry, thumb sizes/angles, drawing bounds and key count match the physical revision | |
+| Registry/default project validates; save/load and export/import preserve bindings | |
+| Every declared board/shield target compiles on the pinned ZMK revision | |
+| Encoder rotation directions, click indices and optional sensors work | |
+| Correct reset artifact and bootloader instructions exist for each controller | |
+| UF2 volume discovery and transfer work on each claimed OS | |
+| Every physical key and both split halves produce the expected output | |
+| Pairing, sleep/wake and reconnection work on hardware | |
+| OLED/battery/USB/Bluetooth features work where advertised | |
+| Dongle migration, reset/recovery and optional state sync work, if offered | |
+| Unsupported features are hidden/rejected; untested combinations are documented | |
+
+Attach build logs, a layout screenshot and a short physical-test report. If hardware is unavailable, say so and invite an owner to test; keep experimental support clearly labelled. Never include private pairing data or unreviewed key-event logs.
+
+Firmware logging can be enabled per target under **Settings → Diagnostics**. Stable target IDs and accurate role metadata are needed for update advice. See [diagnostics](./guide/diagnostics).

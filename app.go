@@ -19,6 +19,7 @@ import (
 	"z-mapflow/internal/devices/lily58"
 	"z-mapflow/internal/devices/silakka54"
 	"z-mapflow/internal/devices/soflev2"
+	"z-mapflow/internal/diagnostics"
 	"z-mapflow/internal/firmware"
 	"z-mapflow/internal/flash"
 	"z-mapflow/internal/i18n"
@@ -31,19 +32,21 @@ import (
 )
 
 type App struct {
-	ctx          context.Context
-	projects     *project.Service
-	builds       *firmware.Manager
-	registry     *devices.Registry
-	initErr      error
-	mu           sync.Mutex
-	operation    sync.Mutex
-	updater      *updates.Manager
-	updating     atomic.Bool
-	restartReady atomic.Bool
-	uiLocale     atomic.Value
-	community    *community.Service
-	topologies   *flash.TopologyStore
+	firmwareHistory *flash.FirmwareHistory
+	diagnostics     diagnostics.Manager
+	ctx             context.Context
+	projects        *project.Service
+	builds          *firmware.Manager
+	registry        *devices.Registry
+	initErr         error
+	mu              sync.Mutex
+	operation       sync.Mutex
+	updater         *updates.Manager
+	updating        atomic.Bool
+	restartReady    atomic.Bool
+	uiLocale        atomic.Value
+	community       *community.Service
+	topologies      *flash.TopologyStore
 }
 
 func NewApp() *App { return &App{} }
@@ -62,6 +65,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.projects = &project.Service{Root: root, Registry: a.registry}
 	a.topologies = &flash.TopologyStore{Root: root}
+	a.firmwareHistory = &flash.FirmwareHistory{Root: root}
 	a.community, err = community.Start(root)
 	if err != nil {
 		runtime.LogWarning(ctx, "Community invitations unavailable: "+err.Error())
@@ -93,6 +97,7 @@ func (a *App) DismissCommunityPrompt(kind string) error {
 	return a.community.Dismiss(kind)
 }
 func (a *App) shutdown(context.Context) {
+	a.diagnostics.Stop()
 	if a.builds != nil {
 		a.builds.Close()
 	}
@@ -457,6 +462,11 @@ func (a *App) ReportExternalFlash(buildID string) (flash.FlashPlan, error) {
 	if err != nil {
 		return flash.FlashPlan{}, err
 	}
+	if a.firmwareHistory != nil {
+		if err := a.firmwareHistory.Forget(ctx.Plugin.ID); err != nil {
+			return flash.FlashPlan{}, err
+		}
+	}
 	return a.topologies.Forget(ctx)
 }
 func (a *App) AcknowledgeFlash(buildID, receiptID string) (flash.FlashPlan, error) {
@@ -468,7 +478,21 @@ func (a *App) AcknowledgeFlash(buildID, receiptID string) (flash.FlashPlan, erro
 	if err != nil {
 		return flash.FlashPlan{}, err
 	}
-	return a.topologies.Acknowledge(ctx, receiptID)
+	plan, err := a.topologies.Plan(ctx)
+	if err != nil {
+		return flash.FlashPlan{}, err
+	}
+	next, err := a.topologies.Acknowledge(ctx, receiptID)
+	if err == nil && plan.Pending != nil && !plan.Pending.Reset && a.firmwareHistory != nil {
+		b, e := a.builds.Result(buildID)
+		if e == nil {
+			e = a.firmwareHistory.Record(ctx.Plugin.ID, plan.Pending.DeviceID, b.Fingerprints[plan.Pending.DeviceID])
+		}
+		if e != nil {
+			return next, e
+		}
+	}
+	return next, err
 }
 func (a *App) FlashDevice(buildID, deviceID, volumePath string, reset bool) (flash.Result, error) {
 	return a.flashDevice(buildID, deviceID, volumePath, reset, true)
@@ -523,9 +547,15 @@ func (a *App) flashDevice(buildID, deviceID, volumePath string, reset, guided bo
 	if err = firmware.ValidateUF2(source, variant.UF2Family); err != nil {
 		return flash.Result{}, err
 	}
+	a.diagnostics.Stop()
 	receipt, err := a.topologies.Begin(ctx, deviceID, reset)
 	if err != nil {
 		return flash.Result{}, err
+	}
+	if a.firmwareHistory != nil {
+		if e := a.firmwareHistory.Record(ctx.Plugin.ID, deviceID, ""); e != nil {
+			return flash.Result{}, e
+		}
 	}
 	trace := map[string]interface{}{"buildId": buildID, "targetId": targetID, "deviceId": deviceID, "reset": reset, "volume": volumePath, "startedAt": time.Now().UTC().Format(time.RFC3339Nano)}
 	tracePath := filepath.Join(a.projects.Root, "flash", "latest.json")
@@ -549,6 +579,15 @@ func (a *App) flashDevice(buildID, deviceID, volumePath string, reset, guided bo
 	})
 	if saveErr := a.topologies.Finish(ctx, receipt, result, err); saveErr != nil {
 		err = fmt.Errorf("the USB write was attempted but its workflow could not be saved: %w", saveErr)
+	}
+	if err == nil && result.Status == "sent" && !reset && a.firmwareHistory != nil {
+		b, e := a.builds.Result(buildID)
+		if e == nil {
+			e = a.firmwareHistory.Record(ctx.Plugin.ID, deviceID, b.Fingerprints[deviceID])
+		}
+		if e != nil {
+			err = fmt.Errorf("Firmware was sent but update advice could not be saved: %w", e)
+		}
 	}
 	result.ReceiptID = receipt
 	trace["status"], trace["detail"] = result.Status, result.Detail
@@ -612,6 +651,7 @@ func (a *App) InstallUpdate(expectedVersion string) error {
 	if b := a.builds.Current(); b != nil && b.Status == "running" {
 		return fmt.Errorf("aguarde ou cancele a compilação antes de atualizar")
 	}
+	a.diagnostics.Stop()
 	a.updating.Store(true)
 	err := a.updater.Install(a.ctx, expectedVersion, func(exe string) error {
 		cmd := exec.Command(exe, "--wait-for-parent", strconv.Itoa(os.Getpid()))
@@ -649,4 +689,32 @@ func (a *App) SetAppLanguage(locale string) error {
 func (a *App) tr(message string) string {
 	locale, _ := a.uiLocale.Load().(string)
 	return i18n.Message(locale, message)
+}
+
+func (a *App) GetFlashGuidance(buildID string) ([]flash.Recommendation, error) {
+	ctx, err := a.flashSetup(buildID)
+	if err != nil {
+		return nil, err
+	}
+	plan, err := a.topologies.Plan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	b, err := a.builds.Result(buildID)
+	if err != nil {
+		return nil, err
+	}
+	return a.firmwareHistory.Advice(ctx.Plugin.ID, ctx.Variant, b.Fingerprints, plan.Required || plan.NeedsSetup)
+}
+
+func (a *App) ForgetFlashGuidance(buildID string) error {
+	if !a.operation.TryLock() {
+		return fmt.Errorf("aguarde a conclusão do envio de firmware em andamento")
+	}
+	defer a.operation.Unlock()
+	ctx, err := a.flashSetup(buildID)
+	if err != nil {
+		return err
+	}
+	return a.firmwareHistory.Forget(ctx.Plugin.ID)
 }

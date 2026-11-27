@@ -14,8 +14,16 @@ export function CheckForUpdates() {
   return window['go']['main']['App']['CheckForUpdates']();
 }
 
+export function ClearDiagnostics() {
+  return window['go']['main']['App']['ClearDiagnostics']();
+}
+
 export function DismissCommunityPrompt(arg1) {
   return window['go']['main']['App']['DismissCommunityPrompt'](arg1);
+}
+
+export function ExportDiagnostics() {
+  return window['go']['main']['App']['ExportDiagnostics']();
 }
 
 export function ExportFirmware(arg1) {
@@ -42,6 +50,10 @@ export function FlashFirmware(arg1, arg2, arg3) {
   return window['go']['main']['App']['FlashFirmware'](arg1, arg2, arg3);
 }
 
+export function ForgetFlashGuidance(arg1) {
+  return window['go']['main']['App']['ForgetFlashGuidance'](arg1);
+}
+
 export function GetAppInfo() {
   return window['go']['main']['App']['GetAppInfo']();
 }
@@ -56,6 +68,14 @@ export function GetBuildStatus() {
 
 export function GetCommunityStatus() {
   return window['go']['main']['App']['GetCommunityStatus']();
+}
+
+export function GetDiagnostics() {
+  return window['go']['main']['App']['GetDiagnostics']();
+}
+
+export function GetFlashGuidance(arg1) {
+  return window['go']['main']['App']['GetFlashGuidance'](arg1);
 }
 
 export function GetFlashPlan(arg1) {
@@ -80,6 +100,10 @@ export function InstallUpdate(arg1) {
 
 export function ListBuilds() {
   return window['go']['main']['App']['ListBuilds']();
+}
+
+export function ListDiagnosticPorts() {
+  return window['go']['main']['App']['ListDiagnosticPorts']();
 }
 
 export function ListPlugins() {
@@ -140,6 +164,14 @@ export function SleepTimeoutMilliseconds(arg1) {
 
 export function StartBuild() {
   return window['go']['main']['App']['StartBuild']();
+}
+
+export function StartDiagnostics(arg1) {
+  return window['go']['main']['App']['StartDiagnostics'](arg1);
+}
+
+export function StopDiagnostics() {
+  return window['go']['main']['App']['StopDiagnostics']();
 }
 
 export function UndoFlashSetupSelection(arg1) {

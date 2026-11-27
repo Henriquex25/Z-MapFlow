@@ -29,6 +29,7 @@ See the **[full keyboard/controller matrix and hardware requirements](https://he
 
 - **Edit directly on your layout.** Drag actions from the palette onto keys or encoders, swap assignments, and organize layers, macros and behaviors visually.
 - **Build from the editor.** Save and compile locally with Docker, follow progress and logs, and keep editing while the saved revision builds.
+- **Diagnose firmware in the editor.** Enable USB logs per device, capture and export serial output under Settings → Diagnostics, and see which devices are recommended for a firmware update. See [diagnostics and update advice](https://henriquex25.github.io/Z-MapFlow/guide/diagnostics).
 - **Flash from the same app.** Use the guided UF2 flow to select a half, connect it in bootloader mode and send the matching firmware. Export artifacts whenever you need them later.
 
 ![Z-MapFlow showing a Sofle v2 layout, layers on the left, the action palette below and firmware controls at the bottom](docs/public/images/z-mapflow-layout.png)

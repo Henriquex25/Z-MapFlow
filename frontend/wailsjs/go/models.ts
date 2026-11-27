@@ -15,6 +15,31 @@ export namespace community {
 
 }
 
+export namespace diagnostics {
+
+	export class Snapshot {
+	    port: string;
+	    running: boolean;
+	    text: string;
+	    error: string;
+	    truncated: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new Snapshot(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.port = source["port"];
+	        this.running = source["running"];
+	        this.text = source["text"];
+	        this.error = source["error"];
+	        this.truncated = source["truncated"];
+	    }
+	}
+
+}
+
 export namespace firmware {
 	
 	export class Artifact {
@@ -36,6 +61,7 @@ export namespace firmware {
 	    }
 	}
 	export class Build {
+	    fingerprints?: Record<string, string>;
 	    id: string;
 	    revision: string;
 	    pluginId: string;
@@ -54,6 +80,7 @@ export namespace firmware {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.fingerprints = source["fingerprints"];
 	        this.id = source["id"];
 	        this.revision = source["revision"];
 	        this.pluginId = source["pluginId"];
@@ -217,6 +244,24 @@ export namespace flash {
 		    }
 		    return a;
 		}
+	}
+	export class Recommendation {
+	    deviceId: string;
+	    name: string;
+	    update: boolean;
+	    reason: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Recommendation(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.deviceId = source["deviceId"];
+	        this.name = source["name"];
+	        this.update = source["update"];
+	        this.reason = source["reason"];
+	    }
 	}
 	export class Result {
 	    status: string;

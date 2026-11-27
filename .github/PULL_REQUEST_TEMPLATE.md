@@ -14,3 +14,7 @@ List relevant commands/tests and results. Include screenshots for visual changes
 - [ ] Saved project compatibility and migrations were considered where applicable.
 - [ ] Wails bindings were regenerated if Go models/API methods changed.
 - [ ] An app version change, if needed, edits only `VERSION`.
+
+## Keyboard plugin validation (when applicable)
+
+Copy the [plugin validation checklist](https://henriquex25.github.io/Z-MapFlow/plugins#contributor-validation-checklist) and report Passed / Failed / Not tested / Not applicable for each item. Identify the keyboard revision, controller, ZMK revision and tested operating systems. Separate CI/build success from simulated transfer and physical keyboard validation.
