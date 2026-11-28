@@ -1,6 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { usePalettePicker } from "./store/usePalettePicker";
+import { beforeEach, afterEach } from "vitest";
+beforeEach(() => usePalettePicker.setState({ target: null, collapsed: false }));
 afterEach(cleanup);
 
 if (!globalThis.ResizeObserver) {

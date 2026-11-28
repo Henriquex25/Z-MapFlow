@@ -6,6 +6,7 @@ import { localizeMessage, tr, useLocale } from "./i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
+  rectIntersection,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
@@ -38,6 +39,7 @@ import { api } from "./services/api";
 import { projectBindingError, validateBinding } from "./utils/bindingValidation";
 import { content, isDirty, useKeyboardStore } from "./store/useKeyboardStore";
 import type { Build, IKeyAction, Plugin, Session } from "./types/keyboard";
+import { usePalettePicker } from "./store/usePalettePicker";
 import { ActionTray } from "./components/ActionTray";
 import { LayerSidebar } from "./components/LayerSidebar";
 import { LayerContextMenu } from "./components/LayerContextMenu";
@@ -69,6 +71,12 @@ export default function App() {
   const { project, savedProject, initialProject, plugin, activeLayerId } = store;
   const [keyboardZoom, setKeyboardZoom] = useState(1);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Layout");
+  const paletteTarget = usePalettePicker((s) => s.target);
+  useEffect(() => {
+    usePalettePicker.getState().clear();
+    usePalettePicker.getState().setCollapsed(tab !== "Layout");
+    if (tab !== "Layout") useKeyboardStore.getState().selectAction(null);
+  }, [tab, project?.pluginId]);
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -84,6 +92,26 @@ export default function App() {
   const [sources, setSources] = useState<{ name: string; content: string }[] | null>(null);
   const [confirm, setConfirm] = useState<(() => void) | null>(null);
   const [editingKey, setEditingKey] = useState<number | null>(null);
+  const [paletteTop, setPaletteTop] = useState(500);
+  const [bindingPaletteMode, setBindingPaletteMode] = useState(false);
+  useEffect(() => {
+    if (editingKey === null) setBindingPaletteMode(false);
+    else if (paletteTarget) setBindingPaletteMode(true);
+  }, [editingKey, paletteTarget]);
+  useEffect(() => {
+    if (editingKey === null || !bindingPaletteMode) return;
+    const palette = document.querySelector(".palette");
+    if (!palette) return;
+    const measure = () => setPaletteTop(palette.getBoundingClientRect().top);
+    const observer = new ResizeObserver(measure);
+    observer.observe(palette);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [editingKey, bindingPaletteMode]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -243,7 +271,10 @@ export default function App() {
   }, []);
   useEffect(() => {
     const cancelSelection = (event: KeyboardEvent) => {
-      if (event.key === "Escape") useKeyboardStore.getState().selectAction(null);
+      if (event.key === "Escape") {
+        useKeyboardStore.getState().selectAction(null);
+        usePalettePicker.getState().clear();
+      }
     };
     window.addEventListener("keydown", cancelSelection);
     return () => window.removeEventListener("keydown", cancelSelection);
@@ -384,28 +415,38 @@ export default function App() {
         </div>
       )}
 
-      {store.selectedAction && (
+      {tab !== "Settings" && (store.selectedAction || paletteTarget) && (
         <div className="notice assignment-notice" role="status">
-          <span>
-            <strong>{actionName(store.selectedAction, project)}</strong>
-            {tab === "Layout"
-              ? tr("— click keys in the “{0}” layer to assign it.", layer.name)
-              : tr("— click the action field you want to fill.")}
-          </span>
-          <div className="flex gap-3 items-center">
-            {tab !== "Layout" && (
-              <button className="btn" onClick={() => setTab("Layout")}>
-                {tr("Go to layout")}{" "}
-              </button>
-            )}
-            <button className="btn" onClick={() => store.selectAction(null)}>
-              {tr("Cancel selection")}{" "}
-            </button>
-          </div>
+          {paletteTarget ? (
+            <span>
+              <strong>{paletteTarget.label}</strong> ·{" "}
+              {tr("Drag and drop or click an action below to fill this slot.")}
+            </span>
+          ) : (
+            <span>
+              <strong>{actionName(store.selectedAction!, project)}</strong> ·{" "}
+              {tr(
+                tab === "Layout"
+                  ? "Drag and drop or click a keyboard key to assign. Press Escape to finish."
+                  : "Click a slot, then choose or drop an action from the palette.",
+              )}
+            </span>
+          )}
         </div>
       )}
       <DndContext
         sensors={sensors}
+        collisionDetection={(args) =>
+          rectIntersection({
+            ...args,
+            droppableContainers:
+              editingKey !== null
+                ? args.droppableContainers.filter(
+                    (c) => typeof c.data.current?.acceptBinding === "function",
+                  )
+                : args.droppableContainers,
+          })
+        }
         onDragStart={(e: DragStartEvent) => {
           store.selectAction(null);
           setDrag(e.active.data.current?.action || null);
@@ -454,7 +495,9 @@ export default function App() {
                 );
               })}
           </nav>
-          <WorkspaceSplit palette={<ActionTray />}>
+          <WorkspaceSplit
+            palette={tab === "Settings" ? null : <ActionTray elevated={editingKey !== null} />}
+          >
             <main className="editor-workspace">
               {tab === "Layout" ? (
                 <>
@@ -642,6 +685,45 @@ export default function App() {
         <DragOverlay dropAnimation={null}>
           {drag && <Key action={drag} className="w-14 h-14 opacity-90 ring-2 ring-sky-400" />}
         </DragOverlay>
+        {editingKey !== null && (
+          <div className={`modal-backdrop ${bindingPaletteMode ? "palette-binding-editor" : ""}`}>
+            <section
+              className="modal-card binding-modal"
+              role="dialog"
+              aria-modal={!bindingPaletteMode}
+              style={bindingPaletteMode ? { maxHeight: Math.max(180, paletteTop - 96) } : undefined}
+              aria-label={tr("Edit key binding")}
+            >
+              <div className="section-toolbar">
+                <h2>
+                  {tr("Key")} {editingKey} — {layer.name}
+                </h2>
+                <button
+                  className="btn"
+                  disabled={pendingErrors.length > 0}
+                  onClick={() => setEditingKey(null)}
+                >
+                  {tr("Done")}{" "}
+                </button>
+              </div>
+              <p className="hint">
+                {tr(
+                  "Adjust this key’s action and parameters. Each use of a macro or behavior can have different arguments.",
+                )}{" "}
+              </p>
+              {pendingErrors.length > 0 && (
+                <button className="btn binding-cancel" onClick={() => setEditingKey(null)}>
+                  {tr("Discard draft")}{" "}
+                </button>
+              )}
+              <BindingDrop
+                label={tr("Key action")}
+                code={layer.keys.find((k) => k.keymapIndex === editingKey)?.code ?? "&none"}
+                onChange={(code) => store.updateKeyCode(editingKey, code)}
+              />
+            </section>
+          </div>
+        )}
       </DndContext>
       <BuildPanel
         build={build}
@@ -683,44 +765,6 @@ export default function App() {
                 <pre className="source-code">{f.content}</pre>
               </details>
             ))}
-          </section>
-        </div>
-      )}
-      {editingKey !== null && (
-        <div className="modal-backdrop">
-          <section
-            className="modal-card binding-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={tr("Edit key binding")}
-          >
-            <div className="section-toolbar">
-              <h2>
-                {tr("Key")} {editingKey} — {layer.name}
-              </h2>
-              <button
-                className="btn"
-                disabled={pendingErrors.length > 0}
-                onClick={() => setEditingKey(null)}
-              >
-                {tr("Done")}{" "}
-              </button>
-            </div>
-            <p className="hint">
-              {tr(
-                "Adjust this key’s action and parameters. Each use of a macro or behavior can have different arguments.",
-              )}{" "}
-            </p>
-            {pendingErrors.length > 0 && (
-              <button className="btn binding-cancel" onClick={() => setEditingKey(null)}>
-                {tr("Discard draft")}{" "}
-              </button>
-            )}
-            <BindingDrop
-              label={tr("Key action")}
-              code={layer.keys.find((k) => k.keymapIndex === editingKey)?.code ?? "&none"}
-              onChange={(code) => store.updateKeyCode(editingKey, code)}
-            />
           </section>
         </div>
       )}

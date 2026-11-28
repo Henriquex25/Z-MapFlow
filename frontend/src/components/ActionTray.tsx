@@ -1,3 +1,4 @@
+import { PaletteOrigin, usePalettePicker } from "../store/usePalettePicker";
 import { tr, useLocale } from "../i18n";
 import { headerSymbols } from "../utils/firmwareSettings";
 import { headerCharacter, keyboardLanguageHeaders } from "../utils/keyboardLanguage";
@@ -223,18 +224,37 @@ const tabs = [
   "Resources",
   "Languages",
 ] as const;
-export const ActionTray = memo(function ActionTray() {
+export const ActionTray = memo(function ActionTray({
+  elevated = false,
+}: { elevated?: boolean } = {}) {
   useLocale();
   const p = useKeyboardStore((s) => s.project)!;
   const plugin = useKeyboardStore((s) => s.plugin);
   const bluetooth = !!plugin?.capabilities.includes("bluetooth");
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Keys");
+  const { collapsed, setCollapsed, target } = usePalettePicker();
+  const [tab, setTab] = useState<string>("Keys");
   useEffect(() => {
     if (!bluetooth && tab === "Bluetooth") setTab("Keys");
   }, [bluetooth, tab]);
   const [search, setSearch] = useState("");
+  const visibleTabs =
+    target?.mode === "values"
+      ? ["Parameters"]
+      : target?.mode === "keycode"
+        ? ["Keys", "Modifiers", "Languages", ...(target.preserveTab ? ["Tap/hold"] : [])]
+        : [...tabs, "Macros", "Behaviors"].filter(
+            (t) => !target || target.context !== "child" || t !== "Tap/hold",
+          );
+  useEffect(() => {
+    if (!target) return;
+    setSearch("");
+    if (!target.preserveTab) setTab(target.mode === "values" ? "Parameters" : "Keys");
+  }, [target?.id]);
+  useEffect(() => {
+    if (!visibleTabs.includes(tab)) setTab(visibleTabs[0]);
+  }, [tab, target?.mode]);
+
   const { importHeaders, importing } = useImportLanguageHeaders();
   useEffect(() => {
     if (bodyRef.current) {
@@ -271,6 +291,7 @@ export const ActionTray = memo(function ActionTray() {
   };
   const filtered = (items: IKeyAction[]) =>
     items.map(localize).filter((a) => {
+      if (target && target.error(a.code)) return false;
       if (!bluetooth && (a.code.startsWith("&bt ") || a.code.startsWith("&out "))) return false;
       const visuals = formatKeyVisuals(displayCode(a.code, p));
       return [
@@ -289,6 +310,7 @@ export const ActionTray = memo(function ActionTray() {
     <div className="palette-action-list">
       {filtered(items).map((a, i) => (
         <DraggableKey
+          palette
           key={`${a.code}-${i}`}
           action={a}
           className={
@@ -309,20 +331,33 @@ export const ActionTray = memo(function ActionTray() {
     ...p.layout.macros.map(macroAction),
     ...p.layout.behaviors.map(behaviorAction),
   ];
-  return (
-    <section aria-label={tr("Action palette")} className="palette" data-collapsed={collapsed}>
+  const content = (
+    <section
+      aria-label={tr("Action palette")}
+      className="palette"
+      data-collapsed={collapsed}
+      data-elevated={elevated}
+    >
       <div className="palette-toolbar">
-        {tabs
-          .filter((t) => t !== "Bluetooth" || bluetooth)
-          .map((t) => (
-            <button
-              key={t}
-              className={`tab ${tab === t ? "active" : ""}`}
-              onClick={() => setTab(t)}
-            >
-              {tr(t)}
-            </button>
-          ))}
+        <div className="palette-tabs">
+          {visibleTabs
+            .filter((t) => t !== "Bluetooth" || bluetooth)
+            .map((t) => (
+              <button
+                key={t}
+                className={`tab ${tab === t ? "active" : ""}`}
+                aria-label={
+                  ["Macros", "Behaviors"].includes(t) ? tr("{0} in palette", tr(t)) : undefined
+                }
+                onClick={() => {
+                  setTab(t);
+                  setCollapsed(false);
+                }}
+              >
+                {tr(t)}
+              </button>
+            ))}
+        </div>
         {tab === "Languages" && (
           <KeyboardLanguageSelect
             compact
@@ -347,13 +382,15 @@ export const ActionTray = memo(function ActionTray() {
           className="btn icon-btn palette-collapse"
           aria-label={collapsed ? tr("Expand palette") : tr("Collapse palette")}
           title={collapsed ? tr("Expand palette") : tr("Collapse palette")}
-          onClick={() => setCollapsed((v) => !v)}
+          onClick={() => setCollapsed(!collapsed)}
         >
           {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
       <div ref={bodyRef} className="palette-body" hidden={collapsed}>
-        {search ? (
+        {target?.mode === "values" ? (
+          list(target.options?.() ?? [])
+        ) : search ? (
           list(
             generateKeys(
               [
@@ -423,7 +460,11 @@ export const ActionTray = memo(function ActionTray() {
                             flexGrow: getPaletteKeyWidth(code),
                           }}
                         >
-                          <DraggableKey action={localize(action(code))} className="w-full h-full" />
+                          <DraggableKey
+                            palette
+                            action={localize(action(code))}
+                            className="w-full h-full"
+                          />
                         </div>
                       ),
                     )}
@@ -477,6 +518,7 @@ export const ActionTray = memo(function ActionTray() {
                 </span>
                 {["mo", "sl", "tog", "to"].map((b) => (
                   <DraggableKey
+                    palette
                     key={b}
                     className="palette-action"
                     action={{
@@ -521,6 +563,10 @@ export const ActionTray = memo(function ActionTray() {
               </p>
             )}
           </div>
+        ) : tab === "Macros" ? (
+          list(p.layout.macros.map(macroAction))
+        ) : tab === "Behaviors" ? (
+          list(p.layout.behaviors.map(behaviorAction))
         ) : tab === "Resources" ? (
           <div className="space-y-3">
             {list([
@@ -593,10 +639,11 @@ export const ActionTray = memo(function ActionTray() {
               </select>
               <BindingDrop
                 label={tr("On tap")}
+                keysOnly
                 compact
                 code={tap}
                 onChange={(c) => {
-                  if (/^&kp [A-Z0-9_]+$/.test(c)) setTap(c);
+                  if (/^&kp \S+$/.test(c)) setTap(c);
                   else
                     useKeyboardStore.setState({
                       error: tr("A hold-tap’s tap action must be a single key."),
@@ -604,7 +651,7 @@ export const ActionTray = memo(function ActionTray() {
                 }}
               />
               <span>→</span>
-              <DraggableKey action={action(generated)} className="palette-action" />
+              <DraggableKey palette action={action(generated)} className="palette-action" />
             </div>
             {list(generateKeys(basicKeysQuickList), true)}
           </div>
@@ -612,4 +659,5 @@ export const ActionTray = memo(function ActionTray() {
       </div>
     </section>
   );
+  return <PaletteOrigin.Provider value={true}>{content}</PaletteOrigin.Provider>;
 });

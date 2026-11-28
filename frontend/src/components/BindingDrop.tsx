@@ -1,16 +1,16 @@
+import { usePaletteTarget, usePalettePicker } from "../store/usePalettePicker";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceVisibility } from "../utils/resourceVisibility";
 import { bindingChoices } from "../utils/bindingChoices";
 import { bindingParts } from "../utils/bindingParameters";
 import { localizeMessage, tr, useLocale } from "../i18n";
 import { BindingArguments } from "./BindingArguments";
-import { useId, useState, useEffect, useMemo, useContext } from "react";
+import { useId, useRef, useState, useEffect, useMemo, useContext } from "react";
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { displayCode, useKeyboardStore } from "../store/useKeyboardStore";
 import { DraggableKey } from "./DraggableKey";
 import { action } from "../types/keyboard";
 import { normalizeBinding } from "../utils/bindingParameters";
-import { actionName } from "../utils/resourceActions";
 import { validateBinding, type BindingContext } from "../utils/bindingValidation";
 import { useDraftError } from "../utils/useDraftError";
 export function BindingDrop({
@@ -20,6 +20,7 @@ export function BindingDrop({
   compact = false,
   context = "binding",
   owner,
+  keysOnly = false,
 }: {
   code: string;
   onChange: (code: string) => void;
@@ -27,6 +28,7 @@ export function BindingDrop({
   compact?: boolean;
   context?: BindingContext;
   owner?: string;
+  keysOnly?: boolean;
 }) {
   const locale = useLocale();
   const visible = useContext(ResourceVisibility);
@@ -41,8 +43,20 @@ export function BindingDrop({
     () => (p ? bindingChoices(p, plugin, context, owner) : []),
     [p, plugin, context, owner, locale],
   );
-  const errorFor = (value: string) =>
-    p ? validateBinding(value, p, plugin, context, new Set(owner ? [owner] : [])) : "";
+  const errorFor = (value: string) => {
+    if (keysOnly && (bindingParts(value)[0] !== "&kp" || bindingParts(value).length !== 2))
+      return tr("This parameter accepts a key or shortcut, not a complete behavior.");
+    const alias = p?.layout.behaviors.find((b) => b.id === owner)?.target;
+    return p
+      ? validateBinding(
+          value,
+          p,
+          plugin,
+          context,
+          new Set([owner, alias].filter((v): v is string => !!v)),
+        )
+      : "";
+  };
   const error = raw !== code ? errorFor(raw) : "";
   useDraftError(error);
   const assign = (value: string) => {
@@ -52,7 +66,19 @@ export function BindingDrop({
       return;
     }
     onChange(p ? normalizeBinding(value, p) : value);
+    usePalettePicker.getState().clear();
   };
+  const picker = usePaletteTarget({
+    label,
+    mode: keysOnly ? "keycode" : "binding",
+    context,
+    error: errorFor,
+    pick: assign,
+  });
+  const container = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (picker.active) container.current?.scrollIntoView?.({ block: "nearest" });
+  }, [picker.active]);
   const commitRaw = () => {
     if (raw.trim() && raw.trim() !== code && !errorFor(raw)) {
       assign(raw.trim());
@@ -68,33 +94,40 @@ export function BindingDrop({
   });
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        container.current = node;
+        setNodeRef(node);
+      }}
       role="group"
       aria-label={tr(label)}
-      className={`binding-drop ${compact ? "is-compact" : ""} ${isOver ? (candidateError ? "is-invalid" : "is-over") : ""} ${error ? "is-invalid" : ""}`}
+      className={`binding-drop ${compact ? "is-compact" : ""} ${isOver ? (candidateError ? "is-invalid" : "is-over") : ""} ${error ? "is-invalid" : ""} ${picker.active ? "is-active" : ""}`}
     >
       <button
         type="button"
         className="binding-select"
-        disabled={!selectedAction || !!candidateError}
+        disabled={!visible}
         aria-label={tr("Assign action to {0}", label)}
         title={candidateError || undefined}
         onClick={() => {
-          if (selectedAction) assign(selectedAction.code);
+          if (selectedAction && !candidateError) {
+            assign(selectedAction.code);
+            useKeyboardStore.getState().selectAction(null);
+          } else picker.activate();
         }}
       >
         <span className="text-xs text-slate-300">{tr(label)}</span>
         {!compact && (
           <span className="hint">
-            {selectedAction
-              ? tr("Use {0}", actionName(selectedAction, p))
-              : tr("Choose an action from the palette or drag it here")}
+            {picker.active
+              ? tr("Drag and drop or click an action below to fill this slot.")
+              : tr("Click a slot to open compatible actions, or drag an action here.")}
           </span>
         )}
       </button>
       {code && (
         <DraggableKey
           validationContext={context}
+          onChoose={picker.activate}
           action={{ ...action(code), label: displayCode(code, p) }}
           className={compact ? "palette-action" : ""}
         />

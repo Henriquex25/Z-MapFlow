@@ -45,3 +45,15 @@ Choose the interface language in **Settings → Application**. This does not cha
 The app may show a small, non-blocking star invitation after five launches and 30 minutes of active use. A separate donation invitation requires ten launches, two hours of active use and at least three launches after responding to the star invitation. Invitations wait until after the first minute of a session and are hidden during builds, flashing and other dialogs. Background or idle time does not count as active use.
 
 Accepting, closing or choosing **No, thanks** permanently dismisses that invitation on this computer. The matching header button also dismisses it. The buttons remain available for later voluntary support. Counters and responses are stored locally, separately from keyboard projects, and survive updates. The app does not access your GitHub account, add stars automatically or process payments.
+
+### Choosing actions and parameters
+
+![Choosing a macro step key from the compatible action palette](/images/z-mapflow-contextual-palette.png)
+
+Settings hides the action palette completely. Macros, Behaviors, Combos and Conditional layers start with it collapsed. Clicking any palette tab or entering a search expands it.
+
+Choose the action type from the **Behavior** dropdown. For a key, layer, Bluetooth profile or other listed parameter, click its slot to open compatible options below, then click an option or drag it onto the slot. A key parameter accepts keycodes/shortcuts, while a complete action field can accept a compatible macro or behavior. Macros and Behaviors have their own palette tabs; invalid or recursive choices are filtered out. Numeric values keep their inputs, and advanced shortcut/ZMK entry remains available.
+
+After a palette choice, the slot is filled and selection ends; the palette stays open for further work. Escape ends selection without changing the field. Closing a resource card or switching views clears its destination. In the key editor, the dialog moves above the palette so you can click or drag without dropping onto the keyboard behind it.
+
+Macro **Step mode** controls execution: **Tap** presses and releases, **Press** holds, **Release** releases, and **Wait** pauses. The **Behavior** dropdown chooses the key/action to execute. Add-step controls appear before the sequence, and step cards align in a responsive grid.

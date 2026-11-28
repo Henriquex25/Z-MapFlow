@@ -1018,5 +1018,22 @@
   "Relevant firmware inputs match the last recorded transfer.": "As entradas relevantes do firmware correspondem ao último envio registrado.",
   "Relevant firmware inputs changed since the last recorded transfer.": "As entradas relevantes do firmware mudaram desde o último envio registrado.",
   "The serial device disconnected.": "O dispositivo serial foi desconectado.",
-  "Manual CONFIG_ZMK_USB_LOGGING flags are present. Remove those flags under Keyboard and firmware before using these logging controls.": "Há flags CONFIG_ZMK_USB_LOGGING configuradas manualmente. Remova essas flags em Teclado e firmware antes de usar estes controles de logs."
+  "Manual CONFIG_ZMK_USB_LOGGING flags are present. Remove those flags under Keyboard and firmware before using these logging controls.": "Há flags CONFIG_ZMK_USB_LOGGING configuradas manualmente. Remova essas flags em Teclado e firmware antes de usar estes controles de logs.",
+  "This parameter accepts a key or shortcut, not a complete behavior.": "Este parâmetro aceita uma tecla ou atalho, não um comportamento completo.",
+  "Choose a layer from the palette.": "Escolha uma camada na paleta.",
+  "Choose a compatible parameter from the palette.": "Escolha um parâmetro compatível na paleta.",
+  "Choose {0} from palette": "Escolher {0} na paleta",
+  "Click to open compatible actions, or drop one here": "Clique para abrir ações compatíveis ou solte uma aqui",
+  "Choose below": "Escolha abaixo",
+  "Choose key": "Escolher tecla",
+  "Choose parameter": "Escolher parâmetro",
+  "Advanced parameter": "Parâmetro avançado",
+  "Parameters": "Parâmetros",
+  "Drag and drop or click an action below to fill this slot.": "Arraste e solte ou clique em uma ação abaixo para preencher este slot.",
+  "Click a slot to open compatible actions, or drag an action here.": "Clique em um slot para abrir ações compatíveis ou arraste uma ação para cá.",
+  "Drag and drop or click a keyboard key to assign. Press Escape to finish.": "Arraste e solte ou clique em uma tecla do teclado para atribuir. Pressione Esc para encerrar.",
+  "Click a slot, then choose or drop an action from the palette.": "Clique em um slot e escolha ou solte uma ação da paleta.",
+  "Step {0} mode": "Modo do passo {0}",
+  "Step mode controls how the action runs: Tap presses and releases, Press holds, and Release lets go. Behavior chooses what runs.": "O modo define como executar: Tocar pressiona e solta; Pressionar mantém pressionado; Soltar libera. O comportamento define qual ação executar.",
+  "{0} in palette": "{0} na paleta"
 }
