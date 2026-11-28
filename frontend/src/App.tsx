@@ -1,3 +1,4 @@
+import { HelpTip } from "./components/HelpTip";
 import { sameBuild } from "./utils/buildStatus";
 import appIcon from "../../build/appicon.png";
 import { AppVersion } from "./components/AppVersion";
@@ -419,8 +420,7 @@ export default function App() {
         <div className="notice assignment-notice" role="status">
           {paletteTarget ? (
             <span>
-              <strong>{paletteTarget.label}</strong> ·{" "}
-              {tr("Drag and drop or click an action below to fill this slot.")}
+              <strong>{paletteTarget.label}</strong> · {tr("Choose below or drop an action.")}
             </span>
           ) : (
             <span>
@@ -697,6 +697,11 @@ export default function App() {
               <div className="section-toolbar">
                 <h2>
                   {tr("Key")} {editingKey} — {layer.name}
+                  <HelpTip
+                    text={tr(
+                      "Adjust this key’s action and parameters. Each use of a macro or behavior can have different arguments.",
+                    )}
+                  />
                 </h2>
                 <button
                   className="btn"
@@ -706,11 +711,7 @@ export default function App() {
                   {tr("Done")}{" "}
                 </button>
               </div>
-              <p className="hint">
-                {tr(
-                  "Adjust this key’s action and parameters. Each use of a macro or behavior can have different arguments.",
-                )}{" "}
-              </p>
+
               {pendingErrors.length > 0 && (
                 <button className="btn binding-cancel" onClick={() => setEditingKey(null)}>
                   {tr("Discard draft")}{" "}

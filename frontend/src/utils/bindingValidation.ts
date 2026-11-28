@@ -293,6 +293,7 @@ export function validateBinding(
   seen = new Set<string>(),
   checkResources = true,
 ): string {
+  if (!code.trim()) return tr("Choose an action to fill this slot.");
   if (code.length > 8192) return tr("Action is too long.");
   const f = bindingParts(code.trim()),
     name = f[0]?.slice(1) ?? "";

@@ -22,7 +22,7 @@ The Keys palette expands across the available window width while preserving mini
 
 The editor validates parameter counts and types before assignment. Invalid drafts appear in red, preserve the last valid value and block saving. Use **Discard draft** in the key editor to close without applying invalid text. Firmware compilation checks additional hardware and module rules.
 
-Behavior cards start collapsed. Their name, type, action preview, assignment and delete controls remain visible. Use the arrow beside a behavior to show its settings; each card opens independently. Applied edits survive collapsing. Correct invalid drafts before closing a card.
+Behavior cards start collapsed. Their name, type, assignment and delete controls remain visible. Use the arrow beside a behavior to show its settings; each card opens independently. Applied edits survive collapsing. Correct invalid drafts before closing a card.
 
 ## Save and export
 
@@ -48,12 +48,14 @@ Accepting, closing or choosing **No, thanks** permanently dismisses that invitat
 
 ### Choosing actions and parameters
 
-![Choosing a macro step key from the compatible action palette](/images/z-mapflow-contextual-palette.png)
+![Compact numbered macro steps and the action palette](/images/z-mapflow-contextual-palette.png)
 
 Settings hides the action palette completely. Macros, Behaviors, Combos and Conditional layers start with it collapsed. Clicking any palette tab or entering a search expands it.
 
 Choose the action type from the **Behavior** dropdown. For a key, layer, Bluetooth profile or other listed parameter, click its slot to open compatible options below, then click an option or drag it onto the slot. A key parameter accepts keycodes/shortcuts, while a complete action field can accept a compatible macro or behavior. Macros and Behaviors have their own palette tabs; invalid or recursive choices are filtered out. Numeric values keep their inputs, and advanced shortcut/ZMK entry remains available.
 
-After a palette choice, the slot is filled and selection ends; the palette stays open for further work. Escape ends selection without changing the field. Closing a resource card or switching views clears its destination. In the key editor, the dialog moves above the palette so you can click or drag without dropping onto the keyboard behind it.
+After clicking or dropping a palette action into an editor slot, selection ends and the palette collapses. Click another slot or palette tab to open it again. Escape ends selection without changing the field. Closing a resource card or switching views clears its destination. In the key editor, the dialog moves above the palette so you can click or drag without dropping onto the keyboard behind it.
 
-Macro **Step mode** controls execution: **Tap** presses and releases, **Press** holds, **Release** releases, and **Wait** pauses. The **Behavior** dropdown chooses the key/action to execute. Add-step controls appear before the sequence, and step cards align in a responsive grid.
+Macro **Step mode** controls execution: **Tap** presses and releases, **Press** holds, **Release** releases, and **Wait** pauses. The **Behavior** dropdown chooses the key/action to execute. Steps appear as compact numbered rows, read from top to bottom. Click a row’s action slot to replace it; use its pencil icon to edit the behavior, individual parameters or advanced code. Add-step controls appear above the sequence, and timing defaults are under **Timing**. Use the up/down arrows to reorder steps. The header’s **Assign to keyboard** button assigns the complete macro; the **Macros** palette tab offers it for dragging.
+
+New macros, behavior child actions and combo outputs start with empty action slots. Fill the required slots before assigning, saving or building. Existing imported actions are preserved. Supplementary explanations are available from the **?** buttons by hovering or focusing them; Escape dismisses the tooltip.

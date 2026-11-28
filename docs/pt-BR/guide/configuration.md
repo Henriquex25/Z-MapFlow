@@ -58,7 +58,7 @@ Para um combo, expanda o cartão e selecione pelo menos duas posições no desen
 - **Macros / Comportamentos:** escolha uma macro ou comportamento criado no projeto. Os parâmetros de uso aparecem quando necessários.
 - **Entrar no bootloader (&bootloader):** não exige parâmetros, portanto não aparece campo de tecla.
 
-Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. O mesmo dropdown de ação e os slots de parâmetros aparecem nas etapas de macros e nas ações internas de comportamentos, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
+Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. Nas etapas de macros, o lápis abre o dropdown de ação e os slots de parâmetros; ações internas de comportamentos usam os mesmos controles, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
 
 Para o bootloader do dongle, veja [o atalho por combo](./dongle#entrar-no-bootloader-do-dongle-com-um-combo).
 

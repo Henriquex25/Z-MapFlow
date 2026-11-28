@@ -295,12 +295,14 @@ it("creates and assigns hold-tap and tap-dance behaviors with the configured act
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap sequence" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap sequence" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to 1 tap(s)" }));
   selectKey("&kp F1");
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Add tap" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New tap sequence to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 1:/ }));
   const dance = getProject().layout.behaviors[1];
-  expect(dance.bindings).toEqual(["&kp A", "&kp B", "&kp F1"]);
+  expect(dance.bindings).toEqual(["&kp A", "&kp F1"]);
   expect(getProject().layout.layers[0].keys[1].code).toBe(`&${dance.id}`);
 });
 
@@ -310,7 +312,8 @@ it("creates a combo that triggers a macro without remapping the trigger keys", a
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
-  fireEvent.click(screen.getByRole("button", { name: "Drag New macro" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
   fireEvent.click(screen.getByRole("button", { name: "Combos" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New combo" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New combo" }));
@@ -380,6 +383,8 @@ it("assigns a macro to encoder rotation and click while keeping its physical bin
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New macro to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CW:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CLK:/ }));
@@ -431,6 +436,11 @@ it("creates mod-morphs and edits a key binding without replacing its reusable de
   selectOption("Add behavior type", "mod-morph");
   const morph = getProject().layout.behaviors[0];
   expect(morph.properties!.mods).toContain("MOD_LSFT");
+  fireEvent.click(screen.getByRole("button", { name: `Show settings for ${morph.name}` }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Normal action" }));
+  selectKey("&kp B");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Modified action" }));
   fireEvent.click(screen.getByRole("button", { name: `Assign ${morph.name} to keyboard` }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
   expect(getProject().layout.layers[0].keys[0].code).toBe(`&${morph.id}`);
@@ -460,6 +470,7 @@ it("creates parameter routing and release continuation controls and assigns macr
   selectOption("Macro control", "&macro_param_1to1");
   expect(getProject().layout.macros[0].parameterCount).toBe(1);
   const add = within(screen.getByRole("group", { name: "Add step" }));
+  fireEvent.click(add.getByText("Edit action and parameters"));
   fireEvent.click(add.getByText("Advanced ZMK code"));
   fireEvent.change(add.getByRole("textbox", { name: "ZMK binding: Add step" }), {
     target: { value: "&kp MACRO_PLACEHOLDER" },
@@ -665,7 +676,7 @@ it("refuses an incompatible hold child before assigning it", async () => {
     }),
   );
   expect(palette().queryByRole("button", { name: "Tap/hold" })).not.toBeInTheDocument();
-  expect(getProject().layout.behaviors[0].bindings).toEqual(["&kp LCTRL", "&kp ESC"]);
+  expect(getProject().layout.behaviors[0].bindings).toEqual(["", ""]);
 });
 
 it("marks an existing invalid mapping red and prevents saving it", async () => {

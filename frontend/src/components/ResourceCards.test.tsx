@@ -27,7 +27,9 @@ beforeEach(() => {
       steps: [{ kind: "tap", binding: "&kp LC(C)", durationMs: 0 }],
     },
   ];
-  p.layout.behaviors = [{ ...newBehavior("tap-dance"), id: "dance", name: "Tap navigation" }];
+  p.layout.behaviors = [
+    { ...newBehavior("tap-dance"), id: "dance", name: "Tap navigation", bindings: ["&kp A"] },
+  ];
   p.layout.combos = ["First", "Second"].map((name, i) => ({
     id: `combo${i}`,
     name,
@@ -123,6 +125,7 @@ it("keeps macro actions on the collapsed header and conditional rules independen
     screen.queryByRole("combobox", { name: "Conditional target layer" }),
   ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Show settings for Copy" }));
+  fireEvent.click(screen.getByText("Timing"));
   fireEvent.change(screen.getByRole("spinbutton", { name: "Tap time (ms)" }), {
     target: { value: "45" },
   });

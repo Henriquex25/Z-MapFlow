@@ -56,8 +56,14 @@ export function usePaletteTarget(input: Omit<PaletteTarget, "id" | "preserveTab"
       preserveTab,
       error: (code) => latest.current.error(code),
       pick: (code) => {
+        const error = latest.current.error(code);
+        if (error) {
+          useKeyboardStore.setState({ error });
+          return;
+        }
         latest.current.pick(code);
-        if (usePalettePicker.getState().target?.id === id) usePalettePicker.getState().clear();
+        usePalettePicker.getState().clear();
+        if (!preserveTab) usePalettePicker.getState().setCollapsed(true);
       },
       options: input.options ? () => latest.current.options?.() ?? [] : undefined,
     }),

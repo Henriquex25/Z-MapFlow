@@ -1,5 +1,6 @@
 import { useLocale } from "../i18n";
-import { useEffect, useRef, useState } from "react";
+import { keyboardGeometry, keyboardUnit } from "../utils/keyboardGeometry";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Plugin, ILayer } from "../types/keyboard";
 import { DroppableKey } from "./DroppableKey";
 import { Sensor } from "./Sensor";
@@ -23,7 +24,8 @@ export function KeyboardLayout({
   onEdit?: (index: number) => void;
 }) {
   useLocale();
-  const unit = 62;
+  const unit = keyboardUnit;
+  const geometry = useMemo(() => keyboardGeometry(plugin), [plugin]);
   const viewport = useRef<HTMLDivElement>(null);
   const [fitScale, setFitScale] = useState(1);
   const scale = fitScale * zoom;
@@ -31,10 +33,13 @@ export function KeyboardLayout({
     if (!fit || !viewport.current) return;
     const el = viewport.current;
     const resize = () => {
-      const bounds = el.getBoundingClientRect();
-      if (bounds.width && bounds.height) {
+      if (el.clientWidth && el.clientHeight) {
         setFitScale(
-          Math.min(1, bounds.width / (plugin.width * unit), bounds.height / (plugin.height * unit)),
+          Math.min(
+            1,
+            (el.clientWidth - 1) / geometry.width,
+            (el.clientHeight - 1) / geometry.height,
+          ),
         );
       }
     };
@@ -42,21 +47,21 @@ export function KeyboardLayout({
     const observer = new ResizeObserver(resize);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fit, plugin.width, plugin.height]);
+  }, [fit, geometry]);
   return (
     <div ref={viewport} className={`keyboard-viewport ${fit ? "flex-1 min-h-0" : ""}`}>
       <div
         className="keyboard-canvas relative"
         style={{
-          width: plugin.width * unit * scale,
-          height: plugin.height * unit * scale,
+          width: geometry.width * scale,
+          height: geometry.height * scale,
         }}
       >
         <div
           className="absolute top-0 left-0"
           style={{
-            width: plugin.width * unit,
-            height: plugin.height * unit,
+            width: geometry.width,
+            height: geometry.height,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
           }}
@@ -73,8 +78,8 @@ export function KeyboardLayout({
                 key={position.id}
                 className="absolute"
                 style={{
-                  left: position.x * unit,
-                  top: position.y * unit,
+                  left: position.x * unit + geometry.offsetX,
+                  top: position.y * unit + geometry.offsetY,
                   width: position.width * unit - 6,
                   height: position.height * unit - 6,
                   transform: `rotate(${position.rotation}deg)`,

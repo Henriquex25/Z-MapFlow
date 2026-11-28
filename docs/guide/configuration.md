@@ -60,7 +60,7 @@ For a combo, expand its card and select at least two trigger positions in the ke
 
 The behavior selector includes search: click it and type a name, code or group, such as `bootloader` or `Macros`. Use the arrow keys and Enter, or click a result. Escape cancels the search; typing a query alone does not change the binding. Long lists render only their visible options. The optional **Advanced parameter** field accepts validated shortcuts such as `LC(A)`.
 
-Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. The same action dropdown and parameter slots appear in macro steps and behavior child actions, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
+Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. Macro steps expose the action dropdown and parameter slots through the pencil icon; behavior child actions use the same controls, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
 
 For a dongle's bootloader, see [the combo shortcut](./dongle#enter-the-dongle-bootloader-with-a-combo).
 

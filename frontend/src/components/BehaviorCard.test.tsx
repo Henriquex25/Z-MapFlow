@@ -12,8 +12,8 @@ beforeEach(() => {
   useAppPreferences.setState({ locale: "en" });
   const session = fixture();
   session.project.layout.behaviors = [
-    { ...newBehavior("hold-tap"), name: "Home row mods" },
-    { ...newBehavior("tap-dance"), name: "Navigation" },
+    { ...newBehavior("hold-tap"), name: "Home row mods", bindings: ["&kp LCTRL", "&kp ESC"] },
+    { ...newBehavior("tap-dance"), name: "Navigation", bindings: ["&kp A"] },
   ];
   useKeyboardStore.getState().initialize(session);
 });

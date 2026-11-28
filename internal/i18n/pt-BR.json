@@ -1035,5 +1035,17 @@
   "Click a slot, then choose or drop an action from the palette.": "Clique em um slot e escolha ou solte uma ação da paleta.",
   "Step {0} mode": "Modo do passo {0}",
   "Step mode controls how the action runs: Tap presses and releases, Press holds, and Release lets go. Behavior chooses what runs.": "O modo define como executar: Tocar pressiona e solta; Pressionar mantém pressionado; Soltar libera. O comportamento define qual ação executar.",
-  "{0} in palette": "{0} na paleta"
+  "{0} in palette": "{0} na paleta",
+  "Choose an action to fill this slot.": "Escolha uma ação para preencher este slot.",
+  "Edit action and parameters": "Editar ação e parâmetros",
+  "Macro sequence": "Sequência da macro",
+  "Step {0}": "Passo {0}",
+  "Move step forward": "Mover passo para baixo",
+  "Remove step {0}": "Remover passo {0}",
+  "Build the sequence from top to bottom.": "Monte a sequência de cima para baixo.",
+  "Choose trigger keys and an action.": "Escolha as teclas do combo e a ação.",
+  "Choose below or drop an action.": "Escolha abaixo ou arraste uma ação.",
+  "Click to choose, or drop an action here.": "Clique para escolher ou arraste uma ação para cá.",
+  "Help": "Ajuda",
+  "Timing": "Tempos"
 }

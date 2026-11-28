@@ -91,14 +91,17 @@ it("opens a collapsed palette from a key slot, filters tabs, and fills only that
   fireEvent.click(palette().getByRole("button", { name: "Drag &kp C" }));
   expect(value()).toBe("&mt LCTRL C");
   expect(usePalettePicker.getState().target).toBeNull();
+  expect(usePalettePicker.getState().collapsed).toBe(true);
 });
 it("accepts only valid key drops and retains the last binding on incompatible input", () => {
   mount();
   const slot = drops.getEnabled().find((d) => String(d.id).startsWith("parameter-"))!;
   act(() => slot.data.current!.acceptBinding("&bootloader"));
   expect(value()).toBe("&kp A");
+  expect(usePalettePicker.getState().collapsed).toBe(false);
   act(() => slot.data.current!.acceptBinding("&kp LC(C)"));
   expect(value()).toBe("&kp LC(C)");
+  expect(usePalettePicker.getState().collapsed).toBe(true);
 });
 it("offers actual layers rather than key or macro bindings for a layer argument", () => {
   mount("&lt @{base} A");
@@ -145,6 +148,7 @@ it("places add-step controls before aligned step cards and separates execution m
     kind: "press",
     binding: "&kp C",
   });
+  fireEvent.click(within(step).getByText("Edit action and parameters"));
   fireEvent.click(
     screen.getByRole("button", { name: "Choose Step 1 action — choose key 1 from palette" }),
   );
