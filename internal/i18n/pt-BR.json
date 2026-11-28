@@ -301,7 +301,7 @@
   "Behavior name": "Nome do comportamento",
   "Base behavior": "Comportamento base",
   "New definition": "Nova definição",
-  "Customize &": "Personalizar &amp;",
+  "Customize &": "Personalizar &",
   "Choose layout positions to assign this behavior": "Escolha posições do layout para receber este comportamento",
   "Define a hold action and a tap action. Each key can use different parameters.": "Defina uma ação ao segurar e outra ao tocar. Cada tecla pode usar parâmetros diferentes.",
   "The first action runs on one tap, the second on two taps, and so on.": "A primeira ação executa com um toque; a segunda com dois toques, e assim por diante.",

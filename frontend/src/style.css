@@ -27,6 +27,7 @@
   font-family: "Fira Sans", "Segoe UI", sans-serif;
   font-synthesis: none;
   --canvas: #0f1014;
+  --field-background: #121319;
   --surface: #17181e;
   --surface-raised: #1e2028;
   --surface-hover: #292b36;
@@ -90,6 +91,7 @@ button:disabled {
   cursor: not-allowed;
 }
 button:focus-visible,
+select:focus-visible,
 [role="button"]:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--accent);
@@ -239,11 +241,10 @@ h3 {
 }
 .keyboard-select {
   max-width: clamp(180px, 24vw, 300px);
-  appearance: auto;
-  background: transparent;
+  background-color: transparent;
   color: var(--text-secondary);
   border: 0;
-  padding: 2px 0;
+  padding: 2px 24px 2px 0;
   font-size: var(--type-caption);
 }
 .keyboard-select option {
@@ -443,7 +444,7 @@ h3 {
 
 .field {
   border: 1px solid var(--border);
-  background: #121319;
+  background: var(--field-background);
   color: var(--text);
   border-radius: 8px;
   padding: 7px 10px;
@@ -454,6 +455,37 @@ h3 {
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
+}
+/* Keep native select behavior while matching the app's field surfaces. */
+select.field,
+select.keyboard-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b0b2c3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 34px;
+  text-overflow: ellipsis;
+}
+select option,
+select optgroup {
+  background: var(--surface);
+  color: var(--text);
+}
+select:not(:disabled):hover {
+  border-color: var(--border-strong);
+}
+select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (forced-colors: active) {
+  select.field,
+  select.keyboard-select {
+    appearance: auto;
+    background-image: none;
+  }
 }
 .field::placeholder {
   color: var(--text-muted);
@@ -941,6 +973,9 @@ h3 {
   min-height: 28px;
   padding: 3px 8px;
   font-size: var(--type-caption);
+}
+.palette-toolbar select.field {
+  padding-right: 34px;
 }
 .palette-toolbar .icon-btn {
   min-height: 28px;
