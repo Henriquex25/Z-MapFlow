@@ -2412,10 +2412,6 @@ input[type="checkbox"]:focus-visible {
   flex-wrap: wrap;
   margin: 16px 0;
 }
-.macro-add-step > .binding-drop {
-  flex: 1;
-  min-width: min(320px, 100%);
-}
 .macro-steps {
   display: flex;
   flex-direction: column;

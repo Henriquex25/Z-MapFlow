@@ -140,7 +140,7 @@ it("places add-step controls before aligned step cards and separates execution m
     </DndContext>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Show settings for Copy" }));
-  const add = screen.getByRole("group", { name: "Add step" });
+  const add = screen.getByRole("button", { name: "Add step" });
   const step = screen.getByRole("group", { name: "Step 1 action" });
   expect(add.compareDocumentPosition(step) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   selectOption("Step 1 type", "press");

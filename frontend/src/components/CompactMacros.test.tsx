@@ -38,6 +38,15 @@ it("starts new resource action slots empty and blocks assignment until the user 
   expect(usePalettePicker.getState().collapsed).toBe(true);
   expect(screen.getByRole("button", { name: "Assign New macro to keyboard" })).toBeEnabled();
   expect(projectBindingError(state().project!, state().plugin)).toBe("");
+  fireEvent.click(screen.getByRole("button", { name: "Add step" }));
+  expect(state().project!.layout.macros[0].steps.map((s) => s.binding)).toEqual(["&kp C", ""]);
+  expect(usePalettePicker.getState().collapsed).toBe(true);
+  expect(screen.getByRole("listitem", { name: "Step 2" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Assign New macro to keyboard" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 2 action" }));
+  fireEvent.click(palette.getByRole("button", { name: "Drag &kp V" }));
+  expect(state().project!.layout.macros[0].steps.map((s) => s.binding)).toEqual(["&kp C", "&kp V"]);
+  expect(screen.getByRole("button", { name: "Assign New macro to keyboard" })).toBeEnabled();
   fireEvent.click(screen.getByRole("button", { name: "+ Tap / hold" }));
   expect(state().project!.layout.behaviors[0].bindings).toEqual(["", ""]);
   expect(screen.getByRole("button", { name: "Assign New tap/hold to keyboard" })).toBeDisabled();

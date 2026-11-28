@@ -242,8 +242,9 @@ it("creates a macro, fills its steps, assigns it to keys on different layers, an
   });
   selectKey("&kp B");
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add step" }));
   selectKey("&kp C");
-  fireEvent.click(screen.getByRole("button", { name: "Assign action to Add step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 2 action" }));
   expect(getProject().layout.macros[0].steps.map((step) => step.binding)).toEqual([
     "&kp B",
     "&kp C",
@@ -469,13 +470,14 @@ it("creates parameter routing and release continuation controls and assigns macr
   selectOption("Step 1 type", "control");
   selectOption("Macro control", "&macro_param_1to1");
   expect(getProject().layout.macros[0].parameterCount).toBe(1);
-  const add = within(screen.getByRole("group", { name: "Add step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add step" }));
+  const add = within(screen.getByRole("group", { name: "Step 2 action" }));
   fireEvent.click(add.getByText("Edit action and parameters"));
   fireEvent.click(add.getByText("Advanced ZMK code"));
-  fireEvent.change(add.getByRole("textbox", { name: "ZMK binding: Add step" }), {
+  fireEvent.change(add.getByRole("textbox", { name: "ZMK binding: Step 2 action" }), {
     target: { value: "&kp MACRO_PLACEHOLDER" },
   });
-  fireEvent.keyDown(add.getByRole("textbox", { name: "ZMK binding: Add step" }), {
+  fireEvent.keyDown(add.getByRole("textbox", { name: "ZMK binding: Step 2 action" }), {
     key: "Enter",
   });
   fireEvent.click(screen.getByRole("button", { name: "+ Wait" }));

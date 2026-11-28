@@ -1,5 +1,5 @@
 import { HelpTip } from "./HelpTip";
-import { ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 import { usePalettePicker } from "../store/usePalettePicker";
 import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
@@ -149,20 +149,25 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
             </div>
           </details>
           <div className="macro-add-step">
-            <BindingDrop
-              condensed
-              code=""
-              context="macro"
-              owner={m.id}
-              label={tr("Add step")}
-              onChange={(code) =>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => {
+                usePalettePicker.getState().clear();
                 edit((p) => {
                   p.layout.macros
                     .find((x) => x.id === m.id)!
-                    .steps.push({ kind: "tap", binding: code, durationMs: 0 });
-                })
-              }
-            />
+                    .steps.push({
+                      kind: "tap",
+                      binding: "",
+                      durationMs: 0,
+                    });
+                });
+              }}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {tr("Add step")}
+            </button>
             <button
               className="btn"
               onClick={() =>
