@@ -27,6 +27,7 @@
   font-family: "Fira Sans", "Segoe UI", sans-serif;
   font-synthesis: none;
   --canvas: #0f1014;
+  --field-background: #121319;
   --surface: #17181e;
   --surface-raised: #1e2028;
   --surface-hover: #292b36;
@@ -90,6 +91,7 @@ button:disabled {
   cursor: not-allowed;
 }
 button:focus-visible,
+select:focus-visible,
 [role="button"]:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--accent);
@@ -239,11 +241,10 @@ h3 {
 }
 .keyboard-select {
   max-width: clamp(180px, 24vw, 300px);
-  appearance: auto;
-  background: transparent;
+  background-color: transparent;
   color: var(--text-secondary);
   border: 0;
-  padding: 2px 0;
+  padding: 2px 24px 2px 0;
   font-size: var(--type-caption);
 }
 .keyboard-select option {
@@ -443,7 +444,7 @@ h3 {
 
 .field {
   border: 1px solid var(--border);
-  background: #121319;
+  background: var(--field-background);
   color: var(--text);
   border-radius: 8px;
   padding: 7px 10px;
@@ -454,6 +455,37 @@ h3 {
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
+}
+/* Keep native select behavior while matching the app's field surfaces. */
+select.field,
+select.keyboard-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b0b2c3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 34px;
+  text-overflow: ellipsis;
+}
+select option,
+select optgroup {
+  background: var(--surface);
+  color: var(--text);
+}
+select:not(:disabled):hover {
+  border-color: var(--border-strong);
+}
+select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (forced-colors: active) {
+  select.field,
+  select.keyboard-select {
+    appearance: auto;
+    background-image: none;
+  }
 }
 .field::placeholder {
   color: var(--text-muted);
@@ -670,6 +702,8 @@ h3 {
 }
 .keyboard-viewport {
   display: flex;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
   overflow: auto;
   width: 100%;
@@ -918,13 +952,32 @@ h3 {
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
 }
-.palette-toolbar .tab {
+.palette-tabs {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.palette-tabs::-webkit-scrollbar {
+  display: none;
+}
+.palette-tabs .tab {
+  flex-shrink: 0;
   padding-block: 5px;
+}
+.palette-toolbar > input {
+  flex: 0 1 192px;
+  min-width: 100px;
 }
 .palette-toolbar .field {
   min-height: 28px;
   padding: 3px 8px;
   font-size: var(--type-caption);
+}
+.palette-toolbar select.field {
+  padding-right: 34px;
 }
 .palette-toolbar .icon-btn {
   min-height: 28px;
@@ -2350,4 +2403,250 @@ input[type="checkbox"]:focus-visible {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.macro-add-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.macro-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.macro-steps .step-card {
+  display: grid;
+  grid-template-columns: 34px minmax(150px, 190px) minmax(160px, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+  min-width: 0;
+  background: var(--surface);
+}
+.macro-step-number {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-top: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.macro-step-mode {
+  min-width: 0;
+  margin-top: 10px;
+}
+.macro-step-tools {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.macro-step-tools .icon-btn {
+  width: 30px;
+  min-height: 32px;
+  padding: 4px;
+}
+.macro-steps .search-select {
+  min-width: 0;
+  max-width: 100%;
+}
+.binding-drop.is-condensed {
+  position: relative;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.binding-slot {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 6px 38px 6px 10px;
+  min-height: 58px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+.binding-slot > .keycap,
+.empty-key-slot {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+}
+.empty-key-slot {
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+.binding-drop:not(.is-condensed) .binding-select:has(.empty-key-slot) {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  justify-content: start;
+}
+.binding-drop:has(.empty-key-slot) > .binding-select {
+  grid-column: 1 / -1;
+}
+.binding-select .empty-key-slot + span {
+  text-align: left;
+}
+.binding-drop.is-active .binding-slot,
+.binding-drop.is-over .binding-slot {
+  border-color: var(--accent);
+}
+.binding-drop.is-invalid .binding-slot {
+  border-color: var(--danger);
+}
+.binding-editor-options {
+  margin-top: 0;
+  min-width: 0;
+}
+.binding-editor-options > summary {
+  position: absolute;
+  right: 8px;
+  top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  list-style: none;
+  font-size: var(--type-caption);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.binding-editor-fields {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+@media (max-width: 1050px) {
+  .macro-steps .step-card {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+  .macro-step-mode {
+    grid-column: 2;
+  }
+  .macro-step-tools {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .macro-steps .step-card > .binding-drop,
+  .macro-steps .step-card > .form-label,
+  .macro-steps .step-card > .flex {
+    grid-column: 2 / -1;
+  }
+}
+.help-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.help-tip:hover,
+.help-tip:focus-visible {
+  color: var(--accent);
+}
+.help-tooltip {
+  position: fixed;
+  z-index: 500;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--type-caption);
+  line-height: 1.5;
+  box-shadow: 0 6px 20px #0006;
+  pointer-events: none;
+}
+.binding-drop.is-active,
+.parameter-slot.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.parameter-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  min-height: 76px;
+  width: 100%;
+  background: var(--canvas);
+  cursor: pointer;
+  text-align: left;
+}
+.parameter-slot > .keycap {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+}
+.parameter-slot > span {
+  font-size: var(--type-caption);
+  color: var(--text-secondary);
+}
+.parameter-slot.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.parameter-slot.is-invalid {
+  border-color: var(--danger);
+}
+.parameter-advanced summary {
+  font-size: var(--type-caption);
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 6px;
+}
+.parameter-advanced input {
+  margin-top: 6px;
+}
+
+.palette[data-elevated="true"] {
+  position: relative;
+  z-index: 110;
+}
+.modal-backdrop.palette-binding-editor {
+  align-items: flex-start;
+  padding-top: 64px;
+}
+
+.macro-timing {
+  margin-top: 6px;
+}
+.macro-timing > summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.macro-timing > div {
+  margin-top: 8px;
+}
+
+.binding-editor-options > summary::-webkit-details-marker {
+  display: none;
+}
+.binding-editor-options > summary:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }

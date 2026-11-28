@@ -224,8 +224,11 @@ it("enables discard before the first save and restores the latest saved revision
 }, 10000);
 
 const palette = () => within(screen.getByRole("region", { name: "Action palette" }));
-const selectKey = (code: string) =>
+const selectKey = (code: string) => {
+  const expand = screen.queryByRole("button", { name: "Expand palette" });
+  if (expand) fireEvent.click(expand);
   fireEvent.click(palette().getByRole("button", { name: `Drag ${code}` }));
+};
 const getProject = () => useKeyboardStore.getState().project!;
 
 it("creates a macro, fills its steps, assigns it to keys on different layers, and saves everything", async () => {
@@ -239,8 +242,9 @@ it("creates a macro, fills its steps, assigns it to keys on different layers, an
   });
   selectKey("&kp B");
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add step" }));
   selectKey("&kp C");
-  fireEvent.click(screen.getByRole("button", { name: "Assign action to Add step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 2 action" }));
   expect(getProject().layout.macros[0].steps.map((step) => step.binding)).toEqual([
     "&kp B",
     "&kp C",
@@ -292,12 +296,14 @@ it("creates and assigns hold-tap and tap-dance behaviors with the configured act
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap sequence" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap sequence" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to 1 tap(s)" }));
   selectKey("&kp F1");
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Add tap" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New tap sequence to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 1:/ }));
   const dance = getProject().layout.behaviors[1];
-  expect(dance.bindings).toEqual(["&kp A", "&kp B", "&kp F1"]);
+  expect(dance.bindings).toEqual(["&kp A", "&kp F1"]);
   expect(getProject().layout.layers[0].keys[1].code).toBe(`&${dance.id}`);
 });
 
@@ -307,7 +313,8 @@ it("creates a combo that triggers a macro without remapping the trigger keys", a
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
-  fireEvent.click(screen.getByRole("button", { name: "Drag New macro" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
   fireEvent.click(screen.getByRole("button", { name: "Combos" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New combo" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New combo" }));
@@ -315,6 +322,8 @@ it("creates a combo that triggers a macro without remapping the trigger keys", a
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 1:/ }));
   fireEvent.click(screen.getByRole("button", { name: "Assign action to Combo action" }));
+  fireEvent.click(palette().getByRole("button", { name: "Macros in palette" }));
+  fireEvent.click(palette().getByRole("button", { name: "Drag New macro" }));
   const combo = getProject().layout.combos[0];
   expect(combo.positions).toEqual([0, 1]);
   expect(combo.binding).toBe(`&${getProject().layout.macros[0].id}`);
@@ -375,6 +384,8 @@ it("assigns a macro to encoder rotation and click while keeping its physical bin
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Step 1 action" }));
   fireEvent.click(screen.getByRole("button", { name: "Assign New macro to keyboard" }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CW:/ }));
   fireEvent.click(screen.getByRole("button", { name: /^encoder_left CLK:/ }));
@@ -426,6 +437,11 @@ it("creates mod-morphs and edits a key binding without replacing its reusable de
   selectOption("Add behavior type", "mod-morph");
   const morph = getProject().layout.behaviors[0];
   expect(morph.properties!.mods).toContain("MOD_LSFT");
+  fireEvent.click(screen.getByRole("button", { name: `Show settings for ${morph.name}` }));
+  selectKey("&kp A");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Normal action" }));
+  selectKey("&kp B");
+  fireEvent.click(screen.getByRole("button", { name: "Assign action to Modified action" }));
   fireEvent.click(screen.getByRole("button", { name: `Assign ${morph.name} to keyboard` }));
   fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
   expect(getProject().layout.layers[0].keys[0].code).toBe(`&${morph.id}`);
@@ -451,23 +467,21 @@ it("creates parameter routing and release continuation controls and assigns macr
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
-    target: { value: "control" },
-  });
+  selectOption("Step 1 type", "control");
   selectOption("Macro control", "&macro_param_1to1");
   expect(getProject().layout.macros[0].parameterCount).toBe(1);
-  const add = within(screen.getByRole("group", { name: "Add step" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add step" }));
+  const add = within(screen.getByRole("group", { name: "Step 2 action" }));
+  fireEvent.click(add.getByText("Edit action and parameters"));
   fireEvent.click(add.getByText("Advanced ZMK code"));
-  fireEvent.change(add.getByRole("textbox", { name: "ZMK binding: Add step" }), {
+  fireEvent.change(add.getByRole("textbox", { name: "ZMK binding: Step 2 action" }), {
     target: { value: "&kp MACRO_PLACEHOLDER" },
   });
-  fireEvent.keyDown(add.getByRole("textbox", { name: "ZMK binding: Add step" }), {
+  fireEvent.keyDown(add.getByRole("textbox", { name: "ZMK binding: Step 2 action" }), {
     key: "Enter",
   });
   fireEvent.click(screen.getByRole("button", { name: "+ Wait" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Step 3 type" }), {
-    target: { value: "control" },
-  });
+  selectOption("Step 3 type", "control");
   fireEvent.click(screen.getByText("Parameters for new assignments"));
   fireEvent.change(
     screen.getByRole("textbox", { name: "Parameters for new assignments — argument 1" }),
@@ -658,14 +672,13 @@ it("refuses an incompatible hold child before assigning it", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Behaviors" }));
   fireEvent.click(screen.getByRole("button", { name: "+ Tap / hold" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New tap/hold" }));
-  fireEvent.click(palette().getByRole("button", { name: "Tap/hold" }));
-  fireEvent.click(palette().getByRole("button", { name: "Drag &mt LCTRL TAB" }));
-  const target = screen.getByRole("button", {
-    name: "Assign action to Hold action (default for new assignments)",
-  });
-  expect(target).toBeDisabled();
-  expect(target).toHaveAttribute("title", expect.stringContaining("zero or one"));
-  expect(getProject().layout.behaviors[0].bindings).toEqual(["&kp LCTRL", "&kp ESC"]);
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Assign action to Hold action (default for new assignments)",
+    }),
+  );
+  expect(palette().queryByRole("button", { name: "Tap/hold" })).not.toBeInTheDocument();
+  expect(getProject().layout.behaviors[0].bindings).toEqual(["", ""]);
 });
 
 it("marks an existing invalid mapping red and prevents saving it", async () => {
@@ -689,9 +702,7 @@ it("keeps the last valid macro control duration and prevents saving an invalid d
   fireEvent.click(screen.getByRole("button", { name: "Macros" }));
   fireEvent.click(screen.getByRole("button", { name: "+ New macro" }));
   fireEvent.click(screen.getByRole("button", { name: "Show settings for New macro" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Step 1 type" }), {
-    target: { value: "control" },
-  });
+  selectOption("Step 1 type", "control");
   selectOption("Macro control", "&macro_wait_time");
   const duration = screen.getByRole("spinbutton", { name: "Control duration (ms)" });
   fireEvent.change(duration, { target: { value: "60001" } });
@@ -756,4 +767,49 @@ it("preserves user-created names and bindings when switching languages", async (
     "Minha camada ç — Save",
   );
   expect(getProject()).toEqual(original);
+});
+
+it("hides the palette in Settings, collapses resource views and opens it when selecting a palette tab", async () => {
+  const s = fixture();
+  s.plugin.capabilities = ["layers", "macros", "combos", "hold-tap", "bluetooth"];
+  vi.mocked(api.load).mockResolvedValue(s);
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Layer name" });
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  expect(screen.queryByRole("region", { name: "Action palette" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("separator", { name: "Adjust keyboard and palette space" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Macros" }));
+  expect(screen.getByRole("region", { name: "Action palette" })).toHaveAttribute(
+    "data-collapsed",
+    "true",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+  fireEvent.click(screen.getByRole("button", { name: "Collapse palette" }));
+  fireEvent.click(palette().getByRole("button", { name: "Bluetooth" }));
+  expect(screen.getByRole("region", { name: "Action palette" })).toHaveAttribute(
+    "data-collapsed",
+    "false",
+  );
+  expect(palette().getByRole("button", { name: "Drag &bt BT_CLR" })).toBeVisible();
+});
+it("uses the lower palette to fill a key inspector parameter without replacing its behavior", async () => {
+  render(<App />);
+  await screen.findByRole("textbox", { name: "Layer name" });
+  fireEvent.click(screen.getByRole("button", { name: /^Position 0:/ }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Choose Key action — choose key 1 from palette" }),
+  );
+  expect(screen.getByRole("dialog", { name: "Edit key binding" })).toHaveAttribute(
+    "aria-modal",
+    "false",
+  );
+  expect(screen.getByRole("region", { name: "Action palette" })).toHaveAttribute(
+    "data-elevated",
+    "true",
+  );
+  fireEvent.click(palette().getByRole("button", { name: "Drag &kp C" }));
+  expect(getProject().layout.layers[0].keys[0].code).toBe("&kp C");
+  expect(screen.getByRole("dialog", { name: "Edit key binding" })).toBeVisible();
 });

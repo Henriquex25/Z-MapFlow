@@ -1,3 +1,6 @@
+import { HelpTip } from "./HelpTip";
+import { ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
+import { usePalettePicker } from "../store/usePalettePicker";
 import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
 import { SleepTimeoutField } from "./SleepTimeoutField";
@@ -24,7 +27,6 @@ import { behaviorAction, macroAction } from "../utils/resourceActions";
 import { NumberField } from "./NumberField";
 import { validateBinding, nativeArity } from "../utils/bindingValidation";
 import { BindingDrop } from "./BindingDrop";
-import { DraggableKey } from "./DraggableKey";
 import { KeyboardLayout } from "./KeyboardLayout";
 
 type AssignProps = { onAssign: (action: IKeyAction) => void };
@@ -32,10 +34,16 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
   useLocale();
   const {
     project: p,
+    plugin,
     edit,
     removeResource,
   } = useKeyboardStore(
-    useShallow((s) => ({ project: s.project, edit: s.edit, removeResource: s.removeResource })),
+    useShallow((s) => ({
+      project: s.project,
+      plugin: s.plugin,
+      edit: s.edit,
+      removeResource: s.removeResource,
+    })),
   );
   if (!p) return null;
   return (
@@ -44,9 +52,12 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
         <div>
           <h2>Macros</h2>
           <p className="hint">
-            {tr(
-              "Select or drag actions from the palette to build a sequence. Then choose “Assign to keyboard”.",
-            )}{" "}
+            {tr("Build the sequence from top to bottom.")}
+            <HelpTip
+              text={tr(
+                "Step mode controls how the action runs: Tap presses and releases, Press holds, and Release lets go. Behavior chooses what runs.",
+              )}
+            />
           </p>
         </div>
         <button
@@ -58,7 +69,7 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
                 name: tr("New macro"),
                 tapMs: 20,
                 waitMs: 20,
-                steps: [{ kind: "tap", binding: "&kp A", durationMs: 0 }],
+                steps: [{ kind: "tap", binding: "", durationMs: 0 }],
               }),
             )
           }
@@ -86,10 +97,10 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
                 }
               />
               <div className="flex gap-3 items-center">
-                <DraggableKey action={macroAction(m)} />
                 <button
                   className="btn primary"
-                  disabled={m.steps.length === 0}
+                  disabled={!!validateBinding(macroAction(m).code, p, plugin)}
+                  title={validateBinding(macroAction(m).code, p, plugin) || undefined}
                   aria-label={tr("Assign {0} to keyboard", m.name)}
                   onClick={() => onAssign(macroAction(m))}
                 >
@@ -112,60 +123,98 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
               })
             }
           />
-          <div className="flex flex-wrap gap-4 mb-4">
-            <NumberField
-              label={tr("Tap time (ms)")}
-              value={m.tapMs}
-              max={5000}
-              onChange={(n) =>
+          <details className="macro-timing">
+            <summary>{tr("Timing")}</summary>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <NumberField
+                label={tr("Tap time (ms)")}
+                value={m.tapMs}
+                max={5000}
+                onChange={(n) =>
+                  edit((p) => {
+                    p.layout.macros.find((x) => x.id === m.id)!.tapMs = n;
+                  })
+                }
+              />
+              <NumberField
+                label={tr("Wait time between actions (ms)")}
+                value={m.waitMs}
+                max={5000}
+                onChange={(n) =>
+                  edit((p) => {
+                    p.layout.macros.find((x) => x.id === m.id)!.waitMs = n;
+                  })
+                }
+              />
+            </div>
+          </details>
+          <div className="macro-add-step">
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => {
+                usePalettePicker.getState().clear();
                 edit((p) => {
-                  p.layout.macros.find((x) => x.id === m.id)!.tapMs = n;
+                  p.layout.macros
+                    .find((x) => x.id === m.id)!
+                    .steps.push({
+                      kind: "tap",
+                      binding: "",
+                      durationMs: 0,
+                    });
+                });
+              }}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {tr("Add step")}
+            </button>
+            <button
+              className="btn"
+              onClick={() =>
+                edit((p) => {
+                  p.layout.macros
+                    .find((x) => x.id === m.id)!
+                    .steps.push({
+                      kind: "wait",
+                      binding: "&none",
+                      durationMs: 100,
+                    });
                 })
               }
-            />
-            <NumberField
-              label={tr("Wait time between actions (ms)")}
-              value={m.waitMs}
-              max={5000}
-              onChange={(n) =>
-                edit((p) => {
-                  p.layout.macros.find((x) => x.id === m.id)!.waitMs = n;
-                })
-              }
-            />
+            >
+              {tr("+ Wait")}{" "}
+            </button>
           </div>
-          <div className="flex gap-3 flex-wrap items-center">
+
+          <ol className="macro-steps" aria-label={tr("Macro sequence")}>
             {m.steps.map((step, i) => (
-              <div key={i} className="step-card">
-                <div className="flex gap-2 items-center">
-                  <span className="hint">{i + 1}</span>
-                  <select
-                    aria-label={tr("Step {0} type", i + 1)}
-                    className="field"
+              <li key={i} className="step-card" aria-label={tr("Step {0}", i + 1)}>
+                <span className="macro-step-number" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <div className="macro-step-mode">
+                  <span className="sr-only">{tr("Step {0} mode", i + 1)}</span>
+                  <SearchableSelect
+                    label={tr("Step {0} type", i + 1)}
                     value={step.kind}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       edit((p) => {
                         const step = p.layout.macros.find((x) => x.id === m.id)!.steps[i];
-                        step.kind = e.target.value;
+                        step.kind = value;
                         if (step.kind === "control") step.binding = "&macro_pause_for_release";
                         else if (step.kind !== "wait" && step.binding.startsWith("&macro_"))
-                          step.binding = "&kp A";
+                          step.binding = "";
                       })
                     }
-                  >
-                    {[
-                      ["tap", tr("Tap")],
-                      ["press", tr("Press")],
-                      ["release", tr("Release")],
-                      ["wait", tr("Wait")],
-                      ["binding", tr("Action in current mode")],
-                      ["control", tr("ZMK control")],
-                    ].map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: "tap", label: tr("Tap") },
+                      { value: "press", label: tr("Press") },
+                      { value: "release", label: tr("Release") },
+                      { value: "wait", label: tr("Wait") },
+                      { value: "binding", label: tr("Action in current mode") },
+                      { value: "control", label: tr("ZMK control") },
+                    ]}
+                  />
                 </div>
                 {step.kind === "control" ? (
                   <MacroControl
@@ -195,6 +244,7 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
                   />
                 ) : (
                   <BindingDrop
+                    condensed
                     context="macro"
                     owner={m.id}
                     label={tr("Step {0} action", i + 1)}
@@ -206,63 +256,54 @@ export const MacroEditor = memo(function MacroEditor({ onAssign }: AssignProps) 
                     }
                   />
                 )}
-                <div className="flex gap-2">
+                <div className="macro-step-tools">
                   <button
-                    className="btn"
+                    className="btn icon-btn"
                     disabled={i === 0}
                     aria-label={tr("Move step backward")}
+                    title={tr("Move step backward")}
                     onClick={() =>
                       edit((p) => {
+                        usePalettePicker.getState().clear();
                         const steps = p.layout.macros.find((x) => x.id === m.id)!.steps;
                         [steps[i - 1], steps[i]] = [steps[i], steps[i - 1]];
                       })
                     }
                   >
-                    ←
+                    <ArrowUp size={16} aria-hidden="true" />
                   </button>
                   <button
-                    className="btn danger"
+                    className="btn icon-btn"
+                    disabled={i === m.steps.length - 1}
+                    aria-label={tr("Move step forward")}
+                    title={tr("Move step forward")}
                     onClick={() =>
                       edit((p) => {
+                        usePalettePicker.getState().clear();
+                        const steps = p.layout.macros.find((x) => x.id === m.id)!.steps;
+                        [steps[i], steps[i + 1]] = [steps[i + 1], steps[i]];
+                      })
+                    }
+                  >
+                    <ArrowDown size={16} aria-hidden="true" />
+                  </button>
+                  <button
+                    className="btn icon-btn danger"
+                    aria-label={tr("Remove step {0}", i + 1)}
+                    title={tr("Remove step {0}", i + 1)}
+                    onClick={() =>
+                      edit((p) => {
+                        usePalettePicker.getState().clear();
                         p.layout.macros.find((x) => x.id === m.id)!.steps.splice(i, 1);
                       })
                     }
                   >
-                    {tr("Remove")}{" "}
+                    <Trash2 size={16} aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              </li>
             ))}
-            <BindingDrop
-              code=""
-              context="macro"
-              owner={m.id}
-              label={tr("Add step")}
-              onChange={(code) =>
-                edit((p) => {
-                  p.layout.macros
-                    .find((x) => x.id === m.id)!
-                    .steps.push({ kind: "tap", binding: code, durationMs: 0 });
-                })
-              }
-            />
-            <button
-              className="btn"
-              onClick={() =>
-                edit((p) => {
-                  p.layout.macros
-                    .find((x) => x.id === m.id)!
-                    .steps.push({
-                      kind: "wait",
-                      binding: "&none",
-                      durationMs: 100,
-                    });
-                })
-              }
-            >
-              {tr("+ Wait")}{" "}
-            </button>
-          </div>
+          </ol>
         </BehaviorCard>
       ))}
     </div>
@@ -293,9 +334,6 @@ export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignP
       <div className="section-toolbar">
         <div>
           <h2>{tr("Behaviors")}</h2>
-          <p className="hint">
-            {tr("Configure tap/hold actions or sequences based on tap count.")}{" "}
-          </p>
         </div>
         <div className="flex gap-2">
           <button className="btn primary" onClick={() => add("hold-tap")}>
@@ -341,6 +379,21 @@ export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignP
                   }
                 />
                 <span className="badge">{tr(behaviorKinds[b.kind] ?? b.kind)}</span>
+                <HelpTip
+                  text={
+                    b.kind === "hold-tap"
+                      ? tr(
+                          "Define a hold action and a tap action. Each key can use different parameters.",
+                        )
+                      : b.kind === "tap-dance"
+                        ? tr("The first action runs on one tap, the second on two taps, and so on.")
+                        : b.kind === "mod-morph"
+                          ? tr(
+                              "Define the normal action and the alternate action triggered by the selected modifiers.",
+                            )
+                          : tr("Configure this behavior and assign it to one or more keys.")
+                  }
+                />
                 {[
                   "sticky-key",
                   "caps-word",
@@ -361,7 +414,7 @@ export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignP
                         const v = p.layout.behaviors.find((v) => v.id === b.id)!;
                         v.target = e.target.value;
                         if (v.target) v.bindings = [];
-                        else if (v.kind === "sticky-key") v.bindings = ["&kp LSHFT"];
+                        else if (v.kind === "sticky-key") v.bindings = [""];
                       })
                     }
                   >
@@ -388,7 +441,6 @@ export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignP
                 )}
               </div>
               <div className="behavior-actions">
-                <DraggableKey action={behaviorAction(b)} className="behavior-preview" />
                 <button
                   className="btn primary"
                   disabled={!!validateBinding(behaviorAction(b).code, p, plugin)}
@@ -408,17 +460,6 @@ export const BehaviorEditor = memo(function BehaviorEditor({ onAssign }: AssignP
             </>
           }
         >
-          <p className="hint behavior-help">
-            {b.kind === "hold-tap"
-              ? tr("Define a hold action and a tap action. Each key can use different parameters.")
-              : b.kind === "tap-dance"
-                ? tr("The first action runs on one tap, the second on two taps, and so on.")
-                : b.kind === "mod-morph"
-                  ? tr(
-                      "Define the normal action and the alternate action triggered by the selected modifiers.",
-                    )
-                  : tr("Configure this behavior and assign it to one or more keys.")}
-          </p>
           <AssignmentParameters
             resource={b}
             onChange={(count, parameters) =>
@@ -699,9 +740,12 @@ export const ComboEditor = memo(function ComboEditor() {
         <div>
           <h2>Combos</h2>
           <p className="hint">
-            {tr(
-              "Select two or more keys in the layout and assign the combo action using the palette.",
-            )}{" "}
+            {tr("Choose trigger keys and an action.")}
+            <HelpTip
+              text={tr(
+                "Select two or more keys in the layout and assign the combo action using the palette.",
+              )}
+            />
           </p>
         </div>
         <button
@@ -713,7 +757,7 @@ export const ComboEditor = memo(function ComboEditor() {
                 id,
                 name: tr("New combo"),
                 positions: [],
-                binding: "&kp ESC",
+                binding: "",
                 layerIds: [],
                 timeoutMs: 50,
                 slowRelease: false,

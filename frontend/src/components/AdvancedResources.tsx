@@ -1,3 +1,4 @@
+import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { BehaviorCard } from "./BehaviorCard";
 import { tr, useLocale } from "../i18n";
@@ -28,14 +29,11 @@ export const behaviorKinds: Record<string, string> = {
   native: "ZMK module behavior",
 };
 export function newBehavior(kind: string): Behavior {
-  const bindings =
-    kind === "hold-tap"
-      ? ["&kp LCTRL", "&kp ESC"]
-      : kind === "tap-dance" || kind === "mod-morph"
-        ? ["&kp A", "&kp B"]
-        : kind === "sticky-key"
-          ? ["&kp LSHFT"]
-          : [];
+  const bindings = ["hold-tap", "mod-morph"].includes(kind)
+    ? ["", ""]
+    : ["tap-dance", "sticky-key"].includes(kind)
+      ? [""]
+      : [];
   return {
     id: uid(),
     name:
@@ -155,11 +153,11 @@ export function AssignmentParameters({
   return (
     <details className="mt-3">
       <summary>{tr("Parameters for new assignments")}</summary>
-      <p className="hint">
-        {tr(
+      <HelpTip
+        text={tr(
           "Each key keeps its own arguments. Click a key in the layout to edit values already assigned to it.",
-        )}{" "}
-      </p>
+        )}
+      />
       <div className="flex flex-wrap gap-3 mt-2">
         {editable && (
           <label>

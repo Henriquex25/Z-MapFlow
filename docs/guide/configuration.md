@@ -54,12 +54,14 @@ Combos, macros, behaviors and conditional-layer rules start collapsed. Their nam
 
 For a combo, expand its card and select at least two trigger positions in the keyboard preview. Under **Combo action**, choose a **Behavior**, then its parameters:
 
-- **Key press (&kp):** choose any key from the key selector, or enter a supported shortcut in the accompanying field.
+- **Key press (&kp):** click the key slot and choose from the palette, or enter a supported shortcut under **Advanced parameter**.
 - **Macros / Behaviors:** choose a macro or custom behavior created in the project. Its invocation parameters appear when required.
 - **Enter bootloader (&bootloader):** no parameter is needed, so no key field appears.
 
-The behavior and parameter selectors include search: click a selector and type a name, keycode or group, such as `bootloader`, `F13` or `Macros`. Use the arrow keys and Enter, or click a result. Escape cancels the search; typing a query alone does not change the binding. Long lists render only their visible options. Key/shortcut fields below the selector continue to accept validated shortcuts such as `LC(A)`.
+The behavior selector includes search: click it and type a name, code or group, such as `bootloader` or `Macros`. Use the arrow keys and Enter, or click a result. Escape cancels the search; typing a query alone does not change the binding. Long lists render only their visible options. The optional **Advanced parameter** field accepts validated shortcuts such as `LC(A)`.
 
-Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. The visual selectors also appear in macro steps and behavior child actions, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
+Actions that are unavailable for the keyboard, invalid or recursive are disabled. You can still drag an action from the palette or use advanced ZMK code. Macro steps expose the action dropdown and parameter slots through the pencil icon; behavior child actions use the same controls, following their parameter limits. Combo layer checkboxes restrict activation; no layers selected means all layers.
 
 For a dongle's bootloader, see [the combo shortcut](./dongle#enter-the-dongle-bootloader-with-a-combo).
+
+Key and listed-parameter fields now use slots backed by the lower palette, filtered to the selected argument. Only the action-type selector remains a dropdown; advanced text entry is optional. See [choosing actions and parameters](./getting-started#choosing-actions-and-parameters).

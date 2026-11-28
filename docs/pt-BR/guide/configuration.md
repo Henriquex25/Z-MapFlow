@@ -54,14 +54,16 @@ Combos, macros, comportamentos e regras de camadas condicionais começam recolhi
 
 Para um combo, expanda o cartão e selecione pelo menos duas posições no desenho do teclado. Em **Ação do combo**, escolha um **Comportamento** e depois seus parâmetros:
 
-- **Pressionar tecla (&kp):** escolha qualquer tecla no seletor ou digite um atalho válido no campo complementar.
+- **Pressionar tecla (&kp):** clique no slot de tecla e escolha na paleta, ou digite um atalho válido em **Parâmetro avançado**.
 - **Macros / Comportamentos:** escolha uma macro ou comportamento criado no projeto. Os parâmetros de uso aparecem quando necessários.
 - **Entrar no bootloader (&bootloader):** não exige parâmetros, portanto não aparece campo de tecla.
 
-Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. Os seletores também aparecem nas etapas de macros e nas ações internas de comportamentos, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
+Ações indisponíveis no teclado, inválidas ou recursivas ficam desabilitadas. Arrastar da paleta e o código ZMK avançado continuam disponíveis. Nas etapas de macros, o lápis abre o dropdown de ação e os slots de parâmetros; ações internas de comportamentos usam os mesmos controles, respeitando seus limites. Os checkboxes de camada restringem a ativação do combo; nenhuma selecionada significa todas.
 
 Para o bootloader do dongle, veja [o atalho por combo](./dongle#entrar-no-bootloader-do-dongle-com-um-combo).
 
-### Buscar comportamentos e parâmetros
+### Buscar comportamentos e escolher parâmetros
 
-Clique em um seletor de comportamento ou parâmetro e digite um nome, código de tecla ou grupo, como `bootloader`, `F13` ou `Macros`. Use as setas e Enter, ou clique em um resultado. Escape cancela a busca; apenas digitar não altera o binding. Listas longas exibem somente as opções visíveis. O campo de tecla/atalho abaixo do seletor continua aceitando atalhos validados, como `LC(A)`.
+Clique no seletor de comportamento e digite um nome, código ou grupo, como `bootloader` ou `Macros`. Use as setas e Enter, ou clique em um resultado. Escape cancela a busca; apenas digitar não altera o binding. Listas longas exibem somente as opções visíveis. O campo opcional **Parâmetro avançado** aceita atalhos validados, como `LC(A)`.
+
+Campos de teclas e parâmetros de lista usam slots ligados à paleta inferior, filtrada para o argumento selecionado. O tipo de ação continua sendo escolhido em dropdown; a entrada de texto avançado é opcional. Consulte [escolher ações e parâmetros](./getting-started#escolher-acoes-e-parametros).
